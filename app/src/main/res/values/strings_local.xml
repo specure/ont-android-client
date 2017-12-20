@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Copyright 2014-2017 Specure GmbH
+  Copyright 2013-2015 alladin-IT GmbH
+  
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+  
+    http://www.apache.org/licenses/LICENSE-2.0
+  
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+<resources>
+    
+    <string name="app_name">Open Nettest</string>
+
+    <string name="app_name_api" translatable="false">RMBT</string>
+    
+    <string name="test_notification_ticker">Open Nettest running…</string>
+    <string name="test_notification_title">Open Nettest</string>
+    
+    <string name="menu_rtr_web_link">https://opendemo.nettest.org/</string>
+    <string name="about_rtr_line1">https://opendemo.nettest.org/</string>
+    
+    <string name="about_web_line1" translatable="false">https://opendemo.nettest.org/</string>
+    <string name="about_web_link" translatable="false">https://opendemo.nettest.org/</string>
+    
+    <string name="about_email_line1" translatable="false">nettest@specure.com</string>
+    <string name="about_email_email">nettest@specure.com</string>
+    <string name="about_email_subject">nettest@specure.com</string>
+    
+    <integer name="rmbt_terms_version" translatable="false">3</integer>
+    
+    <string name="url_help">https://opendemo.nettest.org/en/help</string>
+    <string name="url_statistics">https://opendemo.nettest.org/en/statistics</string>
+    <string name="url_help_result">https://opendemo.nettest.org/en/help</string>
+    <string name="url_terms">https://opendemo.nettest.org/en/tc</string>
+    
+    <string name="header_image_description" translatable="false">Header image</string>
+
+    <string translatable="false" name="default_control_host">c01opendemo.nettest.org</string>
+    <string translatable="false" name="default_control_host_ipv4_only">c01ipv4opendemo.nettest.org</string>
+    <string translatable="false" name="default_control_host_ipv6_only">c01ipv6opendemo.nettest.org</string>
+    <string translatable="false" name="default_control_check_ipv4_url">https://opendemo.nettest.org/RMBTControlServer/ip</string>
+    <string translatable="false" name="default_control_check_ipv6_url">https://opendemo.nettest.org/RMBTControlServer/ip</string>
+
+</resources>

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="colorPrimary">#3F51B5</color>
+    <color name="colorPrimaryDark">#303F9F</color>
+    <color name="colorAccent">#FF4081</color>
+
+    <color name="titlepage_stats_foreground">@color/colorPrimaryDark</color>
+    <color name="app_text_color">@color/colorPrimaryDark</color>
+    <color name="toolbar_icon_overlay">@color/colorPrimaryDark</color>
+
+    <color name="menu_background">@color/colorPrimaryDark</color>
+
+    <color name="cpu_classification_green">#FF59B100</color>
+    <color name="cpu_classification_yellow">#FFFEC826</color>
+    <color name="cpu_classification_red">#FFe33900</color>
+    <color name="cpu_classification_grey">#50FFFFFF</color>
+
+    <color name="classification_green">#FF59B100</color>
+    <color name="classification_yellow">#FFFEC826</color>
+    <color name="classification_red">#FFB22D00</color>
+    <color name="classification_grey">#50FFFFFF</color>
+    <color name="classification_none">#00000000</color>
+
+    <color name="graph_current_speed_download_value_color">@color/colorPrimaryDark</color>
+    <color name="graph_current_signal_value_color">@color/colorPrimaryDark</color>
+    <color name="graph_current_speed_upload_value_color">@color/colorPrimaryDark</color>
+
+    <color name="defaut_list_header_background">@color/colorPrimaryDark</color>
+
+    <color name="app_main_button_text_color">#FF2D313A</color>
+
+    <color name="result_info">#b0585858</color>
+</resources>

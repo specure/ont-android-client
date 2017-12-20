@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Copyright 2014-2017 Specure GmbH
+  Copyright 2013-2015 alladin-IT GmbH
+  
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+  
+    http://www.apache.org/licenses/LICENSE-2.0
+  
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+<resources>
+
+    <integer name="default_loop_max_tests">100</integer>
+    <integer name="default_loop_min_delay">30</integer>
+    <integer name="default_loop_max_delay">900</integer>
+    <integer name="default_loop_max_movement">250</integer>
+
+    <!--IF signal strength should have colors of semaphore according to thresholds-->
+    <bool name="signal_strength_colored">true</bool>
+    <!-- IF set to true the flag "publish_public_data" can be set by a preference and will be sent to the control server -->
+    <bool name="test_use_personal_data_fuzzing">false</bool>
+    <bool name="show_splash_screen">true</bool>
+    <bool name="show_statistics_in_main_menu">false</bool>
+    <bool name="show_ndt_info">false</bool>
+    <bool name="show_loop_mode_after_secret">false</bool>
+    <bool name="show_licenses">false</bool>
+    <bool name="country_specific_operators_for_map">true</bool>
+
+
+
+    <!--MAP FILTERS-->
+    <bool name="show_map_filter_whitespots">false</bool>
+    <bool name="show_map_filter_settlements">false</bool>
+    <bool name="show_map_filter_municipality">false</bool>
+    <bool name="show_map_filter_regions">true</bool>
+
+    <!--MAP-->
+    <item name="map_center_latitude" format="float" type="dimen">46.049053</item>
+    <item name="map_center_longitude" format="float" type="dimen">14.501973</item>
+
+    <integer name="signal_semaphore_gms_green">-85</integer>
+    <integer name="signal_semaphore_gms_orange">-101</integer>
+    <integer name="signal_semaphore_lte_green">-95</integer>
+    <integer name="signal_semaphore_lte_orange">-111</integer>
+    <integer name="signal_semaphore_wifi_green">-61</integer>
+    <integer name="signal_semaphore_wifi_orange">-76</integer>
+
+    <!--in Mbits-->
+    <integer name="download_semaphore_green">10</integer>
+    <integer name="download_semaphore_orange">2</integer>
+    <integer name="upload_semaphore_green">2</integer>
+    <integer name="upload_semaphore_orange">1</integer>
+
+    <!--in ms-->
+    <integer name="ping_semaphore_green">25</integer>
+    <integer name="ping_semaphore_orange">75</integer>
+
+    <!-- Zero measurements thresholds -->
+    <integer name="zero_measurement_gsm_threshold">-110</integer>
+    <integer name="zero_measurement_lte_threshold">-130</integer>
+
+
+</resources>

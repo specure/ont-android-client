@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  Copyright 2014-2017 Specure GmbH
+  Copyright 2013-2015 alladin-IT GmbH
+  
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+  
+    http://www.apache.org/licenses/LICENSE-2.0
+  
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    android:icon="@drawable/alert">
+
+    <PreferenceCategory
+        android:icon="@drawable/alert"
+        android:key="preference_category_test"
+        android:layout="@layout/preferences_category"
+        android:title="@string/preferences_category_test">
+
+        <CheckBoxPreference
+            android:defaultValue="false"
+            android:icon="@drawable/alert"
+            android:key="ndt"
+            android:layout="@layout/preferences_item"
+            android:summary="@string/preferences_ndt_sum"
+            android:title="@string/preferences_ndt" />
+
+        <CheckBoxPreference
+            android:defaultValue="false"
+            android:key="information_commissioner"
+            android:layout="@layout/preferences_item"
+            android:title="@string/preferences_ic" />
+
+        <Preference
+            android:key="location_settings"
+            android:layout="@layout/preferences_item"
+            android:summary="@string/preferences_location_settings_sum"
+            android:title="@string/preferences_location_settings" />
+
+        <CheckBoxPreference
+            android:defaultValue="false"
+            android:key="dont_show_menu_before_exit"
+            android:layout="@layout/preferences_item"
+            android:summary="@string/preferences_dont_show_menu_on_exit_sum"
+            android:title="@string/preferences_dont_show_menu_on_exit" />
+
+        <CheckBoxPreference
+            android:defaultValue="false"
+            android:key="nerd_mode"
+            android:layout="@layout/preferences_item"
+            android:summary="@string/preferences_nerd_mode_sum"
+            android:title="@string/preferences_nerd_mode" />
+
+        <CheckBoxPreference
+            android:defaultValue="false"
+            android:key="ipv4_only"
+            android:layout="@layout/preferences_item"
+            android:summary="@string/preferences_ipv4_only_sum"
+            android:title="@string/preferences_ipv4_only" />
+
+        <CheckBoxPreference
+            android:defaultValue="false"
+            android:key="enable_qos"
+            android:layout="@layout/preferences_item"
+            android:summary="@string/preferences_enable_qos_sum"
+            android:title="@string/preferences_enable_qos" />
+
+        <EditTextPreference
+            android:key="tag"
+            android:title="@string/preferences_tag"
+            android:summary="@string/preferences_tag_sum"
+            android:layout="@layout/preferences_item"
+            />
+
+    </PreferenceCategory>
+
+
+    <PreferenceCategory
+        android:layout="@layout/preferences_category"
+        android:title="@string/preferences_category_loop_mode">
+
+        <CheckBoxPreference
+            android:key="loop_mode"
+            android:layout="@layout/preferences_item"
+            android:summary="@string/preferences_loop_mode_sum"
+            android:title="@string/preferences_loop_mode" />
+
+        <EditTextPreference
+            android:defaultValue="@integer/default_loop_max_tests"
+            android:inputType="number"
+            android:key="loop_mode_max_tests"
+            android:layout="@layout/preferences_item"
+            android:summary="@string/preferences_loop_mode_max_tests_sum"
+            android:title="@string/preferences_loop_mode_max_tests" />
+
+        <EditTextPreference
+            android:defaultValue="@integer/default_loop_min_delay"
+            android:inputType="number"
+            android:key="loop_mode_min_delay"
+            android:layout="@layout/preferences_item"
+            android:summary="@string/preferences_loop_mode_min_delay_sum"
+            android:title="@string/preferences_loop_mode_min_delay" />
+
+        <EditTextPreference
+            android:defaultValue="@integer/default_loop_max_delay"
+            android:inputType="number"
+            android:key="loop_mode_max_delay"
+            android:layout="@layout/preferences_item"
+            android:summary="@string/preferences_loop_mode_max_delay_sum"
+            android:title="@string/preferences_loop_mode_max_delay" />
+
+        <EditTextPreference
+            android:defaultValue="@integer/default_loop_max_movement"
+            android:inputType="number"
+            android:key="loop_mode_movement"
+            android:layout="@layout/preferences_item"
+            android:summary="@string/preferences_loop_mode_movement_sum"
+            android:title="@string/preferences_loop_mode_movement" />
+
+        <CheckBoxPreference
+            android:defaultValue="true"
+            android:key="loop_mode_gps"
+            android:layout="@layout/preferences_item"
+            android:summary="@string/preferences_loop_mode_gps_sum"
+            android:title="@string/preferences_loop_mode_gps" />
+
+        <CheckBoxPreference
+            android:key="loop_mode_disable_qos"
+            android:title="@string/preferences_loop_mode_disable_qos"
+            android:summary="@string/preferences_loop_mode_disable_qos_sum"
+            android:defaultValue="true"
+            android:layout="@layout/preferences_item"
+            />
+
+    </PreferenceCategory>
+
+</PreferenceScreen>

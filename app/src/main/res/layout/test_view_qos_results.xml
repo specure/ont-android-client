@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:padding="10dp">
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="horizontal">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="vertical"
+            android:padding="4dp">
+
+            <ImageView
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:src="@drawable/qos_performed" />
+
+            <Space
+                android:layout_width="1dp"
+                android:layout_height="10dp" />
+
+            <ImageView
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:src="@drawable/qos_passed" />
+
+            <Space
+                android:layout_width="1dp"
+                android:layout_height="10dp" />
+
+
+
+
+            <ImageView
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:src="@drawable/qos_failed" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="vertical"
+            android:padding="4dp">
+
+            <TextView
+                android:id="@+id/qos_result_performed"
+                android:layout_width="wrap_content"
+                android:minHeight="16dp"
+                android:layout_height="wrap_content"
+                android:textSize="11sp"
+                android:textStyle="bold" />
+
+            <Space
+                android:layout_width="1dp"
+                android:layout_height="10dp" />
+
+            <TextView
+                android:id="@+id/qos_result_passed"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:minHeight="16dp"
+                android:textSize="11sp"
+                android:textStyle="bold" />
+
+            <Space
+                android:layout_width="1dp"
+                android:layout_height="10dp" />
+
+            <TextView
+                android:id="@+id/qos_result_failed"
+                android:layout_width="wrap_content"
+                android:minHeight="16dp"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:layout_height="wrap_content" />
+
+        </LinearLayout>
+
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:padding="4dp">
+
+            <TextView
+                android:id="@+id/qos_result_performed_txt"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/qos_result_performed"
+                android:minHeight="16dp"
+                android:gravity="center_vertical"
+                android:textStyle="bold"
+                android:maxLines="1"
+                android:ellipsize="end"/>
+
+            <Space
+                android:layout_width="1dp"
+                android:layout_height="10dp" />
+
+            <TextView
+                android:id="@+id/qos_result_passed_txt"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:minHeight="16dp"
+                android:maxLines="1"
+                android:ellipsize="end"
+                android:gravity="center_vertical"
+                android:text="@string/qos_result_passed"
+                android:textStyle="bold" />
+
+            <Space
+                android:layout_width="1dp"
+                android:layout_height="10dp" />
+
+            <TextView
+                android:id="@+id/qos_result_failed_txt"
+                android:layout_width="wrap_content"
+                android:textStyle="bold"
+                android:text="@string/qos_result_failed"
+                android:minHeight="16dp"
+                android:maxLines="1"
+                android:ellipsize="end"
+                android:gravity="center_vertical"
+                android:layout_height="wrap_content" />
+
+
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="center_horizontal"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/main_fragment__test_server_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:clickable="false"
+            android:gravity="center"
+            android:visibility="gone"
+            android:text="@string/result_page_title_qos" />
+
+        <Button
+            android:id="@+id/show_detailed_qos_result_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:padding="5dp"
+            android:background="@drawable/rounded_button_bckg"
+            android:ellipsize="end"
+            android:lines="1"
+            android:maxLines="1"
+            android:text="@string/show_detailed_results"
+            android:visibility="gone"
+            android:textAllCaps="true" />
+
+        <TextView
+            android:id="@+id/qos_result_percentage"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="right"
+            android:gravity="center"
+            android:paddingEnd="10dp"
+            android:paddingStart="10dp"
+            android:textColor="@color/app_main_button_text_color"
+            android:textSize="30sp"
+            android:textStyle="bold" />
+
+
+
+    </LinearLayout>
+
+</LinearLayout>
