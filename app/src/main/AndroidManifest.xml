@@ -1,0 +1,115 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+
+    package="com.specure.opennettest">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+
+    <!-- to be able to read IMEI - KGB -->
+    <!-- deactivated temporarily - this right requires Privacy policy document added for app in PlayStore -->
+    <!-- <uses-permission android:name="android.permission.READ_PHONE_STATE"/> -->
+
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="com.google.android.providers.gsf.permission.READ_GSERVICES" />
+
+    <uses-feature
+        android:glEsVersion="0x00020000"
+        android:required="true" />
+    <uses-feature
+        android:name="android.hardware.location"
+        android:required="false" />
+    <uses-feature
+        android:name="android.hardware.location.network"
+        android:required="false" />
+    <uses-feature
+        android:name="android.hardware.location.gps"
+        android:required="false" />
+    <uses-feature
+        android:name="android.hardware.wifi"
+        android:required="false" />
+
+    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+
+    <application
+        android:name="android.support.multidex.MultiDexApplication"
+        android:allowBackup="true"
+        android:icon="@drawable/app_logo"
+        android:label="@string/app_name"
+        android:logo="@android:color/transparent"
+        android:supportsRtl="false"
+        android:theme="@style/Theme.AppCompat">
+
+        <activity
+            android:name="at.specure.android.screens.main.MainActivity"
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:label="@string/app_name"
+            android:launchMode="singleTask"
+            android:screenOrientation="portrait"
+            android:theme="@style/AppTheme"
+            android:windowSoftInputMode="adjustPan">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+        <!--
+        in most cases
+             android:configChanges="orientation|screenSize|keyboardHidden"
+         is a bad choice. don't use it!
+        -->
+
+
+        <!-- android:screenOrientation="portrait" -->
+        <!-- <intent-filter> -->
+        <!-- <action android:name="android.intent.action.MAIN" /> -->
+
+
+        <!-- <category android:name="android.intent.category.LAUNCHER" /> -->
+        <!-- </intent-filter> -->
+    </activity>
+
+    <activity
+        android:name="at.specure.android.screens.preferences.PreferenceActivity"
+        android:enabled="true"
+        android:label="@string/preferences"
+        android:theme="@style/AppTheme" />
+    <activity
+        android:name="at.specure.android.screens.terms.TermsActivity"
+        android:enabled="true"
+        android:label="@string/terms"
+        android:theme="@style/AppTheme" />
+
+    <service
+        android:name="at.specure.android.test.TestService"
+        android:enabled="true"
+        android:exported="false" />
+    <service
+        android:name="at.specure.android.test.LoopService"
+        android:enabled="true"
+        android:exported="false" />
+
+    <meta-data
+        android:name="com.google.android.gms.version"
+        android:value="@integer/google_play_services_version" />
+
+    <provider
+        android:name="at.specure.android.database.DatabaseProvider"
+        android:authorities="${databaseAuthority}"
+        android:exported="false" />
+
+    <activity
+        android:name="at.specure.android.screens.licenses.LicensesActivity"
+        android:label="@string/title_activity_licenses"
+        android:theme="@style/AppTheme" />
+    <meta-data
+        android:name="io.fabric.ApiKey"
+        android:value="c1380e42064ffd98ba82f66c3d39168491de1b07" />
+</application>
+
+    </manifest>

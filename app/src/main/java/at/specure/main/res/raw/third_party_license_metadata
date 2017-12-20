@@ -1,0 +1,42 @@
+0:43 dnsjava
+45:50 jopt-simple
+97:47 play-services-maps
+146:60 graphview
+208:46 cardview-v7
+256:46 design
+304:47 play-services-oss-licenses
+353:53 crashlytics
+408:47 play-services-base
+457:47 play-services-basement
+506:11358 CCTZ
+11866:1484 DynamicAnnotations
+13352:19442 ICU4C
+32796:1602 JSR 305
+34400:3182 PCRE
+37584:1732 Protobuf Nano
+39318:1558 RE2
+40878:680 STL
+41560:731 UTF
+42293:1481 darts_clone
+43776:11358 safeparcel
+55136:243 tz database
+55381:2500 zlib
+57883:46 support-annotations
+57931:46 appcompat-v7
+57979:46 recyclerview-v7
+58027:46 transition
+58075:53 beta
+58130:53 crashlytics-core
+58185:23 fabric
+58210:24 answers
+58236:47 play-services-tasks
+58285:46 support-vector-drawable
+58333:46 animated-vector-drawable
+58381:46 support-compat
+58429:46 support-core-ui
+58477:46 runtime
+58573:46 common
+58621:46 support-v4
+58669:46 support-media-compat
+58717:46 support-core-utils
+58765:46 support-fragment

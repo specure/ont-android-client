@@ -1,0 +1,66 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+
+    <style name="AppTheme.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar" />
+
+    <!-- Base application theme. -->
+    <style name="AppTheme" parent="Theme.AppCompat.Light.NoActionBar">
+        <!--<item name="android:actionBarStyle">@style/AppTheme.ActionBar</item>-->
+        <!--<item name="android:popupMenuStyle">@style/AppTheme.PopUpMenu</item>-->
+        <item name="android:windowActionBar">false</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="colorPrimary">@android:color/white</item>
+        <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
+        <item name="colorAccent">@color/colorAccent</item>
+        <!-- Status bar stuff. -->
+        <item name="android:statusBarColor" tools:targetApi="lollipop">@color/colorPrimaryDark</item>
+        <item name="android:windowLightStatusBar" tools:targetApi="m">true</item>
+    </style>
+
+    <style name="preferenceListSeparator" parent="@android:style/Widget.TextView">
+        <item name="android:orientation">vertical</item>
+    </style>
+
+    <style name="preferenceCategoryTitle" parent="@style/textTinyGrey">
+        <item name="android:layout_marginTop">10dp</item>
+        <item name="android:paddingLeft">5dp</item>
+        <item name="android:paddingTop">2dp</item>
+        <item name="android:paddingBottom">2dp</item>
+    </style>
+
+    <style name="preferenceTitle" parent="@style/textMediumLight"></style>
+
+    <style name="preferenceSummary" parent="@style/textTinyGrey">
+        <item name="android:textStyle">normal</item>
+    </style>
+
+    <style name="preferenceListView" parent="@style/listViewDefault"></style>
+
+    <style name="textTinyLight" parent="@android:style/TextAppearance.Small">
+        <item name="android:textColor">@color/app_text_color</item>
+        <item name="android:typeface">sans</item>
+        <item name="android:textSize">12sp</item>
+    </style>
+
+    <style name="textTinyGrey" parent="@style/textTinyLight">
+        <item name="android:textColor">@color/app_text_color</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="textMediumLight" parent="@android:style/TextAppearance.Medium">
+        <item name="android:textColor">@color/app_text_color</item>
+        <item name="android:typeface">sans</item>
+    </style>
+
+    <style name="listViewDefault">
+        <item name="android:dividerHeight">1dp</item>
+        <item name="android:footerDividersEnabled">false</item>
+        <item name="android:headerDividersEnabled">false</item>
+    </style>
+
+    <style name="ToolbarColoredBackArrow" parent="AppTheme">
+        <item name="android:textColorSecondary">@color/toolbar_icon_overlay</item>
+        <item name="android:textColorPrimary">@color/toolbar_icon_overlay</item>
+        <item name="colorAccent">@color/colorAccent</item>
+    </style>
+
+</resources>
