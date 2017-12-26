@@ -318,7 +318,7 @@
     <string name="netstat_local_address">Local address</string>
     <string name="netstat_remote_address">Remote address</string>
     <string name="start_data_consumption_warning">WARNING! Usage of Open Nettest can result in a large data volume transfer. In 3G net, the data volume for a single test is 5 to 10 MB. In 4G net, this volume can exceed 100 MB. Specure shall not be deemed responsible for excessive consumption caused by data transfer when using this application. When testing the internet connection using Open Nettest, the user should consider the resulting Internet traffic and accept the consequences of the data transfer.</string>
-    <string name="data_consumption_warning_short">"The test may cause increased \ndata consumption."</string>
+    <string name="data_consumption_warning_short">"The test may cause increased \ndata costs."</string>
     <string name="show_detailed_results">Detailed results</string>
 
     <!--	SPLASHSCREEN	-->
