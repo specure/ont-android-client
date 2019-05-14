@@ -18,7 +18,6 @@ package at.specure.android.api.calls;
 
 import android.os.AsyncTask;
 
-
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;

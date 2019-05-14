@@ -15,11 +15,12 @@
  *******************************************************************************/
 package at.specure.android.support.telephony;
 
+import android.telephony.gsm.GsmCellLocation;
+
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
-import android.telephony.gsm.GsmCellLocation;
-import android.util.Log;
+import timber.log.Timber;
 
 /**
  * 
@@ -58,23 +59,23 @@ public class CellInfoPreV18 implements CellInfoSupport {
         }
         catch (final SecurityException e)
         {
-            Log.i(DEBUG_TAG, "CellLocationItem scramblingCode failed Security");
+            Timber.i( "CellLocationItem scramblingCode failed Security");
         }
         catch (final NoSuchMethodException e)
         {
-            Log.i(DEBUG_TAG, "CellLocationItem scramblingCode failed NoSuchMethod");
+            Timber.i( "CellLocationItem scramblingCode failed NoSuchMethod");
         }
         catch (final IllegalArgumentException e)
         {
-            Log.i(DEBUG_TAG, "CellLocationItem scramblingCode failed IllegalArgument");
+            Timber.i( "CellLocationItem scramblingCode failed IllegalArgument");
         }
         catch (final IllegalAccessException e)
         {
-            Log.i(DEBUG_TAG, "CellLocationItem scramblingCode failed IllegalAccess");
+            Timber.i( "CellLocationItem scramblingCode failed IllegalAccess");
         }
         catch (final InvocationTargetException e)
         {
-            Log.i(DEBUG_TAG, "CellLocationItem scramblingCode failed InvocationTarget");
+            Timber.i( "CellLocationItem scramblingCode failed InvocationTarget");
         }
         
 		return tmpCode;

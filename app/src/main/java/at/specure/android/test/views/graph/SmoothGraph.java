@@ -16,11 +16,6 @@
  ******************************************************************************/
 package at.specure.android.test.views.graph;
 
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Paint.Cap;
@@ -29,6 +24,12 @@ import android.graphics.Paint.Style;
 import android.graphics.Path;
 import android.graphics.PointF;
 import android.os.Bundle;
+
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+
 import at.specure.android.views.graphview.GraphService;
 import at.specure.android.views.graphview.GraphView;
 
@@ -112,7 +113,7 @@ public class SmoothGraph implements GraphService {
 //				System.out.print("[i:" + i + ", sum: " + sum + "]");
 			}
 			
-			return (sum / (double)SmoothingFunction.getDataAmountNeeded(smoothingFunction, dataAmount));
+			return (sum / (double) SmoothingFunction.getDataAmountNeeded(smoothingFunction, dataAmount));
 		}
 		
 		public static int getDataAmountNeeded(SmoothingFunction smoothingFunction, int dataAmount) {
@@ -208,9 +209,9 @@ public class SmoothGraph implements GraphService {
      * @return
      */
     @SuppressWarnings("unchecked")
-	public static SmoothGraph addGraph(final GraphView graphView,final int dataAmount, final SmoothingFunction smoothingFunction, 
-    		final boolean matchHorizontally, final GraphData graphData) {
-    	final SmoothGraph graph = SmoothGraph.addGraph(graphView, dataAmount, smoothingFunction, matchHorizontally, graphData.getPathStroke(), graphData.getPathFill(), 
+	public static SmoothGraph addGraph(final GraphView graphView, final int dataAmount, final SmoothingFunction smoothingFunction,
+                                       final boolean matchHorizontally, final GraphData graphData) {
+    	final SmoothGraph graph = SmoothGraph.addGraph(graphView, dataAmount, smoothingFunction, matchHorizontally, graphData.getPathStroke(), graphData.getPathFill(),
     			graphData.getPaintStroke(), graphData.getPaintFill());
     	
     	graph.valueList.addAll((Collection<? extends ValueEntry>) graphData.getOptions().getSerializable(OPTION_VALUELIST));
@@ -235,8 +236,8 @@ public class SmoothGraph implements GraphService {
      * @param paintFill
      * @return
      */
-    public static SmoothGraph addGraph(final GraphView graphView,final int dataAmount, final SmoothingFunction smoothingFunction, 
-    		final boolean matchHorizontally, final Path pathStroke, final Path pathFill, final Paint paintStroke, final Paint paintFill)
+    public static SmoothGraph addGraph(final GraphView graphView, final int dataAmount, final SmoothingFunction smoothingFunction,
+                                       final boolean matchHorizontally, final Path pathStroke, final Path pathFill, final Paint paintStroke, final Paint paintFill)
     {
         final SmoothGraph graph = new SmoothGraph(graphView.getGraphWidth(), graphView.getGraphHeight(), pathStroke, pathFill, paintStroke, paintFill);
         graph.setMatchHorizontally(matchHorizontally);

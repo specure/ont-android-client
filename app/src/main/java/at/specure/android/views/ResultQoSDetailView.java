@@ -16,10 +16,7 @@
  ******************************************************************************/
 package at.specure.android.views;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-
+import android.app.Activity;
 import android.content.Context;
 import android.util.AttributeSet;
 import android.view.LayoutInflater;
@@ -36,17 +33,22 @@ import android.widget.ScrollView;
 import android.widget.SimpleAdapter;
 import android.widget.TextView;
 
-import at.specure.android.screens.main.MainActivity;
+import com.google.gson.JsonArray;
+import com.specure.opennettest.R;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+
 import at.specure.android.api.calls.CheckTestResultDetailTask;
 import at.specure.android.configs.ConfigHelper;
-import at.specure.android.screens.result.ResultDetailType;
+import at.specure.android.screens.main.main_activity_interfaces.ExpandedResultInterface;
 import at.specure.android.util.EndTaskListener;
 import at.specure.client.v2.task.result.QoSServerResult.DetailType;
 import at.specure.client.v2.task.result.QoSServerResultCollection;
 import at.specure.client.v2.task.result.QoSTestResultEnum;
 
-import com.google.gson.JsonArray;
-import com.specure.opennettest.R;
+import static at.specure.android.screens.result.adapter.result.ResultDetailType.QUALITY_OF_SERVICE_TEST;
 
 /**
  * 
@@ -55,29 +57,31 @@ import com.specure.opennettest.R;
  */
 public class ResultQoSDetailView extends ScrollView implements EndTaskListener, OnItemClickListener, OnClickListener {
 	
-	private final MainActivity activity;
+	private final Activity activity;
 	
     private final String uid;
-	
+	private final ExpandedResultInterface expandedResultInterface;
+
 	private View view;
 	
 	private EndTaskListener resultFetchEndTaskListener;
-	
-    private CheckTestResultDetailTask testResultDetailTask;;
-    
+
+	private CheckTestResultDetailTask testResultDetailTask;
+
     private JsonArray testResult;
     
     private QoSServerResultCollection results;
 
-	public ResultQoSDetailView(Context context, MainActivity activity, String uid, JsonArray jsonArray) {
-		this(context, null, activity, uid, jsonArray);
+	public ResultQoSDetailView(Context context, Activity activity, String uid, JsonArray jsonArray, ExpandedResultInterface expandedResultInterface) {
+		this(context, null, activity, uid, jsonArray, expandedResultInterface);
 	}
 	
-	public ResultQoSDetailView(Context context, AttributeSet attrs, MainActivity activity, String uid, JsonArray jsonArray) {
+	public ResultQoSDetailView(Context context, AttributeSet attrs, Activity activity, String uid, JsonArray jsonArray, ExpandedResultInterface expandedResultInterface) {
 		super(context, attrs);
 		setFillViewport(true);
 		LayoutInflater layoutInflater = (LayoutInflater) getContext().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
 		this.activity = activity;
+		this.expandedResultInterface = expandedResultInterface;
 		this.uid = uid;
 		this.view = createView(layoutInflater);
 		this.testResult = jsonArray;
@@ -94,7 +98,7 @@ public class ResultQoSDetailView extends ScrollView implements EndTaskListener, 
         	else {
             	System.out.println("initializing ResultDetailsView");
             	
-                testResultDetailTask = new CheckTestResultDetailTask(activity, ResultDetailType.QUALITY_OF_SERVICE_TEST);
+                testResultDetailTask = new CheckTestResultDetailTask(activity, QUALITY_OF_SERVICE_TEST);
                 
                 testResultDetailTask.setEndTaskListener(this);
                 testResultDetailTask.execute(uid);        		
@@ -120,7 +124,7 @@ public class ResultQoSDetailView extends ScrollView implements EndTaskListener, 
 	
 	/*
 	 * (non-Javadoc)
-	 * @see at.specure.android.util.EndTaskListener#taskEnded(org.json.JSONArray)
+	 * @see at.specure.android.util.EndTaskListener#taskEnded(org.json.JsonArray)
 	 */
 	@SuppressWarnings("unchecked")
 	@Override
@@ -131,10 +135,10 @@ public class ResultQoSDetailView extends ScrollView implements EndTaskListener, 
 		if (resultFetchEndTaskListener != null) {
 			resultFetchEndTaskListener.taskEnded(result);
 		}
-		
-		ProgressBar resultProgressBar = (ProgressBar) view.findViewById(R.id.progress_bar);
-		TextView resultTextView = (TextView) view.findViewById(R.id.info_text);
-		
+
+		ProgressBar resultProgressBar = view.findViewById(R.id.progress_bar);
+		TextView resultTextView = view.findViewById(R.id.info_text);
+
 		try {
 			results = new QoSServerResultCollection(result);
 			
@@ -145,14 +149,14 @@ public class ResultQoSDetailView extends ScrollView implements EndTaskListener, 
 			for (QoSTestResultEnum type : QoSTestResultEnum.values()) {
 				if (results.getQoSStatistics().getTestCounter(type) > 0) {
 					HashMap<String, String> listItem = new HashMap<String, String>();
-					listItem.put("name", ConfigHelper.getCachedQoSNameByTestType(type, activity));
+					listItem.put("name", ConfigHelper.getCachedQoSNameByTestType(type, view.getContext()));
 					listItem.put("type_name", type.toString());
 					listItem.put("index", String.valueOf(index++));
 					itemList.add(listItem);
 				}
 			}
 			
-            ListAdapter valueList = new SimpleAdapter(activity, itemList, R.layout.qos_category_list_item, new String[] {
+            ListAdapter valueList = new SimpleAdapter(view.getContext(), itemList, R.layout.qos_category_list_item, new String[] {
             "name"}, new int[] { R.id.name});
 
     		resultProgressBar.setVisibility(View.GONE);
@@ -171,13 +175,13 @@ public class ResultQoSDetailView extends ScrollView implements EndTaskListener, 
 	            		
 	            		QoSTestResultEnum key = QoSTestResultEnum.valueOf(((HashMap<String, String>)valueList.getItem(i)).get("type_name"));
 	            		if (results.getQoSStatistics().getFailureCounter(key) > 0) {
-		            		ImageView img = (ImageView) v.findViewById(R.id.status);
-		            		img.setImageResource(R.drawable.traffic_lights_red);
-	            		}
-	            		
-	            		TextView status = (TextView) v.findViewById(R.id.qos_type_status);
-	            		status.setText((results.getQoSStatistics().getTestCounter(key) - results.getQoSStatistics().getFailedTestsCounter(key)) 
-	            				+ "/" + results.getQoSStatistics().getTestCounter(key));
+							ImageView img = v.findViewById(R.id.status);
+							img.setImageResource(R.drawable.traffic_lights_red);
+						}
+
+						TextView status = v.findViewById(R.id.qos_type_status);
+						status.setText((results.getQoSStatistics().getTestCounter(key) - results.getQoSStatistics().getFailedTestsCounter(key))
+								+ "/" + results.getQoSStatistics().getTestCounter(key));
 
 	            		v.setOnClickListener(this);
 	            		v.setTag(valueList.getItem(i));
@@ -206,11 +210,12 @@ public class ResultQoSDetailView extends ScrollView implements EndTaskListener, 
 	public void onItemClick(AdapterView<?> adapter, View view, int position, long id) {
 		ListView listView = (ListView) adapter;
 		HashMap<String, String> item = (HashMap<String, String>) listView.getAdapter().getItem(position);
-		if (listView.getId() == R.id.qos_success_list) {
-			activity.showExpandedResultDetail(results, DetailType.OK, Integer.valueOf(item.get("index")));
-		}
-		else if (listView.getId() == R.id.qos_error_list) {
-			activity.showExpandedResultDetail(results, DetailType.FAIL, Integer.valueOf(item.get("index")));
+		if (expandedResultInterface != null) {
+			if (listView.getId() == R.id.qos_success_list) {
+				expandedResultInterface.showExpandedResultDetail(results, DetailType.OK, Integer.valueOf(item.get("index")));
+			} else if (listView.getId() == R.id.qos_error_list) {
+				expandedResultInterface.showExpandedResultDetail(results, DetailType.FAIL, Integer.valueOf(item.get("index")));
+			}
 		}
 	}
 	
@@ -218,12 +223,13 @@ public class ResultQoSDetailView extends ScrollView implements EndTaskListener, 
 	@Override
 	public void onClick(View v) {
 		try {
-			HashMap<String, String> item = (HashMap<String, String>) v.getTag();
-			if (((View) v.getParent()).getId() == R.id.qos_success_list) {
-				activity.showExpandedResultDetail(results, DetailType.OK, Integer.valueOf(item.get("index")));
-			}
-			else if (((View) v.getParent()).getId() == R.id.qos_error_list) {
-				activity.showExpandedResultDetail(results, DetailType.FAIL, Integer.valueOf(item.get("index")));
+			if (expandedResultInterface != null) {
+				HashMap<String, String> item = (HashMap<String, String>) v.getTag();
+				if (((View) v.getParent()).getId() == R.id.qos_success_list) {
+					expandedResultInterface.showExpandedResultDetail(results, DetailType.OK, Integer.valueOf(item.get("index")));
+				} else if (((View) v.getParent()).getId() == R.id.qos_error_list) {
+					expandedResultInterface.showExpandedResultDetail(results, DetailType.FAIL, Integer.valueOf(item.get("index")));
+				}
 			}
 		}
 		catch (Exception e) {

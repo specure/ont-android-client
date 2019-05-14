@@ -16,6 +16,13 @@
  ******************************************************************************/
 package at.specure.android.api.calls;
 
+import android.os.AsyncTask;
+import android.os.Environment;
+
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -24,13 +31,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
-
-import android.os.AsyncTask;
-import android.os.Environment;
-
-import com.google.gson.Gson;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
 
 import at.specure.android.api.ControlServerConnection;
 import at.specure.android.configs.ConfigHelper;
@@ -45,7 +45,7 @@ public class LogTask extends AsyncTask<String, Void, Void>
     
     ControlServerConnection serverConn;
     
-    private OnCompleteListener onCompleteListener;   
+    private OnCompleteListener onCompleteListener;
     
     public LogTask(final MainActivity activity, final OnCompleteListener listener)
     {
@@ -67,7 +67,7 @@ public class LogTask extends AsyncTask<String, Void, Void>
     	try {
 	        serverConn = new ControlServerConnection(activity);
 	
-	        final List<File> logFiles = new ArrayList<File>(); 
+	        final List<File> logFiles = new ArrayList<File>();
 	        
 	        if (params == null || params.length == 0) {
 	    		File f = new File(Environment.getExternalStorageDirectory(), "qosdebug");

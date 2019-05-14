@@ -15,9 +15,9 @@
  *******************************************************************************/
 package at.specure.android.support.telephony;
 
-import java.util.List;
-
 import android.telephony.TelephonyManager;
+
+import java.util.List;
 
 /**
  * 

@@ -23,6 +23,7 @@ import android.graphics.Paint.Join;
 import android.graphics.Paint.Style;
 import android.graphics.Path;
 import android.graphics.PointF;
+
 import at.specure.android.views.graphview.GraphService;
 import at.specure.android.views.graphview.GraphView;
 
@@ -54,8 +55,8 @@ public class StaticGraph implements GraphService {
         return graph;
     }
     
-    public static StaticGraph addGraph(final GraphView graphView, final boolean matchHorizontally, 
-    		final Path pathStroke, final Path pathFill, final Paint paintStroke, final Paint paintFill)
+    public static StaticGraph addGraph(final GraphView graphView, final boolean matchHorizontally,
+                                       final Path pathStroke, final Path pathFill, final Paint paintStroke, final Paint paintFill)
     {
         final StaticGraph graph = new StaticGraph(graphView.getGraphWidth(), graphView.getGraphHeight(), pathStroke, pathFill, paintStroke, paintFill);
         graph.setMatchHorizontally(matchHorizontally);

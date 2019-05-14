@@ -43,7 +43,7 @@ import java.util.Locale;
 import at.specure.android.api.calls.CheckTestResultDetailTask;
 import at.specure.android.configs.ConfigHelper;
 import at.specure.android.screens.main.MainActivity;
-import at.specure.android.screens.main.main_fragment.graphs_handlers.GraphHandler;
+import at.specure.android.screens.result.adapter.result.ResultDetailType;
 import at.specure.android.test.ChangeableSpeedTestStatus;
 import at.specure.android.test.SpeedTestStatViewController;
 import at.specure.android.test.TestService;
@@ -97,7 +97,6 @@ public class MainFragmentController implements ServiceConnection, UIUpdateInterf
     private boolean testShowQoSErrorToast;
     private UITestUpdater updateUITask;
     private Handler testHandler;
-    private GraphHandler graphHandler;
     private boolean stopLoop;
     private ResultSwitcher testResultSwitcherRunnable;
     private QoSTestEnum lastQoSTestStatus;
@@ -374,9 +373,6 @@ public class MainFragmentController implements ServiceConnection, UIUpdateInterf
                 totalProgressValue = correctProgressValue * PROGRESS_SEGMENTS_PROGRESS_RING / (double) PROGRESS_SEGMENTS_TOTAL;
                 Log.e("SIGNAL", "totalProgressValue: " + progressSegments);
                 speedValueRelative = testIntermediateResult.downBitPerSecLog;
-                if (graphHandler != null) {
-                    graphHandler.addNewDownloadValue(speedValueRelative, progressSegments, relativeSignal);
-                }
                 break;
 
             case INIT_UP:
@@ -384,9 +380,6 @@ public class MainFragmentController implements ServiceConnection, UIUpdateInterf
                 progressValue = (double) progressSegments / PROGRESS_SEGMENTS_PROGRESS_RING;
                 correctProgressValue = progressValue;
                 totalProgressValue = correctProgressValue * PROGRESS_SEGMENTS_PROGRESS_RING / (double) PROGRESS_SEGMENTS_TOTAL;
-                if (graphHandler != null) {
-                    graphHandler.addNewSignalValue(progressSegments, relativeSignal);
-                }
                 break;
 
             case UP:
@@ -397,9 +390,6 @@ public class MainFragmentController implements ServiceConnection, UIUpdateInterf
                 totalProgressValue = correctProgressValue * PROGRESS_SEGMENTS_PROGRESS_RING / (double) PROGRESS_SEGMENTS_TOTAL;
                 Log.e("SIGNAL", "totalProgressValue: " + progressSegments);
 
-                if (graphHandler != null) {
-                    graphHandler.addNewUploadValue(speedValueRelative, progressSegments, relativeSignal);
-                }
                 break;
 
             case SPEEDTEST_END:
@@ -790,9 +780,6 @@ public class MainFragmentController implements ServiceConnection, UIUpdateInterf
         NetworkUtil.MinMax<Integer> signalBounds = NetworkUtil.getSignalStrengthBounds(signalType);
 
         if (signalTypeChanged) {
-            if (graphHandler != null) {
-                graphHandler.signalTypeChanged(relativeSignal, signalBounds);
-            }
         }
 
         mainFragmentInterface.setSignalValue(signal);
@@ -819,7 +806,7 @@ public class MainFragmentController implements ServiceConnection, UIUpdateInterf
 
 
 
-    public void initializeTesting(GraphHandler graphHandler) {
+    public void initializeTesting() {
         qosMode = false;
         testError = false;
         stopLoop = false;
@@ -832,10 +819,6 @@ public class MainFragmentController implements ServiceConnection, UIUpdateInterf
             PROGRESS_SEGMENTS_TOTAL = PROGRESS_SEGMENTS_PROGRESS_RING;
         } else {
             PROGRESS_SEGMENTS_TOTAL = PROGRESS_SEGMENTS_PROGRESS_RING + PROGRESS_SEGMENTS_QOS;
-        }
-        this.graphHandler = graphHandler;
-        if (graphHandler != null) {
-            this.graphHandler.initializeGraphs(getContext());
         }
 
         testUpdateCounter = 0;
@@ -858,15 +841,12 @@ public class MainFragmentController implements ServiceConnection, UIUpdateInterf
 
     public void onDestroy() {
         dismissDialogs();
-        if (graphHandler != null) {
-            graphHandler.releaseGraphs();
-        }
     }
 
     public void initializeQoSResults(String uid) {
         MainActivity mainActivity = mainFragmentInterface.getMainActivity();
         if (mainActivity != null) {
-            CheckTestResultDetailTask testResultDetailTask = new CheckTestResultDetailTask(mainActivity, QUALITY_OF_SERVICE_TEST);
+            CheckTestResultDetailTask testResultDetailTask = new CheckTestResultDetailTask(mainActivity, ResultDetailType.QUALITY_OF_SERVICE_TEST);
 
             testResultDetailTask.setEndTaskListener(new EndTaskListener() {
                 @Override

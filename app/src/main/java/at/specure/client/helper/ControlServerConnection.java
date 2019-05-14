@@ -33,19 +33,19 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.TimeZone;
 
 import at.specure.client.Ping;
-import at.specure.client.TestParameter;
 import at.specure.client.SpeedItem;
+import at.specure.client.TestParameter;
 import at.specure.client.TotalTestResult;
 import at.specure.client.ndt.UiServicesAdapter;
 import at.specure.client.v2.task.TaskDesc;
 import at.specure.client.v2.task.service.TestMeasurement;
 import at.specure.client.v2.task.service.TestMeasurement.TrafficDirection;
+import timber.log.Timber;
 
 public class ControlServerConnection
 {
@@ -54,8 +54,8 @@ public class ControlServerConnection
     private URI hostUri;
     
     private boolean testEncryption;
-    
-    private final JSONParser jParser;
+
+    private final JsonParser jParser;
     
     private String testToken = "";
     private String testId = "";
@@ -96,7 +96,7 @@ public class ControlServerConnection
     {
         
         // Creating JSON Parser instance
-        jParser = new JSONParser();
+        jParser = new JsonParser();
         
     }
     
@@ -139,8 +139,8 @@ public class ControlServerConnection
      * @return
      */
     public String requestQoSTestParameters(final String host, final String pathPrefix, final int port,
-            final boolean encryption, final ArrayList<String> geoInfo, final String uuid, final String clientType,
-            final String clientName, final String clientVersion, final JsonObject additionalValues)
+                                           final boolean encryption, final ArrayList<String> geoInfo, final String uuid, final String clientType,
+                                           final String clientName, final String clientVersion, final JsonObject additionalValues, String language)
     {
         clientUUID = uuid;
         
@@ -159,7 +159,7 @@ public class ControlServerConnection
             regData.add("type", new JsonPrimitive(clientType));
             regData.add("softwareVersion", new JsonPrimitive(clientVersion));
             regData.add("softwareRevision", new JsonPrimitive(RevisionHelper.getVerboseRevision()));
-            regData.add("language", new JsonPrimitive(Locale.getDefault().getLanguage()));
+            regData.add("language", new JsonPrimitive(language));
             regData.add("timezone", new JsonPrimitive(TimeZone.getDefault().getID()));
             regData.add("time", new JsonPrimitive(System.currentTimeMillis()));
             
@@ -207,7 +207,7 @@ public class ControlServerConnection
         }
         
         // getting JSON string from URL
-        final JsonObject response = jParser.sendJSONToUrl(hostUri, regData);
+        final JsonObject response = jParser.sendJsonToUrl(hostUri, regData);
         
         if (response != null)
             try
@@ -283,8 +283,8 @@ public class ControlServerConnection
     }
     
     public String requestNewTestConnection(final String host, final String pathPrefix, final int port, int measurementServerId,
-            final boolean encryption, final ArrayList<String> geoInfo, final String uuid, final String clientType,
-            final String clientName, final String clientVersion, final JsonObject additionalValues)
+                                           final boolean encryption, final ArrayList<String> geoInfo, final String uuid, final String clientType,
+                                           final String clientName, final String clientVersion, final JsonObject additionalValues, String language)
     {
      
         String errorMsg = null;
@@ -308,7 +308,7 @@ public class ControlServerConnection
             regData.add("type", new JsonPrimitive(clientType));
             regData.add("softwareVersion", new JsonPrimitive(clientVersion));
             regData.add("softwareRevision", new JsonPrimitive(RevisionHelper.getVerboseRevision()));
-            regData.add("language", new JsonPrimitive(Locale.getDefault().getLanguage()));
+            regData.add("language", new JsonPrimitive(language));
             regData.add("timezone", new JsonPrimitive(TimeZone.getDefault().getID()));
             regData.add("time", new JsonPrimitive(System.currentTimeMillis()));
             regData.add("measurement_server_id", new JsonPrimitive(measurementServerId));
@@ -356,7 +356,7 @@ public class ControlServerConnection
         }
         
         // getting JSON string from URL
-        final JsonObject response = jParser.sendJSONToUrl(hostUri, regData);
+        final JsonObject response = jParser.sendJsonToUrl(hostUri, regData);
         
         if (response != null)
             try
@@ -431,8 +431,8 @@ public class ControlServerConnection
             errorMsg = "No response";
         return errorMsg;
     }
-    
-    public String sendTestResult(TotalTestResult result, JsonObject additionalValues)
+
+    public String sendTestResult(TotalTestResult result, JsonObject additionalValues, String loopUUID, String language)
     {
         String errorMsg = null;
         if (resultURI != null)
@@ -446,7 +446,7 @@ public class ControlServerConnection
                 testData.add("client_uuid", new JsonPrimitive(clientUUID));
                 testData.add("client_name", new JsonPrimitive(Config.RMBT_CLIENT_NAME));
                 testData.add("client_version", new JsonPrimitive(Config.RMBT_VERSION_NUMBER));
-                testData.add("client_language", new JsonPrimitive(Locale.getDefault().getLanguage()));
+                testData.add("client_language", new JsonPrimitive(language));
 
                 testData.add("time", new JsonPrimitive(System.currentTimeMillis()));
 
@@ -497,6 +497,9 @@ public class ControlServerConnection
                 JsonElement element = gson.toJsonTree(result.voipTestResult);
                 testData.add("jpl", element);
 
+                if (loopUUID != null && !loopUUID.isEmpty()) {
+                    testData.addProperty("loop_uuid", loopUUID);
+                }
 
                 final JsonArray pingData = new JsonArray();
                 
@@ -521,7 +524,7 @@ public class ControlServerConnection
                 if (result.speedItems != null)
                 {
                     for (SpeedItem item : result.speedItems) {
-                        speedDetail.add(item.toJSON());
+                        speedDetail.add(item.toJson());
                     }
                 }
                 
@@ -537,10 +540,10 @@ public class ControlServerConnection
                 e1.printStackTrace();
             }
 
-            Log.e("TEST RESULTS", "sendTestResult: " + testData);
+            Timber.e("TEST RESULTS sendTestResult: %s", testData);
 
             // getting JSON string from URL
-            final JsonObject response = jParser.sendJSONToUrl(resultURI, testData);
+            final JsonObject response = jParser.sendJsonToUrl(resultURI, testData);
             
             if (response != null)
                 try
@@ -585,7 +588,7 @@ public class ControlServerConnection
      * @param qosTestResult
      * @return
      */
-    public String sendQoSResult(final TotalTestResult result, final JsonArray qosTestResult)
+    public String sendQoSResult(final TotalTestResult result, final JsonArray qosTestResult, String language)
     {
         String errorMsg = null;
         System.out.println("sending qos results to " + resultQoSURI);
@@ -600,7 +603,7 @@ public class ControlServerConnection
                 testData.add("client_uuid", new JsonPrimitive(clientUUID));
                 testData.add("client_name", new JsonPrimitive(Config.RMBT_CLIENT_NAME));
                 testData.add("client_version", new JsonPrimitive(Config.RMBT_VERSION_NUMBER));
-                testData.add("client_language", new JsonPrimitive(Locale.getDefault().getLanguage()));
+                testData.add("client_language", new JsonPrimitive(language));
                 
                 testData.add("time", new JsonPrimitive(System.currentTimeMillis()));
                 
@@ -617,7 +620,7 @@ public class ControlServerConnection
             }
             
             // getting JSON string from URL
-            final JsonObject response = jParser.sendJSONToUrl(resultQoSURI, testData);
+            final JsonObject response = jParser.sendJsonToUrl(resultQoSURI, testData);
             
             if (response != null)
                 try
@@ -657,21 +660,21 @@ public class ControlServerConnection
     }
     
     public void sendNDTResult(final String host, final String pathPrefix, final int port, final boolean encryption,
-            final String clientUUID, final UiServicesAdapter data, final String testUuid)
+                              final String clientUUID, final UiServicesAdapter data, final String testUuide, String language)
     {
         hostUri = getUri(encryption, host, pathPrefix, port, Config.RMBT_CONTROL_MAIN_URL);
         this.clientUUID = clientUUID;
-        sendNDTResult(data, testUuid);
+        sendNDTResult(data, testUuid, language);
     }
-    
-    public void sendNDTResult(final UiServicesAdapter data, final String testUuid)
+
+    public void sendNDTResult(final UiServicesAdapter data, final String testUuid, String language)
     {
         final JsonObject testData = new JsonObject();
          Gson gson = new Gson();
         try
         {
             testData.add("client_uuid", new JsonPrimitive(clientUUID));
-            testData.add("client_language", new JsonPrimitive(Locale.getDefault().getLanguage()));
+            testData.add("client_language", new JsonPrimitive(language));
             if (testUuid != null)
                 testData.add("test_uuid", new JsonPrimitive(testUuid));
             else
@@ -684,8 +687,8 @@ public class ControlServerConnection
             testData.add("diag", new JsonPrimitive(data.sbDiag.toString()));
             testData.add("time_ns", new JsonPrimitive(data.getStartTimeNs() - startTimeNs));
             testData.add("time_end_ns", new JsonPrimitive(data.getStopTimeNs() - startTimeNs));
-            
-            jParser.sendJSONToUrl(hostUri.resolve(Config.RMBT_CONTROL_NDT_RESULT_URL), testData);
+
+            jParser.sendJsonToUrl(hostUri.resolve(Config.RMBT_CONTROL_NDT_RESULT_URL), testData);
             
             System.out.println(testData);
         }

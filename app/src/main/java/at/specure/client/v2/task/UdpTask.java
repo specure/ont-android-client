@@ -38,8 +38,10 @@ import at.specure.client.TestClient;
 import at.specure.client.v2.task.result.QoSTestResult;
 import at.specure.client.v2.task.result.QoSTestResultEnum;
 import at.specure.util.net.udp.NioUdpStreamSender;
-import at.specure.util.net.udp.StreamSender;
+import at.specure.util.net.udp.StreamSender.UdpStreamCallback;
+import at.specure.util.net.udp.StreamSender.UdpStreamSenderSettings;
 import at.specure.util.net.udp.UdpStreamReceiver;
+import at.specure.util.net.udp.UdpStreamReceiver.UdpStreamReceiverSettings;
 
 /**
  * @author lb
@@ -379,11 +381,11 @@ public class UdpTask extends AbstractQoSTask {
      * @throws Exception
      */
     public DatagramChannel sendUdpPackets(final UdpPacketData packetData) throws Exception {
-        final StreamSender.UdpStreamSenderSettings<DatagramChannel> udpSettings = new StreamSender.UdpStreamSenderSettings<DatagramChannel>(null, true,
+        final UdpStreamSenderSettings<DatagramChannel> udpSettings = new UdpStreamSenderSettings<DatagramChannel>(null, true,
                 InetAddress.getByName(getTestServerAddr()), outgoingPort, packetCountOutgoing, delay,
                 timeout, TimeUnit.NANOSECONDS, false, 10000);
 
-        final NioUdpStreamSender udpStreamSender = new NioUdpStreamSender(udpSettings, new StreamSender.UdpStreamCallback() {
+        final NioUdpStreamSender udpStreamSender = new NioUdpStreamSender(udpSettings, new UdpStreamCallback() {
             final TreeSet<Integer> packetsReceived = new TreeSet<Integer>();
             final TreeSet<Integer> duplicatePackets = new TreeSet<Integer>();
 
@@ -446,9 +448,9 @@ public class UdpTask extends AbstractQoSTask {
             final int timeOutMs = (int) TimeUnit.MILLISECONDS.convert(timeout, TimeUnit.NANOSECONDS);
             socket.setSoTimeout(timeOutMs);
 
-            final UdpStreamReceiver.UdpStreamReceiverSettings settings = new UdpStreamReceiver.UdpStreamReceiverSettings(socket, packets, true);
+            final UdpStreamReceiverSettings settings = new UdpStreamReceiverSettings(socket, packets, true);
 
-            final UdpStreamReceiver udpStreamReceiver = new UdpStreamReceiver(settings, new StreamSender.UdpStreamCallback() {
+            final UdpStreamReceiver udpStreamReceiver = new UdpStreamReceiver(settings, new UdpStreamCallback() {
 
                 public boolean onSend(DataOutputStream dataOut, int packetNumber)
                         throws IOException {

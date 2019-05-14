@@ -25,6 +25,7 @@ import android.net.Uri;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.TimeZone;
 
 import at.specure.android.database.Contract;
 import at.specure.android.database.DatabaseHelper;
@@ -68,7 +69,11 @@ public class TZeroMeasurement {
     public Integer state;
 
 
-    public TZeroMeasurement(Long id, String clientUuid, String clientName, String clientVersion, String clientLanguage, Long time, String uuid, String platform, String product, String apiLevel, String telephonyNetworkOperator, String clientSoftwareVersion, String telephonyNetworkIsRoaming, String osVersion, String telephonyNetworkCountry, String networkType, String telephonyNetworkOperatorName, String telephonyNetworkSimOperatorName, String model, String telephonyNetworkSimOperator, String device, String telephonyPhoneType, String telephonyDataState, String telephonyNetworkSimCountry, List<TCellLocation> cellLocations, List<TLocation> geoLocations, List<TSignal> signals, Integer state) {
+    public TZeroMeasurement(Long id, String clientUuid, String clientName, String clientVersion, String clientLanguage, Long time, String uuid, String platform, String product, String apiLevel,
+                            String telephonyNetworkOperator, String clientSoftwareVersion, String telephonyNetworkIsRoaming, String osVersion,
+                            String telephonyNetworkCountry, String networkType, String telephonyNetworkOperatorName, String telephonyNetworkSimOperatorName,
+                            String model, String telephonyNetworkSimOperator, String device, String telephonyPhoneType, String telephonyDataState, String telephonyNetworkSimCountry,
+                            List<TCellLocation> cellLocations, List<TLocation> geoLocations, List<TSignal> signals, Integer state) {
         this.id = id;
         this.clientUuid = clientUuid;
         this.clientName = clientName;

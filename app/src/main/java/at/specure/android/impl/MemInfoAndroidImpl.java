@@ -17,12 +17,9 @@ package at.specure.android.impl;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import at.specure.util.tools.MemInfo;
-import at.specure.util.tools.ToolUtils;
-
 
 public class MemInfoAndroidImpl implements MemInfo {
 	
@@ -33,27 +30,28 @@ public class MemInfoAndroidImpl implements MemInfo {
 	private Map<String, Long> memoryMap;
 	
 	public Map<String, Long> getMemoryMap() {
-		if (memoryMap == null) {
-			update();
-		}
-		return memoryMap;
+//		if (memoryMap == null) {
+//			update();
+//		}
+//		return memoryMap;
+		return null;
 	}
 
 	public long getTotalMem() {
-		if (memoryMap == null) {
-			update();
+//		if (memoryMap == null) {
+//			update();
 			return UNKNOWN;
-		}
-		return memoryMap.get("MemTotal");
+//		}
+//		return memoryMap.get("MemTotal");
 	}
 
 	public long getFreeMem() {
-		if (memoryMap == null) {
-			update();
+//		if (memoryMap == null) {
+//			update();
 			return UNKNOWN;
-		} else {
-			return memoryMap.get("MemFree");			
-		}
+//		} else {
+//			return memoryMap.get("MemFree");
+//		}
 	}
 
 	@Override
@@ -64,7 +62,7 @@ public class MemInfoAndroidImpl implements MemInfo {
 
 	public synchronized void update() {
 		memoryMap = new HashMap<String, Long>();
-		String memInfo = ToolUtils.readFromProc("/proc/meminfo");
+		/*String memInfo = ToolUtils.readFromProc("/proc/meminfo");
 		Matcher m = MEMINFO_PATTERN.matcher(memInfo);
 		while (m.find()) {
 			String type = m.group(1);
@@ -77,7 +75,7 @@ public class MemInfoAndroidImpl implements MemInfo {
 			}
 			
 			memoryMap.put(type, size);
-		}
+		}*/
 	}
 
 }

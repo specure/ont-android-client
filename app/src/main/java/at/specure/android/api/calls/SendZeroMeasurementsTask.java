@@ -19,7 +19,6 @@ package at.specure.android.api.calls;
 import android.content.ContentResolver;
 import android.database.Cursor;
 import android.os.AsyncTask;
-import android.util.Log;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
@@ -29,16 +28,20 @@ import java.util.Date;
 import java.util.List;
 
 import at.specure.android.api.ControlServerConnection;
+import at.specure.android.api.jsons.CellLocation;
+import at.specure.android.api.jsons.Location;
+import at.specure.android.api.jsons.MeasurementServer;
+import at.specure.android.api.jsons.Signal;
+import at.specure.android.api.jsons.ZeroMeasurement;
 import at.specure.android.database.Contract;
 import at.specure.android.database.enums.CellLocationType;
 import at.specure.android.database.enums.LocationType;
 import at.specure.android.database.enums.SignalType;
 import at.specure.android.database.enums.ZeroMeasurementState;
 import at.specure.android.database.obj.TZeroMeasurement;
-import at.specure.android.api.jsons.MeasurementServer;
-import at.specure.android.api.jsons.ZeroMeasurement;
 import at.specure.android.screens.main.MainActivity;
 import at.specure.android.util.EndBooleanTaskListener;
+import timber.log.Timber;
 
 public class SendZeroMeasurementsTask extends AsyncTask<Void, Void, Boolean> {
 
@@ -64,6 +67,7 @@ public class SendZeroMeasurementsTask extends AsyncTask<Void, Void, Boolean> {
     protected Boolean doInBackground(final Void... params) {
 
         boolean result = false;
+        boolean partialResult = true;
         try {
             serverConn = new ControlServerConnection(activity);
 
@@ -73,6 +77,7 @@ public class SendZeroMeasurementsTask extends AsyncTask<Void, Void, Boolean> {
             ArrayList<ZeroMeasurement> zeroMeasurementsToSend;
             if ((cursor != null) && (cursor.moveToFirst())) {
                 zeroMeasurementsToSend = new ArrayList<>();
+                Timber.e( "ZERO MEASUREMENTS TO SEND: %s", cursor.getCount());
                 for (int i = 0; i < cursor.getCount(); i++) {
                     cursor.moveToPosition(i);
                     TZeroMeasurement zeroMeasurement = new TZeroMeasurement(cursor);
@@ -81,27 +86,72 @@ public class SendZeroMeasurementsTask extends AsyncTask<Void, Void, Boolean> {
                     zeroMeasurement.getGeoLocations(activity);
                     zeroMeasurement.getSignals(activity);
                     zeroMeasurementsToSend.add(new ZeroMeasurement(zeroMeasurement));
+                    if (zeroMeasurementsToSend.size() > 9) {
+                        boolean parresult = sendBunchOfZeroMeasurements(contentResolver, zeroMeasurementsToSend);
+                        if (!parresult) {
+                            partialResult = false;
+                        }
+                    }
                 }
-                Gson gson = new Gson();
-                JsonElement response = serverConn.requestSendZeroMeasurements(zeroMeasurementsToSend);
-
-                result = response.getAsBoolean();
-
-                if (result)
-                {
-                    contentResolver.delete(Contract.ZeroMeasurements.CONTENT_URI, Contract.ZeroMeasurementsColumns.STATE + " = ? ", new String[]{String.valueOf(ZeroMeasurementState.NOT_SENT)});
-                    contentResolver.delete(Contract.CellLocations.CONTENT_URI, Contract.CellLocationsColumns.TYPE + " = ? ", new String[]{String.valueOf(CellLocationType.ZERO_MEASUREMENT_CELL_LOCATION)});
-                    contentResolver.delete(Contract.Locations.CONTENT_URI, Contract.LocationsColumns.TYPE + " = ? ",new String[]{String.valueOf(LocationType.ZERO_MEASUREMENT_LOCATION)});
-                    contentResolver.delete(Contract.Signals.CONTENT_URI, Contract.SignalsColumns.TYPE + " = ? ",new String[]{String.valueOf(SignalType.ZERO_MEASUREMENT_SIGNAL)});
+                boolean parresult = sendBunchOfZeroMeasurements(contentResolver, zeroMeasurementsToSend);
+                if (!parresult) {
+                    partialResult = false;
                 }
             }
 
-
+            if (!partialResult) {
+                result = false;
+            } else {
+                result = true;
+            }
             return result;
         } catch (Exception e) {
-            Log.e(DEBUG_TAG, "ERROR SENDING ZERO MEASUREMENTS");
+            Timber.e( "ERROR SENDING ZERO MEASUREMENTS");
             return false;
         }
+    }
+
+    private boolean sendBunchOfZeroMeasurements(ContentResolver contentResolver, ArrayList<ZeroMeasurement> zeroMeasurementsToSend) {
+        boolean result;
+        Gson gson = new Gson();
+        Timber.e("ZERO MEASUREMENTS TO SEND 2: %s", zeroMeasurementsToSend.size());
+        JsonElement response = serverConn.requestSendZeroMeasurements(zeroMeasurementsToSend);
+
+        result = response.getAsBoolean();
+
+        if (result) {
+            for (ZeroMeasurement measurement : zeroMeasurementsToSend) {
+                if (measurement != null) {
+                    contentResolver.delete(Contract.ZeroMeasurements.CONTENT_URI, Contract.ZeroMeasurementsColumns.ID + " = ? ", new String[]{String.valueOf(measurement.getInternalId())});
+                    if (measurement.getCellLocations() != null) {
+                        List<CellLocation> cellLocations = measurement.getCellLocations();
+                        for (CellLocation cellLocation : cellLocations) {
+                            if (cellLocation != null) {
+                                contentResolver.delete(Contract.CellLocations.CONTENT_URI, Contract.CellLocationsColumns.TYPE + " = ?  AND " + Contract.CellLocationsColumns.REF_ID + " = ?", new String[]{String.valueOf(CellLocationType.ZERO_MEASUREMENT_CELL_LOCATION), String.valueOf(measurement.getInternalId())});
+                            }
+                        }
+                    }
+                    List<Location> geoLocations = measurement.getGeoLocations();
+                    if (geoLocations != null) {
+                        for (Location location : geoLocations) {
+                            if (location != null) {
+                                contentResolver.delete(Contract.Locations.CONTENT_URI, Contract.LocationsColumns.TYPE + " = ? AND " + Contract.LocationsColumns.REF_ID, new String[]{String.valueOf(LocationType.ZERO_MEASUREMENT_LOCATION), String.valueOf(measurement.getInternalId())});
+                            }
+                        }
+                    }
+                    List<Signal> signals = measurement.getSignals();
+                    if (signals != null) {
+                        for (Signal signal : signals) {
+                            if (signal != null) {
+                                contentResolver.delete(Contract.Signals.CONTENT_URI, Contract.SignalsColumns.TYPE + " = ? ",new String[]{String.valueOf(SignalType.ZERO_MEASUREMENT_SIGNAL), String.valueOf(measurement.getInternalId())});
+                            }
+                        }
+                    }
+                }
+            }
+            zeroMeasurementsToSend.clear();
+        }
+        return result;
     }
 
     @Override

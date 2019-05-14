@@ -17,12 +17,9 @@ package at.specure.android.impl;
 
 import com.specure.opennettest.R;
 
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import at.specure.util.tools.CpuStat;
-import at.specure.util.tools.ToolUtils;
-
 
 public class CpuStatAndroidImpl extends CpuStat {
 	
@@ -87,7 +84,7 @@ public class CpuStatAndroidImpl extends CpuStat {
 	public CpuUsage getCurrentCpuUsage(boolean getByCore) {
 		CpuUsage cpuUsage = new CpuUsage();
 		
-		String stat = ToolUtils.readFromProc(PROC_PATH + "stat");
+		/*String stat = ToolUtils.readFromProc(PROC_PATH + "stat");
 		
 		if (getByCore) {
 			Matcher m = CPU_CORE_PATTERN.matcher(stat);
@@ -95,10 +92,10 @@ public class CpuStatAndroidImpl extends CpuStat {
 				int core = Integer.parseInt(m.group(1));
 				String[] cpu = m.group(2).trim().split(" ");
 				cpuUsage.getCoreUsageList().add(new
-						CpuUsage.CoreUsage(core, Integer.parseInt(cpu[0]),
-								Integer.parseInt(cpu[1]), Integer.parseInt(cpu[2]), 
-								Integer.parseInt(cpu[3]), Integer.parseInt(cpu[4]), 
-								Integer.parseInt(cpu[5]), Integer.parseInt(cpu[6])));
+                        CoreUsage(core, Long.parseLong(cpu[0]),
+								Long.parseLong(cpu[1]), Long.parseLong(cpu[2]),
+								Long.parseLong(cpu[3]), Long.parseLong(cpu[4]),
+								Long.parseLong(cpu[5]), Long.parseLong(cpu[6])));
 			}
 		}
 		else {
@@ -106,12 +103,12 @@ public class CpuStatAndroidImpl extends CpuStat {
 			while(m.find()) {
 				String[] cpu = m.group(1).trim().split(" ");
 				cpuUsage.getCoreUsageList().add(new
-						CpuUsage.CoreUsage(0, Integer.parseInt(cpu[0]),
-								Integer.parseInt(cpu[1]), Integer.parseInt(cpu[2]), 
-								Integer.parseInt(cpu[3]), Integer.parseInt(cpu[4]), 
-								Integer.parseInt(cpu[5]), Integer.parseInt(cpu[6])));
+                        CoreUsage(0, Long.parseLong(cpu[0]),
+								Long.parseLong(cpu[1]), Long.parseLong(cpu[2]),
+								Long.parseLong(cpu[3]), Long.parseLong(cpu[4]),
+								Long.parseLong(cpu[5]), Long.parseLong(cpu[6])));
 			}
-		}
+		}*/
 		return cpuUsage;
 	}	
 }

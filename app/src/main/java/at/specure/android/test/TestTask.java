@@ -16,6 +16,15 @@
  ******************************************************************************/
 package at.specure.android.test;
 
+import android.content.Context;
+import android.location.Location;
+import android.os.Handler;
+import android.telephony.TelephonyManager;
+
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import com.specure.opennettest.R;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Map;
@@ -25,24 +34,18 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
-import android.content.Context;
-import android.location.Location;
-import android.os.Handler;
-import android.telephony.TelephonyManager;
-import android.util.Log;
-
-import com.google.gson.Gson;
-import com.google.gson.JsonObject;
-import com.specure.opennettest.R;
-
+import at.specure.android.configs.Config;
+import at.specure.android.configs.ConfigHelper;
+import at.specure.android.configs.LocaleConfig;
+import at.specure.android.configs.LoopModeConfig;
 import at.specure.android.impl.CpuStatAndroidImpl;
 import at.specure.android.impl.MemInfoAndroidImpl;
 import at.specure.android.impl.TracerouteAndroidImpl;
 import at.specure.android.impl.TrafficServiceImpl;
 import at.specure.android.impl.WebsiteTestServiceImpl;
-import at.specure.android.configs.Config;
-import at.specure.android.configs.ConfigHelper;
 import at.specure.android.util.InformationCollector;
+import at.specure.android.util.location.GeoLocationX;
+import at.specure.android.util.net.ZeroMeasurementDetector;
 import at.specure.client.QualityOfServiceTest;
 import at.specure.client.QualityOfServiceTest.Counter;
 import at.specure.client.TestClient;
@@ -58,10 +61,9 @@ import at.specure.client.v2.task.QoSTestEnum;
 import at.specure.client.v2.task.result.QoSResultCollector;
 import at.specure.client.v2.task.result.QoSTestResultEnum;
 import at.specure.client.v2.task.service.TestSettings;
-import at.specure.android.util.net.ZeroMeasurementDetector;
-import at.specure.android.configs.LoopModeConfig;
 import at.specure.net.measurementlab.ndt.NdtTests;
 import at.specure.util.tools.InformationCollectorTool;
+import timber.log.Timber;
 
 public class TestTask {
     private static final String LOG_TAG = "TestTask";
@@ -71,21 +73,23 @@ public class TestTask {
     private final AtomicBoolean finished = new AtomicBoolean();
     private final AtomicBoolean cancelled = new AtomicBoolean();
 
+
     private final AtomicReference<QualityOfServiceTest> qosReference = new AtomicReference<QualityOfServiceTest>();
+    private final boolean isLoopMeasurement;
+    private final boolean isFirstLoopMeasurement;
 
     private Handler handler;
     private final Runnable postExecuteHandler = new Runnable() {
         @Override
         public void run() {
             if (fullInfo != null) {
-                fullInfo.unload();
-                fullInfo = null;
+//                fullInfo.unload();
+//                fullInfo = null; removed because of detecting some zero at the end of test was no possible if info collector is null
             }
             if (endTaskListener != null)
                 endTaskListener.taskEnded();
         }
     };
-    ;
 
     final private Context context;
 
@@ -97,6 +101,7 @@ public class TestTask {
     private InformationCollector fullInfo;
 
     private EndTaskListener endTaskListener;
+    private boolean isZeroMeasurement;
 
     interface EndTaskListener {
         public void taskEnded();
@@ -104,10 +109,19 @@ public class TestTask {
 
     public TestTask(final Context ctx) {
         this.context = ctx;
+        this.isLoopMeasurement = false;
+        this.isFirstLoopMeasurement = false;
+    }
+
+    public TestTask(final Context ctx, boolean isLoopMeasurement, boolean isFirstLoopMeasurement) {
+        this.context = ctx;
+        this.isLoopMeasurement = isLoopMeasurement;
+        this.isFirstLoopMeasurement = isFirstLoopMeasurement;
     }
 
     public void execute(final Handler _handler) {
-        fullInfo = new InformationCollector(context, true, true);
+        fullInfo = InformationCollector.getInstance(context, true, true, true);
+        isZeroMeasurement = false;
         cancelled.set(false);
         started.set(true);
         running.set(true);
@@ -117,23 +131,40 @@ public class TestTask {
         executor.execute(new Runnable() {
             @Override
             public void run() {
-                Log.d(LOG_TAG, "executor task started");
+                Timber.d( "executor task started");
                 doInBackground();
-                Log.d(LOG_TAG, "doInBackground finished");
+                Timber.d( "doInBackground finished");
                 running.set(false);
                 finished.set(true);
                 if (handler != null)
                     handler.post(postExecuteHandler);
-                Log.d(LOG_TAG, "executor task finished");
+                Timber.d( "executor task finished");
             }
         });
+    }
+
+    /**
+     * This checks zero measurement every time alarm is triggered (test may be running but this is testing for zero measurement)
+     */
+    public void checkZeroMeasurement() {
+        if ((context != null) && (ConfigHelper.detectZeroMeasurementEnabled(context))) {
+            if ((!isZeroMeasurement)) {
+                Timber.e("ZERO Zero detection on alarm");
+                isZeroMeasurement = ZeroMeasurementDetector.detectZeroMeasurement(null, context, fullInfo);
+            }
+        }
     }
 
     public void cancel() {
         setPreviousTestStatus();
         cancelled.set(true);
         executor.shutdownNow();
-        Log.d(LOG_TAG, "shutdownNow called TestTask=" + this);
+        if ((context != null) && (ConfigHelper.detectZeroMeasurementEnabled(context))) {
+            if ((!isZeroMeasurement)) {
+                isZeroMeasurement = ZeroMeasurementDetector.detectZeroMeasurement(null, context, fullInfo);
+            }
+        }
+        Timber.d( "shutdownNow called TestTask" );
 //        try
 //        {
 //            executor.awaitTermination(10, TimeUnit.SECONDS);
@@ -177,17 +208,23 @@ public class TestTask {
 
     private void doInBackground() {
         try {
+            isZeroMeasurement = false;
             boolean error = false;
             connectionError.set(false);
             TestResult result = null;
             QoSResultCollector qosResult = null;
             QoSResultCollector voipResult = null;
+            GeoLocationX geoInstance = GeoLocationX.getInstance(context);
+            geoInstance.startRecordingPositions();
 
             // check for zero measurement
-            boolean isZeroMeasurement = ZeroMeasurementDetector.detectZeroMeasurement(null, context, fullInfo);
-            if (isZeroMeasurement) {
-                this.cancel();
-                return;
+            if (ConfigHelper.detectZeroMeasurementEnabled(context)) {
+                isZeroMeasurement = ZeroMeasurementDetector.detectZeroMeasurement(null, context, fullInfo);
+                Timber.e("ZERO RESULT IN TEST_TASK: %s", isZeroMeasurement);
+                if (isZeroMeasurement) {
+                    this.cancel();
+                    return;
+                }
             }
 
             try {
@@ -198,15 +235,26 @@ public class TestTask {
                 final boolean controlSSL = ConfigHelper.isControlSeverSSL(context);
                 File cacheDir = context.getCacheDir();
 
-                final ArrayList<String> geoInfo = fullInfo.getCurLocation();
+
+                final ArrayList<String> geoInfo = GeoLocationX.getInstance(context).getCurLocationForTest();
+
 
                 client = TestClient.getInstance(controlServer, null, controlPort, ConfigHelper.getSelectedMeasurementServerId(context), controlSSL, geoInfo, uuid,
                         Config.RMBT_CLIENT_TYPE, Config.RMBT_CLIENT_NAME,
-                        fullInfo.getInfo("CLIENT_SOFTWARE_VERSION"), null, fullInfo.getInitialInfo(), cacheDir);
+                        fullInfo.getInfo("CLIENT_SOFTWARE_VERSION"), null, fullInfo.getInitialInfo(), cacheDir, context);
+
+                if (!isLoopMeasurement) {
+                    LoopModeConfig.resetCurrentLoopId(context);
+                }
+
+                if (isLoopMeasurement && isFirstLoopMeasurement) {
+                    LoopModeConfig.setCurrentLoopId(client.getTestUuid(), context);
+                }
+
 
                 if (client != null) {
                     /*
-                	 * Example on how to implement the information collector tool:
+                     * Example on how to implement the information collector tool:
                 	 *
                 	 * 
 					*/
@@ -225,9 +273,6 @@ public class TestTask {
                         fullInfo.setUUID(controlConnection.getClientUUID());
                         fullInfo.setTestServerName(controlConnection.getServerName());
                     }
-
-
-
                 }
             } catch (final Exception e) {
                 e.printStackTrace();
@@ -243,7 +288,8 @@ public class TestTask {
                     try {
                         if (Thread.interrupted() || cancelled.get())
                             throw new InterruptedException();
-                        Log.d(LOG_TAG, "runTest TestTask=" + this);
+                        Timber.d( "runTest TestTask= %s", this);
+
                         result = client.runTest();
                         final ControlServerConnection controlConnection = client.getControlConnection();
 
@@ -262,7 +308,17 @@ public class TestTask {
                                 infoObject.add("publish_public_data", gson.toJsonTree(ConfigHelper.isInformationCommissioner(context)));
                             }
 
-                            client.sendResult(infoObject);
+                            // checking bad network switch at the end of the test
+                            if (fullInfo.getIllegalNetworkTypeChangeDetcted()) {
+                                error = true;
+                                connectionError.set(true);
+                                client.setStatus(TestStatus.ERROR);
+                                throw new Exception("Illegal network switch detected");
+
+                            } else {
+                                client.sendResult(infoObject);
+                            }
+
                         } else {
                             error = true;
                         }
@@ -294,13 +350,13 @@ public class TestTask {
                 if (runQoS && !error && !cancelled.get()) {
                     try {
 
-					    TestSettings qosTestSettings = new TestSettings();
-			            qosTestSettings.setCacheFolder(context.getCacheDir());
-					    qosTestSettings.setWebsiteTestService(new WebsiteTestServiceImpl(context));
-					    qosTestSettings.setTrafficService(new TrafficServiceImpl());
-					    qosTestSettings.setTracerouteServiceClazz(TracerouteAndroidImpl.class);
-						qosTestSettings.setStartTimeNs(getRmbtClient().getControlConnection().getStartTimeNs());
-						qosTestSettings.setUseSsl(ConfigHelper.isQoSSeverSSL(context));
+                        TestSettings qosTestSettings = new TestSettings();
+                        qosTestSettings.setCacheFolder(context.getCacheDir());
+                        qosTestSettings.setWebsiteTestService(new WebsiteTestServiceImpl(context));
+                        qosTestSettings.setTrafficService(new TrafficServiceImpl());
+                        qosTestSettings.setTracerouteServiceClazz(TracerouteAndroidImpl.class);
+                        qosTestSettings.setStartTimeNs(getRmbtClient().getControlConnection().getStartTimeNs());
+                        qosTestSettings.setUseSsl(ConfigHelper.isQoSSeverSSL(context));
 
 
                         qosTest = new QualityOfServiceTest(client, qosTestSettings);
@@ -336,14 +392,41 @@ public class TestTask {
             e.printStackTrace();
             Thread.currentThread().interrupt();
         } finally {
+            GeoLocationX geoInstance = GeoLocationX.getInstance(context);
+            geoInstance.stopRecordingPositions();
             try {
                 if (client != null) {
                     client.stopInformationCollectorTool();
-                    final TestStatus status = client.getStatus();
+                    TestStatus status = client.getStatus();
+                    Timber.e("ZERO status %s" , client.getStatus().name());
                     if (!(status == TestStatus.ABORTED || status == TestStatus.ERROR))
                         client.setStatus(TestStatus.END);
+                    //if client is not null then we check status of the test, ignoring aborted and ended test
+                    status = client.getStatus();
+                    if (!(status == TestStatus.ABORTED)) {
+                        if ((context != null) && (ConfigHelper.detectZeroMeasurementEnabled(context))) {
+                            if (!isZeroMeasurement) {
+                                Timber.e("ZERO detecting from client %s" , client.getStatus().name());
+                                isZeroMeasurement = ZeroMeasurementDetector.detectZeroMeasurement(null, context, fullInfo);
+                            }
+                        }
+                    }
+                } else {
+                    //detecting zero measurements if the client was not created at all
+                    if ((context != null) && (ConfigHelper.detectZeroMeasurementEnabled(context))) {
+                        if (!isZeroMeasurement) {
+                            Timber.e("ZERO detecting from null client");
+                            isZeroMeasurement = ZeroMeasurementDetector.detectZeroMeasurement(null, context, fullInfo);
+                        }
+                    }
                 }
             } catch (Exception e) {
+                if ((context != null) && (ConfigHelper.detectZeroMeasurementEnabled(context))) {
+                    if (!isZeroMeasurement) {
+                        Timber.e("ZERO detecting from finally exception");
+                        isZeroMeasurement = ZeroMeasurementDetector.detectZeroMeasurement(null, context, fullInfo);
+                    }
+                }
             }
         }
     }
@@ -374,7 +457,7 @@ public class TestTask {
         final NDTRunner ndtRunner = new NDTRunner();
         ndtRunnerHolder.set(ndtRunner);
 
-        Log.d(LOG_TAG, "ndt status RUNNING");
+        Timber.d( "ndt status RUNNING");
 
         final String ndtNetworkType;
         final int networkType = getNetworkType();
@@ -396,7 +479,7 @@ public class TestTask {
 
             @Override
             public void sendResults() {
-                client.getControlConnection().sendNDTResult(this, null);
+                client.getControlConnection().sendNDTResult(this, null, LocaleConfig.getLocaleForServerRequest(TestTask.this.context));
             }
 
             public boolean wantToStop() {
@@ -496,10 +579,10 @@ public class TestTask {
     }
 
     public Location getLocation() {
-        if (fullInfo != null)
-            return fullInfo.getLastLocation();
-        else
-            return null;
+        if (context != null) {
+            return GeoLocationX.getInstance(context).getLastKnownLocation(context, null);
+        }
+        return null;
     }
 
     public String getServerName() {
@@ -527,7 +610,7 @@ public class TestTask {
         if (fullInfo != null) {
             final int networkType = fullInfo.getNetwork();
             if (fullInfo.getIllegalNetworkTypeChangeDetcted()) {
-                Log.e(LOG_TAG, "illegal network change detected; cancelling test");
+                Timber.e( "illegal network change detected; cancelling test");
                 cancel();
             }
             return networkType;

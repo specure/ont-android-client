@@ -16,9 +16,11 @@
 package at.specure.android.configs;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 
 import com.specure.opennettest.R;
 
+import at.specure.androidX.data.map_filter.data.MapFilterTypes;
 
 /**
  * @author lb
@@ -27,6 +29,10 @@ import com.specure.opennettest.R;
 //	see defaults.xml for other configs (also in respective customer directories)
 
 public class FeatureConfig {
+
+    public static final int LAYOUT_DEFAULT = 0;
+    public static final int LAYOUT_SQUARE = 1;
+
 
     /**
      * only home, history, map, help, info, settings are shown in menu
@@ -52,7 +58,39 @@ public class FeatureConfig {
         return context.getResources().getBoolean(R.bool.show_statistics_in_main_menu);
     }
 
-    public static boolean showCountrySpecificOperatorsInMapFilters(Context context) {
-        return context.getResources().getBoolean(R.bool.country_specific_operators_for_map);
+//    public static boolean showCountrySpecificOperatorsInMapFilters(Context context) {
+//        return context.getResources().getBoolean(R.bool.country_specific_operators_for_map);
+//    }
+
+    public static String countrySpecificOperatorsCountryCode(Context context) {
+        SharedPreferences preferenceSharedPreferences = PreferenceConfig.getPreferenceSharedPreferences(context);
+        String string = preferenceSharedPreferences.getString(MapFilterTypes.MAP_FILTER_TYPE_COUNTRY, null);
+        String[] split = null;
+        if ((string != null) && string.contains("=")) {
+            split = string.split("=");
+            if (split.length > 0) {
+                return split[1];
+            }
+        } else {
+            return  "";
+        }
+        return  "";
+    }
+
+    /**
+     * @param context
+     * @return 0 - Default - classic curves and curved basic results with lined advanced results
+     * 1 - Square - square results
+     */
+    public static int showLayoutTheme(Context context) {
+        return 0;
+    }
+
+    /**
+     * @param context
+     * @return default true
+     */
+    public static boolean showBasicResultInPager(Context context) {
+        return true;
     }
 }

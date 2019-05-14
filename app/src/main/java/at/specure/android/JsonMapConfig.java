@@ -18,13 +18,17 @@ package at.specure.android;
 
 import android.util.Log;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
+
+import timber.log.Timber;
+
 /**
  * Created by grondz on 18.11.16.
  */
@@ -33,38 +37,35 @@ public class JsonMapConfig {
     private Map<String, String> data;
     private InputStream propertiesStream;
 
-    public JsonMapConfig(InputStream propertiesStream) throws IOException, JSONException {
+    public JsonMapConfig(InputStream propertiesStream) throws IOException {
         this.propertiesStream = propertiesStream;
         parseJson();
     }
 
-    private void parseJson() throws JSONException, IOException {
+    private void parseJson() throws IOException {
         try {
             data = new HashMap<String, String>();
-            JSONObject obj = new JSONObject(loadJSONFromAsset());
-            JSONArray m_jArry = obj.getJSONArray("urls");
+            JsonObject obj = new Gson().fromJson(loadJsonFromAsset(), JsonObject.class);
+            JsonArray m_jArry = obj.getAsJsonArray("urls");
             String language_data;
             String url_data;
 
-            for (int i = 0; i < m_jArry.length(); i++) {
-                JSONObject jo_inside = m_jArry.getJSONObject(i);
-                language_data = jo_inside.getString("language");
-                url_data = jo_inside.getString("url");
-                Log.d("Details-->", "Language:" + language_data + ". Url:" + url_data);
+            for (int i = 0; i < m_jArry.size(); i++) {
+                JsonObject jo_inside = m_jArry.get(i).getAsJsonObject();
+                language_data = jo_inside.getAsJsonPrimitive("language").getAsString();
+                url_data = jo_inside.getAsJsonPrimitive("url").getAsString();
+                Timber.d("Details--> Language: %s. Url: %s",   language_data, url_data);
 
                 data.put(language_data, url_data);
             }
-        } catch (JSONException e) {
-            Log.d("JSON Parser error:", e.getLocalizedMessage());
-            throw e;
         }
           catch (IOException e) {
-              Log.d("JSON Parser error:", e.getLocalizedMessage());
+              Timber.d("JSON Parser error: %s", e.getLocalizedMessage());
               throw e;
           }
         }
 
-    private String loadJSONFromAsset() throws IOException {
+    private String loadJsonFromAsset() throws IOException {
         String json = "";
         try {
             int size = propertiesStream.available();
@@ -73,7 +74,7 @@ public class JsonMapConfig {
             propertiesStream.close();
             json = new String(buffer, "UTF-8");
         } catch (IOException e) {
-            Log.d("JSON Load error:", e.getLocalizedMessage());
+            Timber.d("JSON Load error: %s", e.getLocalizedMessage());
             throw e;
         }
         return json;

@@ -16,17 +16,17 @@
  ******************************************************************************/
 package at.specure.android.constants;
 
-import java.util.HashMap;
-import java.util.Locale;
-import java.util.Map;
-
 import android.content.Context;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.os.Build;
 
+
 import com.specure.opennettest.R;
 
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.Map;
 
 public class AppConstants {
 

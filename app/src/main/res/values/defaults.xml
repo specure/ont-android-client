@@ -32,8 +32,13 @@
     <bool name="show_loop_mode_after_secret">false</bool>
     <bool name="show_licenses">false</bool>
     <bool name="country_specific_operators_for_map">true</bool>
+    <bool name="show_terms_and_conditions_on_start">false</bool>
+    <bool name="url_override">true</bool>
+    <bool name="detect_zero_measurements">false</bool>
 
 
+    <integer name="loop_min_delay">5</integer>
+    <integer name="loop_min_distance">30</integer>
 
     <!--MAP FILTERS-->
     <bool name="show_map_filter_whitespots">false</bool>

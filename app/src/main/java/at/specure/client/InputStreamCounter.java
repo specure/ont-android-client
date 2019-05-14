@@ -16,6 +16,8 @@
  ******************************************************************************/
 package at.specure.client;
 
+import androidx.annotation.NonNull;
+
 import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -44,7 +46,7 @@ public class InputStreamCounter extends FilterInputStream
     }
     
     @Override
-    public int read(final byte[] buffer, final int offset, final int count) throws IOException
+    public int read(@NonNull final byte[] buffer, final int offset, final int count) throws IOException
     {
         final int read = in.read(buffer, offset, count);
         if (read != -1)

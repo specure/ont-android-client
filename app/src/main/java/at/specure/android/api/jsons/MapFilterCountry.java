@@ -18,11 +18,13 @@ package at.specure.android.api.jsons;
 
 import com.google.gson.annotations.SerializedName;
 
+import java.io.Serializable;
+
 /**
  * Created by michal.cadrik on 10/25/2017.
  */
 
-public class MapFilterCountry {
+public class MapFilterCountry implements Serializable {
 
     @SerializedName("country_code")
     public String countryCode;

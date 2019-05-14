@@ -15,23 +15,22 @@
  *******************************************************************************/
 package at.specure.client.tools.impl;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
 import at.specure.util.tools.Collector;
 import at.specure.util.tools.MemInfo;
 
-public class MemInfoCollector implements Collector<Map<String, Long>, JSONObject> {
+public class MemInfoCollector implements Collector<Map<String, Long>, JsonObject> {
 	
 	public final static String JSON_KEY = "mem_usage";
 
-	List<Collector.CollectorData<Map<String, Long>>> collectorDataList = new ArrayList<Collector.CollectorData<Map<String, Long>>>();
+	List<CollectorData<Map<String, Long>>> collectorDataList = new ArrayList<Collector.CollectorData<Map<String, Long>>>();
 	final MemInfo memInfo;
 	final long pauseNs;
 
@@ -66,7 +65,7 @@ public class MemInfoCollector implements Collector<Map<String, Long>, JSONObject
 	 * (non-Javadoc)
 	 * @see at.specure.client.tools.Collector#getJsonResult()
 	 */
-	public JSONObject getJsonResult(boolean clean) throws JSONException {
+	public JsonObject getJsonResult(boolean clean) {
 		return getJsonResult(clean, 0, TimeUnit.NANOSECONDS);
 	}
 	
@@ -74,23 +73,23 @@ public class MemInfoCollector implements Collector<Map<String, Long>, JSONObject
 	 * (non-Javadoc)
 	 * @see Collector#getJsonResult(boolean, long, java.util.concurrent.TimeUnit)
 	 */
-	public JSONObject getJsonResult(boolean clean, long relTimeStamp, TimeUnit timeUnit) throws JSONException {
+	public JsonObject getJsonResult(boolean clean, long relTimeStamp, TimeUnit timeUnit) {
 		final long relativeTimeStampNs = TimeUnit.NANOSECONDS.convert(relTimeStamp, timeUnit);
-		final JSONArray jsonArray = new JSONArray();
+		final JsonArray jsonArray = new JsonArray();
 		
 		for (CollectorData<Map<String, Long>> data : collectorDataList) {
-			final JSONObject dataJson = new JSONObject();
-			dataJson.put("value", 100f - ((float)data.getValue().get("MemFree") / (float)data.getValue().get("MemTotal")) * 100f);
-			dataJson.put("time_ns", data.getTimeStampNs() - relativeTimeStampNs);
-			jsonArray.put(dataJson);
+			final JsonObject dataJson = new JsonObject();
+			//dataJson.addProperty("value", 100f - ((float) data.getValue().get("MemFree") / (float) data.getValue().get("MemTotal")) * 100f);
+			//dataJson.addProperty("time_ns", data.getTimeStampNs() - relativeTimeStampNs);
+			jsonArray.add(dataJson);
 		}
 		
 		if (clean) {
 			collectorDataList.clear();
 		}
-		
-		final JSONObject jsonObject = new JSONObject();
-		jsonObject.put("values", jsonArray);
+
+		final JsonObject jsonObject = new JsonObject();
+		jsonObject.add("values", jsonArray);
 		
 		return jsonObject;
 	}

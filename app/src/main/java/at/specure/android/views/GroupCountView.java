@@ -15,14 +15,6 @@
  *******************************************************************************/
 package at.specure.android.views;
 
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeSet;
-
 import android.content.Context;
 import android.os.Handler;
 import android.view.LayoutInflater;
@@ -36,6 +28,14 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.specure.opennettest.R;
+
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 
 import at.specure.android.configs.ConfigHelper;
 import at.specure.client.QualityOfServiceTest;
@@ -164,8 +164,8 @@ public class GroupCountView extends LinearLayout implements TestProgressListener
 		View view = null;
     	view = inflater.inflate(R.layout.test_view_qos_group_counter, null);
     	view.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT, .5f));
-    	TextView title = (TextView) view.findViewById(R.id.test_view_qos_groupname);
-    	TextView progress = (TextView) view.findViewById(R.id.test_view_qos_progress);
+		TextView title = view.findViewById(R.id.test_view_qos_groupname);
+		TextView progress = view.findViewById(R.id.test_view_qos_progress);
 		title.setText(ConfigHelper.getCachedQoSNameByTestType(counter.testType, getContext()));
 		progress.setText("(" + counter.value + "/" + counter.target + ")");
 		System.out.println("adding new subview with title=" + title.getText() + " and progress=" + progress.getText());
@@ -181,8 +181,8 @@ public class GroupCountView extends LinearLayout implements TestProgressListener
 		View view = null;
     	view = inflater.inflate(R.layout.test_view_qos_group_counter, null);
     	view.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT, .5f));
-    	TextView title = (TextView) view.findViewById(R.id.test_view_qos_groupname);
-    	TextView progress = (TextView) view.findViewById(R.id.test_view_qos_progress);
+		TextView title = view.findViewById(R.id.test_view_qos_groupname);
+		TextView progress = view.findViewById(R.id.test_view_qos_progress);
 		title.setText("NDT");
 		progress.setText("0%");
 		System.out.println("adding new subview with title=" + title.getText() + " and progress=" + progress.getText());
@@ -198,7 +198,7 @@ public class GroupCountView extends LinearLayout implements TestProgressListener
 			Iterator<QoSTestResultEnum> keys = counterMap.keySet().iterator();
 			if ((viewMap == null || getChildCount() <= 1 || (viewMap.size() == 0  && status.equals(QoSTestEnum.QOS_RUNNING))) && counterMap != null) {
 				//init and create view if empty:
-				this.counterSet = new TreeSet<QualityOfServiceTest.Counter>(new Comparator<QualityOfServiceTest.Counter>() {
+				this.counterSet = new TreeSet<Counter>(new Comparator<Counter>() {
 
 					@Override
 					public int compare(Counter lhs, Counter rhs) {
@@ -214,9 +214,9 @@ public class GroupCountView extends LinearLayout implements TestProgressListener
 			}
 			
 			if (ConfigHelper.isNDT(getContext()) && ndtProgress >= 0f && ndtView != null) {
-		    	TextView progress = (TextView) ndtView.findViewById(R.id.test_view_qos_progress);
-		    	ProgressBar progressBar = (ProgressBar) ndtView.findViewById(R.id.test_view_qos_progress_bar);
-		    	progress.setText((int)(ndtProgress * 100) + "%");
+				TextView progress = ndtView.findViewById(R.id.test_view_qos_progress);
+				ProgressBar progressBar = ndtView.findViewById(R.id.test_view_qos_progress_bar);
+				progress.setText((int) (ndtProgress * 100) + "%");
 				progressBar.setProgress((int) (ndtProgress * 100));
 			}
 			
@@ -231,7 +231,7 @@ public class GroupCountView extends LinearLayout implements TestProgressListener
 					 * calculate current test group progress
 					 */
 					float testGroupProgress = 0f;					
-					long currentTs = System.nanoTime(); 
+					long currentTs = System.nanoTime();
 
 					List<AbstractQoSTask> taskList = taskMap.get(key);
 					if (taskList != null && value < counter.target) {
@@ -257,15 +257,15 @@ public class GroupCountView extends LinearLayout implements TestProgressListener
 					else {
 						System.out.println("NO TASKMAP FOUND: " + key);
 					}
-					
-			    	TextView progress = (TextView) view.findViewById(R.id.test_view_qos_progress);
-			    	ProgressBar progressBar = (ProgressBar) view.findViewById(R.id.test_view_qos_progress_bar);
+
+					TextView progress = view.findViewById(R.id.test_view_qos_progress);
+					ProgressBar progressBar = view.findViewById(R.id.test_view_qos_progress_bar);
 					//progress.setText("(" + value + "/" + counter.target + ") - " + testGroupProgress + "%");
-			    	progress.setText("(" + value + "/" + counter.target + ")");
+					progress.setText("(" + value + "/" + counter.target + ")");
 					progressBar.setProgress((int) testGroupProgress);
 					if (value == counter.target) {
 						viewMap.remove(key);
-						ImageView image = (ImageView) view.findViewById(R.id.test_view_qos_image);
+						ImageView image = view.findViewById(R.id.test_view_qos_image);
 						image.setAnimation(null);
 						image.setImageResource(R.drawable.traffic_lights_green);
 						image.setVisibility(View.VISIBLE);
@@ -319,5 +319,5 @@ public class GroupCountView extends LinearLayout implements TestProgressListener
 		public void onAnimationEnd(Animation animation) {
 			this.view.setVisibility(View.GONE);
 		}
-	}; 
+	}
 }

@@ -15,22 +15,21 @@
  *******************************************************************************/
 package at.specure.client.tools.impl;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
 import at.specure.util.tools.Collector;
 import at.specure.util.tools.CpuStat;
 
-public class CpuStatCollector implements Collector<Float, JSONObject> {
+public class CpuStatCollector implements Collector<Float, JsonObject> {
 
 	public final static String JSON_KEY = "cpu_usage";
 
-	List<Collector.CollectorData<Float>> collectorDataList = new ArrayList<Collector.CollectorData<Float>>();
+	List<CollectorData<Float>> collectorDataList = new ArrayList<Collector.CollectorData<Float>>();
 	final CpuStat cpuStat;
 	final long pauseNs;
 
@@ -90,7 +89,7 @@ public class CpuStatCollector implements Collector<Float, JSONObject> {
 	 * (non-Javadoc)
 	 * @see at.specure.client.tools.Collector#getJsonResult()
 	 */
-	public JSONObject getJsonResult(boolean clean) throws JSONException {
+	public JsonObject getJsonResult(boolean clean) {
 		return getJsonResult(clean, 0, TimeUnit.NANOSECONDS);
 	}
 
@@ -98,28 +97,28 @@ public class CpuStatCollector implements Collector<Float, JSONObject> {
 	 * (non-Javadoc)
 	 * @see Collector#getJsonResult(boolean, long, java.util.concurrent.TimeUnit)
 	 */
-	public JSONObject getJsonResult(boolean clean, long relTimeStamp, TimeUnit timeUnit) throws JSONException {
+	public JsonObject getJsonResult(boolean clean, long relTimeStamp, TimeUnit timeUnit) {
 		final long relativeTimeStampNs = TimeUnit.NANOSECONDS.convert(relTimeStamp, timeUnit);
-		final JSONArray jsonArray = new JSONArray();
+		final JsonArray jsonArray = new JsonArray();
 		for (CollectorData<Float> data : collectorDataList) {
-			final JSONObject dataJson = new JSONObject();
-			dataJson.put("value", ((data.getValue() * 100f)));
-			dataJson.put("time_ns", data.getTimeStampNs() - relativeTimeStampNs);
-			jsonArray.put(dataJson);
+			final JsonObject dataJson = new JsonObject();
+			//dataJson.addProperty("value", ((data.getValue() * 100f)));
+			//dataJson.addProperty("time_ns", data.getTimeStampNs() - relativeTimeStampNs);
+			jsonArray.add(dataJson);
 		}
-		
-		final JSONObject jsonObject = new JSONObject();
-		if (!cpuStat.getLastCpuUsage().isDetectedIdleOrIoWaitDrop()) {
-			jsonObject.put("values", jsonArray);
-		}
-		else {
-			jsonObject.put("values", new JSONArray());
-			final JSONArray flagArray = new JSONArray();
-			JSONObject flag = new JSONObject();
-			flag.put("info", "implausible idle/iowait");
-			flagArray.put(flag);
-			jsonObject.put("flags", flagArray);
-		}
+
+		final JsonObject jsonObject = new JsonObject();
+//		if (!cpuStat.getLastCpuUsage().isDetectedIdleOrIoWaitDrop()) {
+//			jsonObject.add("values", jsonArray);
+//		}
+//		else {
+//			jsonObject.add("values", new JsonArray());
+//			final JsonArray flagArray = new JsonArray();
+//			JsonObject flag = new JsonObject();
+//			flag.addProperty("info", "implausible idle/iowait");
+//			flagArray.add(flag);
+//			jsonObject.add("flags", flagArray);
+//		}
 		
 		if (clean) {
 			collectorDataList.clear();

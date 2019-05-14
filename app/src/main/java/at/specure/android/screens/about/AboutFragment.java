@@ -18,7 +18,6 @@ package at.specure.android.screens.about;
 
 import android.content.res.Configuration;
 import android.os.Bundle;
-import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -28,6 +27,8 @@ import android.widget.ImageView;
 import android.widget.ListAdapter;
 import android.widget.ListView;
 
+
+import androidx.fragment.app.Fragment;
 
 import com.specure.opennettest.R;
 
@@ -53,15 +54,7 @@ public class AboutFragment extends Fragment implements AboutInterface {
     private View createView(View view, LayoutInflater inflater) {
         final AboutController aboutController = new AboutController(this);
         listView = view.findViewById(R.id.aboutList);
-        if (aboutController.isLoopModeSecret(getContext())) {
-            ImageView icon = view.findViewById(R.id.headerImageBg);
-            icon.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    aboutController.showSecretOnClickAction();
-                }
-            });
-        }
+
         ArrayList<HashMap<String, String>> listItems = aboutController.getListItems(getActivity());
         ListAdapter sa = new AboutAdapter(getActivity(), listItems, R.layout.about_item, new String[]{"title", "text1", "text2"},
                 new int[]{R.id.title, R.id.text1, R.id.text2});

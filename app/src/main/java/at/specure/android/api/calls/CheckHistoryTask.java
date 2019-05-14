@@ -16,11 +16,11 @@
  ******************************************************************************/
 package at.specure.android.api.calls;
 
-import java.util.ArrayList;
-
 import android.os.AsyncTask;
 
 import com.google.gson.JsonArray;
+
+import java.util.ArrayList;
 
 import at.specure.android.api.ControlServerConnection;
 import at.specure.android.configs.ConfigHelper;
@@ -32,19 +32,12 @@ public class CheckHistoryTask extends AsyncTask<Void, Void, JsonArray>
 {
     
     private final MainActivity activity;
-    
-    private JsonArray historyList;
-    
-    private String uuid;
-    
-    private ControlServerConnection serverConn;
-    
-    private EndTaskListener endTaskListener;
-    
     private final ArrayList<String> devicesToShow;
-    
     private final ArrayList<String> networksToShow;
-    
+    private JsonArray historyList;
+    private String uuid;
+    private ControlServerConnection serverConn;
+    private EndTaskListener endTaskListener;
     private boolean hasError = false;
     
     public CheckHistoryTask(final MainActivity mainActivity, final ArrayList<String> devicesToShow,
@@ -66,7 +59,7 @@ public class CheckHistoryTask extends AsyncTask<Void, Void, JsonArray>
         
         if (uuid.length() > 0)
             historyList = serverConn.requestHistory(uuid, devicesToShow, networksToShow,
-                    ((MainActivity) activity).getHistoryResultLimit());
+                    activity.getHistoryResultLimit());
         
         return historyList;
     }

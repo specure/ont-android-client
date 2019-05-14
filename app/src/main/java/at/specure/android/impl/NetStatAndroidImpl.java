@@ -24,10 +24,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 import at.specure.util.tools.ConnectionInformation;
+import at.specure.util.tools.ConnectionInformation.ProtocolType;
 import at.specure.util.tools.NetStat;
 import at.specure.util.tools.TcpConnectionInformation;
 import at.specure.util.tools.UdpConnectionInformation;
-
 
 /**
  * android (linux) implementation of the netstat tool
@@ -133,7 +133,7 @@ public class NetStatAndroidImpl implements NetStat {
 	 * (non-Javadoc)
 	 * @see at.specure.client.tools.NetStat#getConnectionList(at.specure.client.tools.ConnectionInformation.ProtocolType)
 	 */
-	public List<ConnectionInformation> getConnectionList(ConnectionInformation.ProtocolType protocolType) {
+	public List<ConnectionInformation> getConnectionList(ProtocolType protocolType) {
 		switch (protocolType) {
 		case TCP:
 			return readFromProc(NetFiles.TCP);

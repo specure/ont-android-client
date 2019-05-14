@@ -22,10 +22,10 @@ import com.google.gson.annotations.SerializedName;
 
 import java.util.ArrayList;
 
-import at.specure.android.screens.map.MapFilterTypes;
+import at.specure.android.configs.ConfigHelper;
 import at.specure.android.screens.map.MapListEntry;
 import at.specure.android.screens.map.MapListSection;
-import at.specure.android.configs.ConfigHelper;
+import at.specure.androidX.data.map_filter.data.MapFilterTypes;
 
 /**
  * Used in map filters for operators only for this moment
@@ -44,22 +44,24 @@ public class FilterGroup {
     public MapListSection convertOperatorsToMapListSection(Context context) {
         boolean oneSelected = false;
         ArrayList<MapListEntry> lists = new ArrayList<>();
-        for (FilterOperator operator: filterOperators) {
-            String idToStore = operator.id == null ? "" : operator.id.toString();
-            String selectedOperatorInMapFilter = ConfigHelper.getSelectedOperatorInMapFilter(context);
-            boolean selected = selectedOperatorInMapFilter.equalsIgnoreCase(idToStore);
+        if (filterOperators != null) {
+            for (FilterOperator operator : filterOperators) {
+                String idToStore = operator.id == null ? "" : operator.id.toString();
+                String selectedOperatorInMapFilter = ConfigHelper.getSelectedOperatorInMapFilter(context);
+                boolean selected = selectedOperatorInMapFilter.equalsIgnoreCase(idToStore);
 
-            if (!oneSelected) {
-                if (selected) {
-                    oneSelected = true;
+                if (!oneSelected) {
+                    if (selected) {
+                        oneSelected = true;
+                    }
+                } else {
+                    selected = false;
                 }
-            } else {
-                selected = false;
-            }
 
-            MapListEntry provider = new MapListEntry(operator.title, operator.detail, selected, "operator", idToStore, operator.isDefault);
-            provider.setOverlayType(MapFilterTypes.MAP_FILTER_TYPE_OPERATOR);
-            lists.add(provider);
+                MapListEntry provider = new MapListEntry(operator.title, operator.detail, selected, "operator", idToStore, operator.isDefault != null);
+                provider.setOverlayType(MapFilterTypes.MAP_FILTER_TYPE_OPERATOR);
+                lists.add(provider);
+            }
         }
         if ((!oneSelected)&& (lists.size() > 0)) {
             lists.get(0).setChecked(true);

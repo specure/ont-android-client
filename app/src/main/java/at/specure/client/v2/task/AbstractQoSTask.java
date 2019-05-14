@@ -29,6 +29,7 @@ import java.io.InputStreamReader;
 import java.net.Socket;
 import java.util.Locale;
 
+import androidx.annotation.NonNull;
 import at.specure.client.AbstractRMBTTest;
 import at.specure.client.QualityOfServiceTest;
 import at.specure.client.v2.task.result.QoSTestResult;
@@ -62,38 +63,25 @@ public abstract class AbstractQoSTask extends AbstractRMBTTest implements QoSTas
 	public final static String PARAM_QOS_RESULT_END_TIME = "end_time_ns";
 	
 	public final static String PARAM_QOS_RESULT_DURATION_NS = "duration_ns";
-		
 	/**
-	 * 
-	 */
-	private final int priority;
-	
-	private Integer serverPort;
-	
-	private Integer concurrencyGroup;
-	
-	private String serverAddress;
-	
-	private Long qoSTestObjectiveUid;
-	
-	private long testStartTimestampNs;
-	
-	private long testEndTimestampNs;
-	
-	private boolean hasFinished = false;
-	
-	private boolean hasStarted = false;
-	
-	/**
-	 * 
+	 *
 	 */
 	protected final TaskDesc taskDesc;
-	
 	protected final QualityOfServiceTest qoSTest;
-	
 	protected final int id;
-	
+	/**
+	 *
+	 */
+	private final int priority;
 	protected QoSControlConnection controlConnection;
+	private Integer serverPort;
+	private Integer concurrencyGroup;
+	private String serverAddress;
+	private Long qoSTestObjectiveUid;
+	private long testStartTimestampNs;
+	private long testEndTimestampNs;
+	private boolean hasFinished = false;
+	private boolean hasStarted = false;
 	
 	/**
 	 * this constructor set the priority to max 
@@ -194,7 +182,7 @@ public abstract class AbstractQoSTask extends AbstractRMBTTest implements QoSTas
 	 * (non-Javadoc)
 	 * @see java.lang.Comparable#compareTo(java.lang.Object)
 	 */
-	public int compareTo(QoSTask o) {
+	public int compareTo(@NonNull QoSTask o) {
 		return (Integer.valueOf(priority).compareTo(Integer.valueOf(o.getPriority())));
 	}
 	

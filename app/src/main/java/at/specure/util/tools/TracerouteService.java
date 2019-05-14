@@ -15,11 +15,11 @@
  *******************************************************************************/
 package at.specure.util.tools;
 
+import com.google.gson.JsonObject;
+
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.Callable;
-
-import org.json.JSONObject;
 
 public interface TracerouteService extends Callable<List<TracerouteService.HopDetail>> {
 
@@ -36,7 +36,7 @@ public interface TracerouteService extends Callable<List<TracerouteService.HopDe
 	}
 	
 	public interface HopDetail {
-		public JSONObject toJson();
+        public JsonObject toJson();
 	}
 	
 	public String getHost();

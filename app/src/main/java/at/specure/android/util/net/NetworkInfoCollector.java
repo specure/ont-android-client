@@ -16,16 +16,6 @@
  ******************************************************************************/
 package at.specure.android.util.net;
 
-import java.net.Inet4Address;
-import java.net.Inet6Address;
-import java.net.InetAddress;
-import java.net.SocketException;
-import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
-
 import android.content.Context;
 import android.content.Intent;
 import android.net.ConnectivityManager;
@@ -37,13 +27,24 @@ import android.util.Log;
 
 import com.specure.opennettest.R;
 
-import at.specure.android.screens.main.MainActivity;
-import at.specure.android.screens.result.adapter.result.OnCompleteListener;
+import java.net.Inet4Address;
+import java.net.Inet6Address;
+import java.net.InetAddress;
+import java.net.SocketException;
+import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import at.specure.android.api.calls.CheckIpTask;
 import at.specure.android.configs.ConfigHelper;
+import at.specure.android.screens.main.MainActivity;
+import at.specure.android.screens.result.adapter.result.OnCompleteListener;
 import at.specure.android.util.Helperfunctions;
+import at.specure.android.util.net.NetworkInfoCollector.OnNetworkInfoChangedListener.InfoFlagEnum;
 import at.specure.android.util.net.NetworkUtil.NetworkInterface46;
-
+import timber.log.Timber;
 
 /**
  * 
@@ -276,6 +277,7 @@ public class NetworkInfoCollector {
         }
         
         isIpFetchAllowed.set(allowIpFetch);
+		Timber.e("IP CHANGE allowIpFetch: %s", allowIpFetch);
         gatherIpInformation(false);
 	}
 	
@@ -294,6 +296,7 @@ public class NetworkInfoCollector {
 //					+ ipFetchController.isCheckAllowed(System.currentTimeMillis(), isPoll));
 			if ((!hasIpFromControlServer || overrideIpFetchAllow) && !isIpChecking.get() && ipFetchController.isCheckAllowed(System.currentTimeMillis(), isPoll)) {
 				isIpChecking.set(true);
+				Timber.e("IP_TASK checking");
 				checkIp();
 				ipFetchController.storeIpCheck(System.currentTimeMillis());
 				isIpChecking.set(false);
@@ -341,12 +344,12 @@ public class NetworkInfoCollector {
 	 * 
 	 * @param ctx
 	 * @param intent
-	 * @throws SocketException 
+	 * @throws SocketException
 	 */
 	public void onNetworkChange(Context ctx, Intent intent) {
 		ConnectivityManager cm = (ConnectivityManager) ctx.getSystemService(Context.CONNECTIVITY_SERVICE);
 		NetworkInfo ni = cm.getActiveNetworkInfo();
-//		Log.i(DEBUG_TAG, "" + (intent != null ? intent.getAction() : "check network change"));
+//		Timber.i(DEBUG_TAG, "" + (intent != null ? intent.getAction() : "check network change"));
 		
 		String currentSsid = null;
 		
@@ -381,20 +384,20 @@ public class NetworkInfoCollector {
 					ipFetchController.reset();
 				}
 				
-				Log.d(DEBUG_TAG, "CHECK FOR CAPTIVE PORTAL step 1");
-//				Log.d(DEBUG_TAG, "ssid = " + ssid + ", new ssid = " + currentSsid);
+				Timber.d( "CHECK FOR CAPTIVE PORTAL step 1");
+//				Timber.d(DEBUG_TAG, "ssid = " + ssid + ", new ssid = " + currentSsid);
 				resetAllPublicIps();
 				resetAllPrivateIps();				
 				
 				ipSet = currentIpSet;
 				ssid = currentSsid;
-//				Log.d(DEBUG_TAG, "" + ni);
-//				Log.d(DEBUG_TAG, "" + activeNetworkInfo);
+//				Timber.d(DEBUG_TAG, "" + ni);
+//				Timber.d(DEBUG_TAG, "" + activeNetworkInfo);
 				//active network has changed
 				activeNetworkInfo = ni;
-//				Log.d(DEBUG_TAG, "" + activeNetworkInfo);
+//				Timber.d(DEBUG_TAG, "" + activeNetworkInfo);
 				if (activeNetworkInfo != null && activeNetworkInfo.isConnected() && currentSsid != null) {
-					Log.d(DEBUG_TAG,"CHECK FOR CAPTIVE PORTAL step 2");
+					Timber.d("CHECK FOR CAPTIVE PORTAL step 2");
 					
 					isIpFetchAllowed.set(true);
 
@@ -473,13 +476,13 @@ public class NetworkInfoCollector {
 				try {
 					switch (flag) {
 					case OnCompleteListener.ERROR:
-						Log.d(DEBUG_TAG,"try again");
+						Timber.d("try again");
 						hasIpFromControlServer = false;
 						lastIpCheckWasError = true;
 						publicIpv6Plain = null;
 						publicIpv4Plain = null;
 						isIpChecking.set(false);
-						dispatchEvent(OnNetworkInfoChangedListener.InfoFlagEnum.IP_CHECK_ERROR, null);
+						dispatchEvent(InfoFlagEnum.IP_CHECK_ERROR, null);
 						break;
 					case FLAG_PRIVATE_IPV4:
 						if (object != null && (IP_METHOD == IP_METHOD_ACTIVE_NETWORK)) {
@@ -511,7 +514,7 @@ public class NetworkInfoCollector {
 								setPublicIpv6((String) object);
 							}
 						}
-						dispatchEvent(OnNetworkInfoChangedListener.InfoFlagEnum.IP_CHECK_SUCCESS, null);
+						dispatchEvent(InfoFlagEnum.IP_CHECK_SUCCESS, null);
 						break;
 					}
 				}
@@ -540,7 +543,7 @@ public class NetworkInfoCollector {
 			} catch (UnknownHostException e) {
 				e.printStackTrace();
 			}
-			dispatchEvent(OnNetworkInfoChangedListener.InfoFlagEnum.PUBLIC_IPV4_CHANGED, ip);
+			dispatchEvent(InfoFlagEnum.PUBLIC_IPV4_CHANGED, ip);
 		}
 		//System.out.println("AFTER SET: " + publicIpv6);
     }
@@ -561,7 +564,7 @@ public class NetworkInfoCollector {
 			} catch (UnknownHostException e) {
 				e.printStackTrace();
 			}
-			dispatchEvent(OnNetworkInfoChangedListener.InfoFlagEnum.PUBLIC_IPV6_CHANGED, ip);
+			dispatchEvent(InfoFlagEnum.PUBLIC_IPV6_CHANGED, ip);
 		}
 		//System.out.println("AFTER SET: " + publicIpv6);
     }
@@ -569,14 +572,14 @@ public class NetworkInfoCollector {
     private void setPrivateIpv4(Inet4Address ip) {
     	if (privateIpv4 != null && !privateIpv4.equals(ip) || privateIpv4 == null) {
     		privateIpv4 = ip;
-    		dispatchEvent(OnNetworkInfoChangedListener.InfoFlagEnum.PRIVATE_IPV4_CHANGED, ip);
+    		dispatchEvent(InfoFlagEnum.PRIVATE_IPV4_CHANGED, ip);
     	}
     }
     
     private void setPrivateIpv6(Inet6Address ip) {
     	if (privateIpv6 != null && !privateIpv6.equals(ip) || privateIpv6 == null) {
     		privateIpv6 = ip;
-    		dispatchEvent(OnNetworkInfoChangedListener.InfoFlagEnum.PRIVATE_IPV6_CHANGED, ip);
+    		dispatchEvent(InfoFlagEnum.PRIVATE_IPV6_CHANGED, ip);
     	}
     }
     
@@ -730,7 +733,7 @@ public class NetworkInfoCollector {
 	 */
 	public void setHasConnectionFromAndroidApi(boolean hasConnection) {
 		this.hasConnectionFromAndroidApi = hasConnection;
-		dispatchEvent(OnNetworkInfoChangedListener.InfoFlagEnum.NETWORK_CONNECTION_CHANGED, hasConnection);
+		dispatchEvent(InfoFlagEnum.NETWORK_CONNECTION_CHANGED, hasConnection);
 	}
 
 	/**
@@ -763,12 +766,12 @@ public class NetworkInfoCollector {
 	 * 
 	 * @param event
 	 */
-	private void dispatchEvent(OnNetworkInfoChangedListener.InfoFlagEnum event, Object newValue) {
-		//Log.d(DEBUG_TAG, "Dispatching Event: " + event + ", Listeners: " + listenerList.size());
+	private void dispatchEvent(InfoFlagEnum event, Object newValue) {
+		//Timber.d(DEBUG_TAG, "Dispatching Event: " + event + ", Listeners: " + listenerList.size());
 		
 		if (IP_METHOD == IP_METHOD_NETWORKINTERFACE) {
-			if (event == OnNetworkInfoChangedListener.InfoFlagEnum.PRIVATE_IPV4_CHANGED || event == OnNetworkInfoChangedListener.InfoFlagEnum.PRIVATE_IPV6_CHANGED) {
-				Log.d(DEBUG_TAG, "Dispatching Event: " + event + ", Listeners: " + listenerList.size());
+			if (event == InfoFlagEnum.PRIVATE_IPV4_CHANGED || event == InfoFlagEnum.PRIVATE_IPV6_CHANGED) {
+				Timber.d( "Dispatching Event: " + event + ", Listeners: " + listenerList.size());
 				resetAllPublicIps();
 			}
 		}

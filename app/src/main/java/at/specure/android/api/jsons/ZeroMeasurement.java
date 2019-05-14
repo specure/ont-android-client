@@ -20,10 +20,10 @@ import com.google.gson.annotations.SerializedName;
 
 import java.util.List;
 
-import at.specure.android.database.obj.TZeroMeasurement;
 import at.specure.android.database.mappers.CellLocationMapper;
 import at.specure.android.database.mappers.GeolocationMapper;
 import at.specure.android.database.mappers.SignalMapper;
+import at.specure.android.database.obj.TZeroMeasurement;
 
 /**
  * Created by michal.cadrik on 8/9/2017.
@@ -31,6 +31,8 @@ import at.specure.android.database.mappers.SignalMapper;
 
 @SuppressWarnings("JavadocReference")
 public class ZeroMeasurement {
+
+    private transient Long internalId;
 
     @SerializedName("client_uuid")
     private String clientUuid;
@@ -102,6 +104,9 @@ public class ZeroMeasurement {
     @SerializedName("telephony_network_sim_country")
     private String telephonyNetworkSimCountry;
 
+    @SerializedName("timezone")
+    private String timezone;
+
     @SerializedName("geoLocations")
     private List<Location> geoLocations;
 
@@ -111,8 +116,9 @@ public class ZeroMeasurement {
     @SerializedName("signals")
     private List<Signal> signals;
 
-    public ZeroMeasurement(String clientUuid, String clientName, String clientVersion, String clientLanguage, Long time, String uuid, String plattform, String product, String apiLevel, String telephonyNetworkOperator, String clientSoftwareVersion, String telephonyNetworkIsRoaming, String osVersion, String telephonyNetworkCountry, String networkType, String telephonyNetworkOperatorName, String telephonyNetworkSimOperatorName, String model, String telephonyNetworkSimOperator, String device, String telephonyPhoneType, String telephonyDataState, String telephonyNetworkSimCountry, List<Location> geoLocations, List<CellLocation> cellLocations, List<Signal> signals) {
+    public ZeroMeasurement(Long internalId, String clientUuid, String clientName, String clientVersion, String clientLanguage, Long time, String uuid, String plattform, String product, String apiLevel, String telephonyNetworkOperator, String clientSoftwareVersion, String telephonyNetworkIsRoaming, String osVersion, String telephonyNetworkCountry, String networkType, String telephonyNetworkOperatorName, String telephonyNetworkSimOperatorName, String model, String telephonyNetworkSimOperator, String device, String telephonyPhoneType, String telephonyDataState, String telephonyNetworkSimCountry, String timezone, List<Location> geoLocations, List<CellLocation> cellLocations, List<Signal> signals) {
 
+        this.internalId = internalId;
         this.clientUuid = clientUuid;
         this.clientName = clientName;
         this.clientVersion = clientVersion;
@@ -142,6 +148,8 @@ public class ZeroMeasurement {
         this.geoLocations = geoLocations;
         this.cellLocations = cellLocations;
         this.signals = signals;
+
+        this.timezone = timezone;
     }
 
     /**
@@ -151,6 +159,7 @@ public class ZeroMeasurement {
      */
     public ZeroMeasurement(TZeroMeasurement zeroMeasurement) {
 
+        this.internalId = zeroMeasurement.id;
         this.clientUuid = zeroMeasurement.clientUuid;
         this.clientName = zeroMeasurement.clientName;
         this.clientVersion = zeroMeasurement.clientVersion;
@@ -180,6 +189,11 @@ public class ZeroMeasurement {
         this.geoLocations = new GeolocationMapper().map(zeroMeasurement.getGeoLocations(null));
         this.cellLocations = new CellLocationMapper().map(zeroMeasurement.getCellLocations(null));
         this.signals = new SignalMapper().map(zeroMeasurement.getSignals(null));
+
+    }
+
+    public Long getInternalId() {
+        return internalId;
     }
 
     public String getClientUuid() {
@@ -388,5 +402,13 @@ public class ZeroMeasurement {
 
     public void setSignals(List<Signal> signals) {
         this.signals = signals;
+    }
+
+    public String getTimezone() {
+        return timezone;
+    }
+
+    public void setTimezone(String timezone) {
+        this.timezone = timezone;
     }
 }

@@ -19,9 +19,10 @@ package at.specure.android.screens.result.adapter.result;
 import java.util.List;
 
 import android.content.Context;
-import android.support.v4.view.PagerAdapter;
 import android.view.View;
 import android.view.ViewGroup;
+
+import androidx.viewpager.widget.PagerAdapter;
 
 import at.specure.android.screens.main.MainActivity;
 import at.specure.android.screens.result.QoSTestDetailView;

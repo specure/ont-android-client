@@ -16,6 +16,7 @@
  ******************************************************************************/
 package at.specure.client;
 
+import android.content.Context;
 import android.util.Log;
 
 import com.google.gson.JsonObject;
@@ -48,10 +49,12 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
 
-import org.json.JSONObject;
-
+import at.specure.android.api.jsons.VoipTestResult;
+import at.specure.android.configs.LocaleConfig;
+import at.specure.android.configs.LoopModeConfig;
 import at.specure.android.impl.TracerouteAndroidImpl;
 import at.specure.android.impl.TrafficServiceImpl;
+import at.specure.android.screens.test_results.VoipTestResultHandler;
 import at.specure.android.util.InformationCollector;
 import at.specure.client.RMBTTest.CurrentSpeed;
 import at.specure.client.helper.Config;
@@ -66,9 +69,8 @@ import at.specure.client.v2.task.result.QoSTestResult;
 import at.specure.client.v2.task.service.TestMeasurement;
 import at.specure.client.v2.task.service.TestSettings;
 import at.specure.client.v2.task.service.TrafficService;
-import at.specure.android.api.jsons.VoipTestResult;
-import at.specure.android.screens.test_results.VoipTestResultHandler;
 import at.specure.util.tools.InformationCollectorTool;
+import timber.log.Timber;
 
 import static at.specure.client.v2.task.VoipTask.RESULT_INCOMING_PREFIX;
 import static at.specure.client.v2.task.VoipTask.RESULT_MEAN_JITTER;
@@ -100,7 +102,8 @@ public class TestClient {
 
     private final static long MIN_DIFF_TIME = 100000000; // 100 ms
 
-    private final static int KEEP_LAST_ENTRIES = 20;
+    private final static int KEEP_LAST_ENTRIES = 100; // if more than more smooth values changes during measurement
+    private final Context context;
     private int lastCounter;
     private final long[][] lastTransfer;
     private final long[][] lastTime;
@@ -160,11 +163,12 @@ public class TestClient {
     public static TestClient getInstance(final String host, final String pathPrefix, final int port, int measurementServerId,
                                          final boolean encryption, final ArrayList<String> geoInfo, final String uuid, final String clientType,
                                          final String clientName, final String clientVersion, final TestParameter overrideParams,
-                                         final JsonObject additionalValues, File cacheDir) {
+                                         final JsonObject additionalValues, File cacheDir, Context context) {
         final ControlServerConnection controlConnection = new ControlServerConnection();
 
+
         final String error = controlConnection.requestNewTestConnection(host, pathPrefix, port, measurementServerId, encryption, geoInfo,
-                uuid, clientType, clientName, clientVersion, additionalValues);
+                uuid, clientType, clientName, clientVersion, additionalValues, LocaleConfig.getLocaleForServerRequest(context));
 
         if (error != null) {
             System.out.println(error);
@@ -173,7 +177,7 @@ public class TestClient {
 
         //TODO: simple and fast solution; make it better
         final String errorNewTest = controlConnection.requestQoSTestParameters(host, pathPrefix, port, encryption, geoInfo,
-                uuid, clientType, clientName, clientVersion, additionalValues);
+                uuid, clientType, clientName, clientVersion, additionalValues, LocaleConfig.getLocaleForServerRequest(context));
 
         if (errorNewTest != null) {
             System.out.println(errorNewTest);
@@ -182,26 +186,14 @@ public class TestClient {
 
         final TestParameter params = controlConnection.getTestParameter(overrideParams);
 
-        return new TestClient(params, controlConnection, cacheDir);
+        return new TestClient(params, controlConnection, cacheDir, context);
     }
 
-    //DO NOT USE
-
-    /**
-     * Lack of cache dir important for voip test
-     *
-     * @param params
-     * @return
-     */
-    @Deprecated
-    private static TestClient getInstance(final TestParameter params) {
-        return new TestClient(params, null, null);
-    }
-
-    private TestClient(final TestParameter params, final ControlServerConnection controlConnection, File cacheDir) {
+    private TestClient(final TestParameter params, final ControlServerConnection controlConnection, File cacheDir, Context context) {
         this.params = params;
         this.controlConnection = controlConnection;
         this.cacheDir = cacheDir;
+        this.context = context;
 
         params.check();
 
@@ -229,6 +221,10 @@ public class TestClient {
 
     }
 
+    public Context getContext() {
+        return context;
+    }
+
     public void setTrafficService(TrafficService trafficService) {
         this.trafficService = trafficService;
     }
@@ -251,7 +247,7 @@ public class TestClient {
         }
     }
 
-    public JSONObject getInformationCollectorToolIntermediateResult(boolean clean) {
+    public JsonObject getInformationCollectorToolIntermediateResult(boolean clean) {
         if (this.informationCollectorTool != null && !this.informationCollectorTool.isRunning()) {
             return this.informationCollectorTool.getJsonObject(clean);
         }
@@ -397,8 +393,10 @@ public class TestClient {
     public TestResult runTest() throws InterruptedException {
         System.out.println("starting test...");
 
-        long txBytes = 0;
-        long rxBytes = 0;
+        // https://copperegg.zendesk.com/hc/en-us/articles/214633883-What-do-TX-and-RX-refer-to-in-the-Network-Charts-
+
+        long txBytes = 0; //transmit bytes = from server
+        long rxBytes = 0; //receive bytes = to server
         final long timeStampStart = System.nanoTime();
 
         if (testStatus.get() != TestStatus.ERROR && testThreadPool != null) {
@@ -479,13 +477,14 @@ public class TestClient {
                     if (testResult != null) {
                         realNumThreads++;
 
-                        log(String.format(Locale.US, "Thread %d: Download: bytes: %d time: %.3f s", i,
+                        Timber.e("DOWNLOAD Thread %d: Download: bytes: %d time: %.3f s", i,
                                 ThreadTestResult.getLastEntry(testResult.down.bytes),
-                                ThreadTestResult.getLastEntry(testResult.down.nsec) / 1e9));
-                        log(String.format(Locale.US, "Thread %d: Upload:   bytes: %d time: %.3f s", i,
+                                ThreadTestResult.getLastEntry(testResult.down.nsec) / 1e9);
+                        Timber.e("UPLOAD Thread %d: Upload:   bytes: %d time: %.3f s", i,
                                 ThreadTestResult.getLastEntry(testResult.up.bytes),
-                                ThreadTestResult.getLastEntry(testResult.up.nsec) / 1e9));
+                                ThreadTestResult.getLastEntry(testResult.up.nsec) / 1e9);
 
+                        //na co sa tu zistuje shortest ked sa zobrazuje ten median?
                         final long ping = testResult.ping_shortest;
                         if (ping < shortestPing)
                             shortestPing = ping;
@@ -506,94 +505,8 @@ public class TestClient {
                     }
                 }
 
-                /**** VOIP, JITTER, PACKET LOSS ****/
-                VoipTest voipTest;
-
-                if (!aborted.get()) {
-                    try {
-                        QoSResultCollector voipResult;
-                        //Implementation for Jitter and Packet loss
-                        TestSettings qosTestSettings = new TestSettings();
-                        qosTestSettings.setCacheFolder(getCacheDir());
-                        qosTestSettings.setTrafficService(new TrafficServiceImpl());
-                        qosTestSettings.setTracerouteServiceClazz(TracerouteAndroidImpl.class);
-                        qosTestSettings.setStartTimeNs(getControlConnection().getStartTimeNs());
-                        qosTestSettings.setUseSsl(params.isEncryption());
-
-                        boolean onlyVoipTest = true;
-                        //noinspection ConstantConditions
-                        voipTest = new JitterTest(this, qosTestSettings, onlyVoipTest);
-//                        qosTest = new QualityOfServiceTest(client, qosTestSettings, onlyVoipTest);
-
-                        voipReference.set(voipTest);
-                        setStatus(TestStatus.PACKET_LOSS_AND_JITTER);
-                        voipResult = voipTest.call();
-
-                        List<QoSTestResult> voipTestRsults = voipResult.getResults();
-                        if ((voipTestRsults != null) && (!voipTestRsults.isEmpty())) {
-                            QoSTestResult qoSTestResult = voipTestRsults.get(0);
-                            HashMap<String, Object> resultMap = qoSTestResult.getResultMap();
-
-                            VoipTestResultHandler voipTestResultHandler = new VoipTestResultHandler();
-                            VoipTestResult voipTestResult = voipTestResultHandler.convertResultsToObject(resultMap);
-                            result.voipTestResult = voipTestResult;
-
-//                            Log.e("TEST", voipResult.toString());
-
-                            //TODO: save to shared pref to load to send them together with result
-
-                            final String prefix_out = RESULT_VOIP_PREFIX + RESULT_OUTGOING_PREFIX;
-                            final String prefix_in = RESULT_VOIP_PREFIX + RESULT_INCOMING_PREFIX;
-
-                            String format;
-
-                            Long meanJitterOut = (Long) resultMap.get(prefix_out + RESULT_MEAN_JITTER);
-                            Long meanJitterIn = (Long) resultMap.get(prefix_in + RESULT_MEAN_JITTER);
-                            if ((meanJitterIn != null) && (meanJitterOut != null)) {
-                                Long meanJitter = (meanJitterIn + meanJitterOut) / 2;
-                                result.jitterMedian = meanJitter;
-                                this.jitter.set(meanJitter);
-                            }
-
-                            long callDuration = (Long) resultMap.get(VoipTask.RESULT_CALL_DURATION);
-                            long delay = (Long) resultMap.get(VoipTask.RESULT_DELAY);
-                            long outPacketsNumber = (Long) resultMap.get(prefix_out + VoipTask.RESULT_NUM_PACKETS);
-                            int inPacketsNumber = (Integer) resultMap.get(prefix_in + VoipTask.RESULT_NUM_PACKETS);
-
-                            int total = ((int) callDuration / (int) delay);
-
-                            int packetLossDown = (int) (100f * ((float) (total - inPacketsNumber) / (float) total));
-                            int packetLossUp = (int) (100f * ((float) (total - outPacketsNumber) / (float) total));
-
-                            result.packetLossPercentDown = packetLossDown;
-                            result.packetLossPercentUp = packetLossUp;
-
-                            this.packetLossDown.set(packetLossDown);
-                            this.packetLossUp.set(packetLossUp);
-
-
-                            Log.e("JITTER, PACKET LOSS", "JITTER: " + jitter + ", PL_DOWN: " + packetLossDown + ", PL_UP: " + packetLossUp);
-
-                            InformationCollector.voipResult = voipResult;
-
-//                    if (!aborted.get()) {
-//                        if (voipResult != null && !voipTest.getStatus().equals(QoSTestEnum.ERROR)) {
-//                            sendQoSResult(voipResult);
-//                        }
-//                    }
-                        }
-
-                    } catch (Exception e) {
-                        e.printStackTrace();
-//                    throw new Exception("Error during jitter measurement");
-                        log(e);
-                        // commented because of failed test ends test
-//                        abortTest(true);
-//                        return null;
-//                    error = true;
-                    }
-//            }
-                }
+//                /**** VOIP, JITTER, PACKET LOSS ****/
+//                performVoipTest();
 
                 result.calculateDownload(allDownBytes, allDownNsecs);
                 result.calculateUpload(allUpBytes, allUpNsecs);
@@ -644,7 +557,6 @@ public class TestClient {
                     result.setMeasurementMap(measurementMap);
                 }
 
-
                 return result;
             } catch (final ExecutionException e) {
                 log(e);
@@ -657,8 +569,84 @@ public class TestClient {
             }
         } else {
             setStatus(TestStatus.SPEEDTEST_END);
-
             return null;
+        }
+    }
+
+    public void performVoipTest() {
+        VoipTest voipTest;
+
+        if (!aborted.get()) {
+            try {
+                QoSResultCollector voipResult;
+                //Implementation for Jitter and Packet loss
+                TestSettings qosTestSettings = new TestSettings();
+                qosTestSettings.setCacheFolder(getCacheDir());
+                qosTestSettings.setTrafficService(new TrafficServiceImpl());
+                qosTestSettings.setTracerouteServiceClazz(TracerouteAndroidImpl.class);
+                qosTestSettings.setStartTimeNs(getControlConnection().getStartTimeNs());
+                qosTestSettings.setUseSsl(params.isEncryption());
+
+                boolean onlyVoipTest = true;
+                //noinspection ConstantConditions
+                voipTest = new JitterTest(this, qosTestSettings, onlyVoipTest);
+
+                voipReference.set(voipTest);
+                setStatus(TestStatus.PACKET_LOSS_AND_JITTER);
+                voipResult = voipTest.call();
+
+                List<QoSTestResult> voipTestRsults = voipResult.getResults();
+                if ((voipTestRsults != null) && (!voipTestRsults.isEmpty())) {
+                    QoSTestResult qoSTestResult = voipTestRsults.get(0);
+                    HashMap<String, Object> resultMap = qoSTestResult.getResultMap();
+
+                    VoipTestResultHandler voipTestResultHandler = new VoipTestResultHandler();
+                    VoipTestResult voipTestResult = voipTestResultHandler.convertResultsToObject(resultMap);
+                    result.voipTestResult = voipTestResult;
+
+                    //TODO: save to shared pref to load to send them together with result
+
+                    final String prefix_out = RESULT_VOIP_PREFIX + RESULT_OUTGOING_PREFIX;
+                    final String prefix_in = RESULT_VOIP_PREFIX + RESULT_INCOMING_PREFIX;
+
+                    String format;
+
+                    Long meanJitterOut = (Long) resultMap.get(prefix_out + RESULT_MEAN_JITTER);
+                    Long meanJitterIn = (Long) resultMap.get(prefix_in + RESULT_MEAN_JITTER);
+                    if ((meanJitterIn != null) && (meanJitterOut != null)) {
+                        Long meanJitter = (meanJitterIn + meanJitterOut) / 2;
+                        result.jitterMedian = meanJitter;
+                        this.jitter.set(meanJitter);
+                    }
+
+                    long callDuration = (Long) resultMap.get(VoipTask.RESULT_CALL_DURATION);
+                    long delay = (Long) resultMap.get(VoipTask.RESULT_DELAY);
+                    long outPacketsNumber = (Long) resultMap.get(prefix_out + VoipTask.RESULT_NUM_PACKETS);
+                    int inPacketsNumber = (Integer) resultMap.get(prefix_in + VoipTask.RESULT_NUM_PACKETS);
+
+                    int total = ((int) callDuration / (int) delay);
+
+                    int packetLossDown = (int) (100f * ((float) (total - inPacketsNumber) / (float) total));
+                    int packetLossUp = (int) (100f * ((float) (total - outPacketsNumber) / (float) total));
+
+                    result.packetLossPercentDown = packetLossDown;
+                    result.packetLossPercentUp = packetLossUp;
+
+                    this.packetLossDown.set(packetLossDown);
+                    this.packetLossUp.set(packetLossUp);
+
+
+                    Timber.e("JITTER: %s, PL_DOWN: %s, PL_UP: %s", jitter, packetLossDown, packetLossUp);
+
+                    InformationCollector.voipResult = voipResult;
+
+                }
+
+            } catch (Exception e) {
+                e.printStackTrace();
+                Timber.e("JITTER ERROR %s", e.getMessage());
+                log(e);
+            }
         }
     }
 
@@ -867,6 +855,14 @@ public class TestClient {
             downBitPerSec.set(Math.round(getTotalSpeed()));
             resetSpeed();
         }
+
+//        /**
+//         * JITTER PACKET LOSS
+//         */
+//        if (status == TestStatus.PACKET_LOSS_AND_JITTER) {
+//            Timber.e("JITTER", "START");
+//            performVoipTest();
+//        }
     }
 
     public void startTrafficService(final int threadId, final TestStatus status) {
@@ -893,7 +889,7 @@ public class TestClient {
 
     public void sendResult(final JsonObject additionalValues) {
         if (controlConnection != null) {
-            final String errorMsg = controlConnection.sendTestResult(result, additionalValues);
+            final String errorMsg = controlConnection.sendTestResult(result, additionalValues, LoopModeConfig.getCurrentLoopId(context), LocaleConfig.getLocaleForServerRequest(context));
             if (errorMsg != null) {
                 setErrorStatus();
                 log("Error sending Result...");
@@ -904,7 +900,7 @@ public class TestClient {
 
     public void sendQoSResult(final QoSResultCollector qosResult) {
         if (controlConnection != null) {
-            final String errorMsg = controlConnection.sendQoSResult(result, qosResult.toJson());
+            final String errorMsg = controlConnection.sendQoSResult(result, qosResult.toJson(), LocaleConfig.getLocaleForServerRequest(context));
             if (errorMsg != null) {
                 setErrorStatus();
                 log("Error sending QoS Result...");

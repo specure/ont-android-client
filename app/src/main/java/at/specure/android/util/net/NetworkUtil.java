@@ -16,6 +16,8 @@
  ******************************************************************************/
 package at.specure.android.util.net;
 
+import android.util.Log;
+
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.Inet4Address;
@@ -31,8 +33,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import android.util.Log;
 import at.specure.android.util.InformationCollector;
+import timber.log.Timber;
 
 /**
  * 
@@ -120,7 +122,7 @@ public class NetworkUtil {
 	public static boolean isWalledGardenConnection() {
 	    HttpURLConnection urlConnection = null;
 	    try {
-	    	Log.d(DEBUG_TAG, "checking for walled garden...");
+	    	Timber.d( "checking for walled garden...");
 	        URL url = new URL(WALLED_GARDEN_URL);
 	        urlConnection = (HttpURLConnection) url.openConnection();
 	        urlConnection.setInstanceFollowRedirects(false);
@@ -128,7 +130,7 @@ public class NetworkUtil {
 	        urlConnection.setReadTimeout(WALLED_GARDEN_SOCKET_TIMEOUT_MS);
 	        urlConnection.setUseCaches(false);
 	        urlConnection.getInputStream();
-	        Log.d(DEBUG_TAG, "check completed");
+	        Timber.d( "check completed");
 	        // We got a valid response, but not from the real google
 	        return urlConnection.getResponseCode() != 204;
 	    } catch (IOException e) {
@@ -149,7 +151,7 @@ public class NetworkUtil {
 	        for (Enumeration<NetworkInterface> en = NetworkInterface.getNetworkInterfaces(); en.hasMoreElements();) {
 	            NetworkInterface intf = en.nextElement();
 	            //if (NetworkInfoCollector.DJ_DEBUG) {
-	            	System.out.println(intf.toString() + ", isUp: " + intf.isUp() 
+	            	System.out.println(intf.toString() + ", isUp: " + intf.isUp()
 	            		+ ", isLoopback: " + intf.isLoopback() 
 	            		+ ", isP2P: " + intf.isPointToPoint() 
 	            		+ ", isVirtual: " + intf.isVirtual() + "\n");
@@ -185,7 +187,7 @@ public class NetworkUtil {
 	 * 
 	 * @return
 	 * @throws SocketException
-	 * @throws UnknownHostException 
+	 * @throws UnknownHostException
 	 */
 	public static Set<InetAddress> getAllInterfaceIpAddresses() throws SocketException, UnknownHostException {
 		Set<InetAddress> ipSet = new HashSet<InetAddress>();

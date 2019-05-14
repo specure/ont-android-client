@@ -16,9 +16,9 @@
 
 package at.specure.android.util;
 
+import at.specure.android.configs.Config;
 import at.specure.android.database.enums.LocationType;
 import at.specure.android.database.obj.TLocation;
-import at.specure.android.configs.Config;
 
 /**
  * Created by michal.cadrik on 8/14/2017.

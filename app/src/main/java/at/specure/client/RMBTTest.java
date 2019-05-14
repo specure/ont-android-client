@@ -16,6 +16,9 @@
  ******************************************************************************/
 package at.specure.client;
 
+import android.os.AsyncTask;
+import android.util.Log;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -43,11 +46,12 @@ import javax.net.ssl.SSLSession;
 import javax.net.ssl.SSLSocket;
 
 import at.specure.client.helper.TestStatus;
+import timber.log.Timber;
 
 /**
  * This class is one of 4 threads of main test and
  * contains theese parts see in {@link #call()}:
- *
+ * <p>
  * short download
  * ping
  * download
@@ -58,7 +62,7 @@ public class RMBTTest extends AbstractRMBTTest implements Callable<ThreadTestRes
     private static final long nsecsL = 1000000000L;
 //    private static final double nsecs = 1e9;
 
-    private static final long UPLOAD_MAX_DISCARD_TIME = 1 * nsecsL;
+    private static final long UPLOAD_MAX_DISCARD_TIME = 1;
     private static final long UPLOAD_MAX_WAIT_SECS = 3;
 
     private final CyclicBarrier barrier;
@@ -73,6 +77,9 @@ public class RMBTTest extends AbstractRMBTTest implements Callable<ThreadTestRes
     private final long minDiffTime;
     private final int maxCoarseResults;
     private final int maxFineResults;
+
+    public static boolean downloadContinue = true;
+    public static boolean uploadContinue = true;
 
     private class SingleResult {
         private final Results fine;
@@ -240,39 +247,28 @@ public class RMBTTest extends AbstractRMBTTest implements Callable<ThreadTestRes
     }
 
     protected Socket connect(final TestResult testResult) throws IOException {
-        log(String.format(Locale.US, "thread %d: connecting...", threadId));
+        Timber.e("SOCKECT CONNECT thread %d: connecting...", threadId);
 
         final InetAddress inetAddress = InetAddress.getByName(params.getHost());
 
         System.out.println("connecting to: " + inetAddress.getHostName() + ":" + params.getPort());
-        final Socket s = getSocket(inetAddress.getHostAddress(), params.getPort(), true, 20000);
+        final Socket s = getSocket(inetAddress.getHostAddress(), params.getPort(), true, 30000);
 
         testResult.ip_local = s.getLocalAddress();
         testResult.ip_server = s.getInetAddress();
 
         testResult.port_remote = s.getPort();
 
+        Timber.e("CONNECT TO TEST RESULT thread %d: reconnected \n RESULT2: %s ", threadId, s);
         if (s instanceof SSLSocket) {
             final SSLSocket sslSocket = (SSLSocket) s;
-//
-//            List<String> cipherSuitesToEnable = new ArrayList<>();
-//            String[] enabledCipherSuites = sslSocket.getEnabledCipherSuites();
-//            if ((enabledCipherSuites != null) && (enabledCipherSuites.length > 0)) {
-//                for (int i = 0; i < enabledCipherSuites.length; i++) {
-//                    cipherSuitesToEnable.add(enabledCipherSuites[i]);
-//                }
-//            }
-//
-//            cipherSuitesToEnable.add("SSL_RSA_WITH_RC4_128_SHA");
-//            cipherSuitesToEnable.add("SSL_RSA_WITH_3DES_EDE_CBC_SHA");
-//            sslSocket.setEnabledCipherSuites(cipherSuitesToEnable.toArray(new String[cipherSuitesToEnable.size()]));
 
             final SSLSession session = sslSocket.getSession();
             testResult.encryption = String.format(Locale.US, "%s (%s)", session.getProtocol(), session.getCipherSuite());
         }
 
-        log(String.format(Locale.US, "thread %d: ReceiveBufferSize: '%s'.", threadId, s.getReceiveBufferSize()));
-        log(String.format(Locale.US, "thread %d: SendBufferSize: '%s'.", threadId, s.getSendBufferSize()));
+        Timber.e("SOCKECT CONNECT thread %d: ReceiveBufferSize: '%s'.", threadId, s.getReceiveBufferSize());
+        Timber.e("SOCKECT CONNECT thread %d: SendBufferSize: '%s'.", threadId, s.getSendBufferSize());
 
         if (in != null)
             totalDown += in.getCount();
@@ -285,13 +281,13 @@ public class RMBTTest extends AbstractRMBTTest implements Callable<ThreadTestRes
 
         String line = reader.readLine();
         if (!line.equals(EXPECT_GREETING)) {
-            log(String.format(Locale.US, "thread %d: got '%s' expected '%s'", threadId, line, EXPECT_GREETING));
+            Timber.e("SOCKECT CONNECT thread %d: got '%s' expected '%s'", threadId, line, EXPECT_GREETING);
             return null;
         }
 
         line = reader.readLine();
         if (!line.startsWith("ACCEPT ")) {
-            log(String.format(Locale.US, "thread %d: got '%s' expected 'ACCEPT'", threadId, line));
+            Timber.e("SOCKECT CONNECT thread %d: got '%s' expected 'ACCEPT'", threadId, line);
             return null;
         }
 
@@ -303,9 +299,10 @@ public class RMBTTest extends AbstractRMBTTest implements Callable<ThreadTestRes
 
         if (line == null) {
             log(String.format(Locale.US, "thread %d: got no answer expected 'OK'", threadId, line));
+            Timber.e("SOCKECT CONNECT thread %d: got '%s' expected 'OK'  \n  LINE: %s", threadId, line,  line);
             return null;
         } else if (!line.equals("OK")) {
-            log(String.format(Locale.US, "thread %d: got '%s' expected 'OK'", threadId, line));
+            Timber.e("SOCKECT CONNECT thread %d: got '%s' expected 'OK' \nLINE: %s", threadId, line, line);
             return null;
         }
 
@@ -313,23 +310,24 @@ public class RMBTTest extends AbstractRMBTTest implements Callable<ThreadTestRes
         final Scanner scanner = new Scanner(line);
         try {
             if (!"CHUNKSIZE".equals(scanner.next())) {
-                log(String.format(Locale.US, "thread %d: got '%s' expected 'CHUNKSIZE'", threadId, line));
+                Timber.e("SOCKECT CONNECT thread %d: got '%s' expected 'CHUNKSIZE'", threadId, line);
                 return null;
             }
             try {
                 chunksize = scanner.nextInt();
-                log(String.format(Locale.US, "thread %d: CHUNKSIZE is %d", threadId, chunksize));
+                Timber.e("SOCKECT CONNECT thread %d: CHUNKSIZE is %d", threadId, chunksize);
             } catch (final Exception e) {
-                log(String.format(Locale.US, "thread %d: invalid CHUNKSIZE: '%s'", threadId, line));
+                Timber.e("SOCKECT CONNECT thread %d: invalid CHUNKSIZE: '%s'", threadId, line);
                 return null;
             }
-            if (buf == null || buf != null && buf.length != chunksize)
+            if (buf == null || buf.length != chunksize)
                 buf = new byte[chunksize];
             return s;
         } finally {
             scanner.close();
         }
     }
+
 
     public ThreadTestResult call() {
         log(String.format(Locale.US, "thread %d: started.", threadId));
@@ -345,7 +343,7 @@ public class RMBTTest extends AbstractRMBTTest implements Callable<ThreadTestRes
             if (s == null)
                 throw new Exception("error during connect to test server");
 
-            log(String.format(Locale.US, "thread %d: connected, waiting for rest...", threadId));
+            Timber.e("TEST START thread %d: connected, waiting for rest...", threadId);
             barrier.await();
 
             /***** short download *****/
@@ -363,6 +361,16 @@ public class RMBTTest extends AbstractRMBTTest implements Callable<ThreadTestRes
                     fallbackToOneThread.set(true);
             }
             /*********************/
+
+            if (threadId == 0) {
+//                JitterAndPacketLostAsync asyncTask = new JitterAndPacketLostAsync(client);
+//                asyncTask.execute();
+
+//                setStatus(TestStatus.PACKET_LOSS_AND_JITTER);
+                client.performVoipTest();
+            }
+            barrier.await();
+
 
             boolean _fallbackToOneThread;
             setStatus(TestStatus.PING);
@@ -417,147 +425,163 @@ public class RMBTTest extends AbstractRMBTTest implements Callable<ThreadTestRes
                 testResult.ping_shortest = shortestPing;
                 testResult.ping_median = medianPing;
 
+                Timber.e("PING_M %s", testResult.ping_median);
+                Timber.e("PING_SHORTEST  %s", testResult.ping_shortest);
+
             }
             /*********************/
 
 
-                /**********************/
-                if (doDownload) {
-                    final int duration = params.getDuration();
-                    //final int duration = 1;
+            /**********************/
+            if (doDownload) {
+                final int duration = params.getDuration();
+                //final int duration = 1;
 
-                    setStatus(TestStatus.DOWN);
-                    /***** download *****/
+                setStatus(TestStatus.DOWN);
+                /***** download *****/
 
-                    if (!_fallbackToOneThread)
-                        barrier.await();
+                if (!_fallbackToOneThread)
+                    barrier.await();
 
-                    stopTrafficService(TestStatus.PING);
-                    startTrafficService(TestStatus.DOWN);
+                stopTrafficService(TestStatus.PING);
+                startTrafficService(TestStatus.DOWN);
 
-                    curTransfer.set(0);
-                    curTime.set(0);
+                curTransfer.set(0);
+                curTime.set(0);
 
-                    final SingleResult result = new SingleResult();
-                    final boolean reinitSocket = download(duration, 0, result);
-                    if (reinitSocket) {
-                        s.close();
-                        s = connect(testResult);
-                        log(String.format(Locale.US, "thread %d: reconnected", threadId));
-                        if (s == null)
-                            throw new Exception("error during connect to test server");
-                    }
+                //                      IF UNCOMMENTED TEST FAILS
+//                    if (threadId == 0)
+//                    Thread.sleep(30000);
 
-                    testResult.down = result.getAllResults();
-                    result.addCoarseSpeedItems(testResult.speedItems, false, threadId);
+                final SingleResult result = new SingleResult();
+                // reinit socket == true in general case
+                final boolean reinitSocket = download(duration, 0, result);
+                Timber.e("DOWN_REINIT_SOCK   for thread %s", threadId);
+                if (reinitSocket) {
+                    s.close();
+                    s = connect(testResult);
+                    Timber.e("CONNECT TO TEST RESULT  thread %d: reconnected   RESULT:  %s", threadId, s);
+                    if (s == null)
+                        throw new Exception("error during connect to test server");
+                }
+
+                testResult.down = result.getAllResults();
+                result.addCoarseSpeedItems(testResult.speedItems, false, threadId);
 
 //                if (threadId == 0) {
 //                	System.out.println("download speed items: " + testResult.speedItems);
 //                	System.out.println("download raw results: " + result);
 //                }
 
-                    curTransfer.set(result.getBytes());
-                    curTime.set(result.getNsec());
+                curTransfer.set(result.getBytes());
+                curTime.set(result.getNsec());
 
 
-                    /*********************/
+                /*********************/
 
-                }
+            }
 
-                if (doUpload) {
-                    final int duration = params.getDuration();
-                    //final int duration = 1;
+            //TOTO BOLO NAJLEPSIE
+//            setStatus(TestStatus.PACKET_LOSS_AND_JITTER);
 
-                    setStatus(TestStatus.INIT_UP);
-                    /***** short upload *****/
-                    {
-                        if (!_fallbackToOneThread)
-                            barrier.await();
 
-                        stopTrafficService(TestStatus.DOWN);
+            if (doUpload) {
+                final int duration = params.getDuration();
+                //final int duration = 1;
 
-                        curTransfer.set(0);
-                        curTime.set(0);
+                setStatus(TestStatus.INIT_UP);
+                /***** short upload *****/
+                {
+                    if (!_fallbackToOneThread)
+                        barrier.await();
 
-                        final long targetTimeEnd = System.nanoTime() + params.getPretestDuration() * nsecsL;
-                        int chunks = 1;
-                        do {
-                            uploadChunks(chunks);
-                            chunks *= 2;
-                        }
-                        while (System.nanoTime() < targetTimeEnd);
-                    }
-                    /*********************/
-
-                    /***** upload *****/
-
-                    setStatus(TestStatus.UP);
-
-                    startTrafficService(TestStatus.UP);
+                    stopTrafficService(TestStatus.DOWN);
 
                     curTransfer.set(0);
                     curTime.set(0);
 
-                    if (!_fallbackToOneThread)
-                        barrier.await();
-
-                    final SingleResult result = new SingleResult();
-
-                    upload(duration, result);
-
-                    testResult.up = result.getAllResults();
-                    result.addCoarseSpeedItems(testResult.speedItems, true, threadId);
-
-                    if (in != null)
-                        totalDown += in.getCount();
-                    if (out != null)
-                        totalUp += out.getCount();
-
-                    testResult.totalDownBytes = totalDown;
-                    testResult.totalUpBytes = totalUp;
-
-                    curTransfer.set(result.getBytes());
-                    curTime.set(result.getNsec());
-
-                    stopTrafficService(TestStatus.UP);
-
-                    /*********************/
-                }
-
-            } catch (final BrokenBarrierException e) {
-                client.log("interrupted (BBE)");
-                Thread.currentThread().interrupt();
-            } catch (final InterruptedException e) {
-                client.log("interrupted");
-                Thread.currentThread().interrupt();
-            } catch (final Exception e) {
-                client.log(e);
-                client.abortTest(true);
-            } finally {
-                if (s != null)
-                    try {
-                        s.close();
-                    } catch (final IOException e) {
-                        client.log(e);
+                    final long targetTimeEnd = System.nanoTime() + params.getPretestDuration() * nsecsL;
+                    int chunks = 1;
+                    do {
+                        uploadChunks(chunks);
+                        chunks *= 2;
                     }
+                    while (System.nanoTime() < targetTimeEnd);
+                }
+                /*********************/
+
+                /***** upload *****/
+
+                setStatus(TestStatus.UP);
+
+                startTrafficService(TestStatus.UP);
+
+                curTransfer.set(0);
+                curTime.set(0);
+
+                if (!_fallbackToOneThread)
+                    barrier.await();
+
+                final SingleResult result = new SingleResult();
+
+                upload(duration, result);
+
+                testResult.up = result.getAllResults();
+                result.addCoarseSpeedItems(testResult.speedItems, true, threadId);
+
+                if (in != null)
+                    totalDown += in.getCount();
+                if (out != null)
+                    totalUp += out.getCount();
+
+                testResult.totalDownBytes = totalDown;
+                testResult.totalUpBytes = totalUp;
+
+                curTransfer.set(result.getBytes());
+                curTime.set(result.getNsec());
+
+                stopTrafficService(TestStatus.UP);
+
+                /*********************/
             }
-            return testResult;
+
+        } catch (final BrokenBarrierException e) {
+            client.log("interrupted (BBE)");
+            Thread.currentThread().interrupt();
+        } catch (final InterruptedException e) {
+            client.log("interrupted");
+            Thread.currentThread().interrupt();
+        } catch (final Exception e) {
+            client.log(e);
+            client.abortTest(true);
+        } finally {
+            if (s != null)
+                try {
+                    s.close();
+                } catch (final IOException e) {
+                    client.log(e);
+                }
         }
+        return testResult;
+    }
 
     private void downloadChunks(final int chunks) throws InterruptedException, IOException {
+
+        downloadContinue = true;
+
         if (Thread.interrupted())
             throw new InterruptedException();
 
         if (chunks < 1)
             throw new IllegalArgumentException();
 
-        log(String.format(Locale.US, "thread %d: getting %d chunk(s)", threadId, chunks));
+        Timber.e("DOWNLOAD CHUNKS thread %d: getting %d chunk(s)", threadId, chunks);
 
         String line = reader.readLine();
         if (line == null)
             throw new IllegalStateException("connection lost");
         if (!line.startsWith("ACCEPT ")) {
-            log(String.format(Locale.US, "thread %d: got '%s' expected 'ACCEPT'", threadId, line));
+            Timber.e("DOWNLOAD CHUNKS thread %d: got '%s' expected 'ACCEPT'", threadId, line);
             throw new IllegalStateException();
         }
 
@@ -593,8 +617,8 @@ public class RMBTTest extends AbstractRMBTTest implements Callable<ThreadTestRes
     /**
      * perform single donwload test
      *
-     * @param seconds requested duration of the test
-     * @param result  SingleResult object to store the results in
+     * @param duration requested duration of the test
+     * @param result   SingleResult object to store the results in
      * @return true if the socket needs to be reinitialized, false if can be
      * reused
      * @throws IOException
@@ -602,29 +626,29 @@ public class RMBTTest extends AbstractRMBTTest implements Callable<ThreadTestRes
      * @throws InterruptedException
      * @throws IllegalStateException
      */
-    private boolean download(final int seconds, final int additionalWait, final SingleResult result)
+    private boolean download(final int duration, final int additionalWait, final SingleResult result)
             throws IOException, UnsupportedEncodingException, InterruptedException, IllegalStateException {
         if (Thread.interrupted())
             throw new InterruptedException();
 
-        if (seconds < 1)
+        if (duration < 1)
             throw new IllegalArgumentException();
 
-        log(String.format(Locale.US, "thread %d: download test %d seconds", threadId, seconds));
+        Timber.e("DOWNLOAD thread %d: download test %d seconds", threadId, duration);
 
         String line = reader.readLine();
         if (line == null)
             throw new IllegalStateException("connection lost");
         if (!line.startsWith("ACCEPT ")) {
-            log(String.format(Locale.US, "thread %d: got '%s' expected 'ACCEPT'", threadId, line));
+            Timber.e("DOWNLOAD thread %d: got '%s' expected 'ACCEPT'", threadId, line);
             throw new IllegalStateException();
         }
 
         final long timeStart = System.nanoTime();
-        final long timeLatestEnd = timeStart + (seconds + additionalWait) * nsecsL;
+        final long timeLatestEnd = timeStart + (duration + additionalWait) * nsecsL;
 
         String send;
-        send = String.format(Locale.US, "GETTIME %d\n", seconds);
+        send = String.format(Locale.US, "GETTIME %d\n", duration);
         out.write(send.getBytes("US-ASCII"));
         out.flush();
 
@@ -636,6 +660,9 @@ public class RMBTTest extends AbstractRMBTTest implements Callable<ThreadTestRes
             if (Thread.interrupted())
                 throw new InterruptedException();
             read = in.read(buf);
+            if (!downloadContinue) {
+                break;
+            }
             if (read > 0) {
                 final int posLast = chunksize - 1 - (int) (totalRead % chunksize);
                 if (read > posLast)
@@ -644,20 +671,37 @@ public class RMBTTest extends AbstractRMBTTest implements Callable<ThreadTestRes
 
                 final long nsec = System.nanoTime() - timeStart;
 
+                if (!downloadContinue) {
+                    break;
+                }
+
                 result.addResult(totalRead, nsec);
                 curTransfer.set(totalRead);
                 curTime.set(nsec);
             }
+            if (read <= 0) {
+                Timber.e("DOWNLOAD END THREADID = %s  read <= 0", threadId);
+            }
+            if (lastByte == (byte) 0xff) {
+                Timber.e("DOWNLOAD END THREADID = %s  lastByte == 0xff", threadId);
+            }
+            if (System.nanoTime() > timeLatestEnd) {
+                Timber.e("DOWNLOAD END THREADID = %s  time of thread finished", threadId);
+            }
+            if (!downloadContinue) {
+                Timber.e("DOWNLOAD_END THREADID = %s DOWNLOAD continue = false" , threadId);
+            }
         }
-        while (read > 0 && lastByte != (byte) 0xff && System.nanoTime() <= timeLatestEnd);
+        while (read > 0 && lastByte != (byte) 0xff && System.nanoTime() <= timeLatestEnd && downloadContinue);
 
+        downloadContinue = false;
         final long timeEnd = System.nanoTime();
         send = "OK\n";
         out.write(send.getBytes("US-ASCII"));
         out.flush();
 
         if (read <= 0) {
-            log(String.format(Locale.US, "thread %d: error while receiving data", threadId));
+            Timber.e("DOWNLOAD thread %d: error while receiving data", threadId);
             throw new IllegalStateException();
         }
 
@@ -687,13 +731,13 @@ public class RMBTTest extends AbstractRMBTTest implements Callable<ThreadTestRes
         if (chunks < 1)
             throw new IllegalArgumentException();
 
-        log(String.format(Locale.US, "thread %d: putting %d chunk(s)", threadId, chunks));
+        Timber.e("UPLOAD CHUNK thread %d: putting %d chunk(s)", threadId, chunks);
 
         String line = reader.readLine();
         if (line == null)
             throw new IllegalStateException("connection lost");
         if (!line.startsWith("ACCEPT ")) {
-            log(String.format(Locale.US, "thread %d: got '%s' expected 'ACCEPT'", threadId, line));
+            Timber.e("UPLOAD CHUNKS thread %d: got '%s' expected 'ACCEPT'", threadId, line);
             throw new IllegalStateException();
         }
 
@@ -730,13 +774,15 @@ public class RMBTTest extends AbstractRMBTTest implements Callable<ThreadTestRes
      */
     private boolean upload(final int seconds, final SingleResult result) throws IOException,
             UnsupportedEncodingException, InterruptedException, IllegalStateException {
+        uploadContinue = true;
+
         if (Thread.interrupted())
             throw new InterruptedException();
 
         if (seconds < 1 && !params.isEncryption())
             throw new IllegalArgumentException();
 
-        log(String.format(Locale.US, "thread %d: upload test %d seconds", threadId, seconds));
+        Timber.e("UPLOAD thread %d: upload test %d seconds", threadId, seconds);
 
         long _enoughTime = (seconds - UPLOAD_MAX_DISCARD_TIME) * nsecsL;
         if (_enoughTime < 0)
@@ -747,7 +793,7 @@ public class RMBTTest extends AbstractRMBTTest implements Callable<ThreadTestRes
         if (line == null)
             throw new IllegalStateException("connection lost");
         if (!line.startsWith("ACCEPT ")) {
-            log(String.format(Locale.US, "thread %d: got '%s' expected 'ACCEPT'", threadId, line));
+            Timber.e("UPLOAD thread %d: got '%s' expected 'ACCEPT'", threadId, line);
             throw new IllegalStateException();
         }
 
@@ -790,7 +836,7 @@ public class RMBTTest extends AbstractRMBTTest implements Callable<ThreadTestRes
                         }
 
                         final MatchResult match = s.match();
-                        if (match.groupCount() == 2) {
+                        if ((match.groupCount() == 2) && (uploadContinue)) {
                             final long nsec = Long.parseLong(match.group(1));
                             final long bytes = Long.parseLong(match.group(2));
                             result.addResult(bytes, nsec);
@@ -798,12 +844,20 @@ public class RMBTTest extends AbstractRMBTTest implements Callable<ThreadTestRes
                             curTime.set(nsec);
                         }
 
-                        if (terminateRxAtAllEvents.get())
+                        if (terminateRxAtAllEvents.get() || (!uploadContinue)) {
                             terminate = true;
-                        if (terminateRxIfEnough.get() && curTime.get() > enoughTime)
+                            uploadContinue = false;
+                        }
+                        if (terminateRxIfEnough.get() && curTime.get() > enoughTime || (!uploadContinue)) {
                             terminate = true;
+                            uploadContinue = false;
+                        }
+                        if (!uploadContinue) {
+                            Timber.e("UPLOAD_END %s  Upload continue = false", threadId);
+                        }
+
                     }
-                    while (!terminate);
+                    while (!terminate && uploadContinue);
                     return true;
                 } finally {
                     s.close();
@@ -880,13 +934,13 @@ public class RMBTTest extends AbstractRMBTTest implements Callable<ThreadTestRes
     }
 
     private Ping ping() throws IOException {
-        log(String.format(Locale.US, "thread %d: ping test", threadId));
+        Timber.e("PING thread %d: ping test", threadId);
 
         final long pingTimeNs = System.nanoTime();
 
         String line = reader.readLine();
         if (!line.startsWith("ACCEPT ")) {
-            log(String.format(Locale.US, "thread %d: got '%s' expected 'ACCEPT'", threadId, line));
+            Timber.e("PING thread %d: got '%s' expected 'ACCEPT'", threadId, line);
             return null;
         }
 
@@ -912,8 +966,8 @@ public class RMBTTest extends AbstractRMBTTest implements Callable<ThreadTestRes
         final double pingClient = diffClient / 1e6;
         final double pingServer = diffServer / 1e6;
 
-        log(String.format(Locale.US, "thread %d - client: %.3f ms ping", threadId, pingClient));
-        log(String.format(Locale.US, "thread %d - server: %.3f ms ping", threadId, pingServer));
+        Timber.e("PING thread %d - client: %.3f ms ping", threadId, pingClient);
+        Timber.e("PING thread %d - server: %.3f ms ping", threadId, pingServer);
         return new Ping(diffClient, diffServer, pingTimeNs);
     }
 
@@ -928,6 +982,22 @@ public class RMBTTest extends AbstractRMBTTest implements Callable<ThreadTestRes
 
     private void stopTrafficService(final TestStatus status) {
         client.stopTrafficMeasurement(threadId, status);
+    }
+
+    public static class JitterAndPacketLostAsync extends AsyncTask<Void, Void, Void> {
+
+        TestClient client;
+
+
+        JitterAndPacketLostAsync(TestClient client) {
+            this.client = client;
+        }
+
+        @Override
+        protected Void doInBackground(Void[] voids) {
+            client.performVoipTest();
+            return null;
+        }
     }
 
 }

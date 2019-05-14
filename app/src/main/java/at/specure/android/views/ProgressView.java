@@ -28,7 +28,6 @@ import com.specure.opennettest.R;
 
 import at.specure.android.util.Helperfunctions;
 
-
 public class ProgressView extends View
 {
     private final static float DISTANCE = 5f;

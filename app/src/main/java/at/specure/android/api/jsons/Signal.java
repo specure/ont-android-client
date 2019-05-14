@@ -16,6 +16,8 @@
 
 package at.specure.android.api.jsons;
 
+import android.telephony.TelephonyManager;
+
 import com.google.gson.annotations.SerializedName;
 
 import at.specure.android.database.obj.TSignal;
@@ -92,6 +94,14 @@ public final class Signal {
         }
 
         if (lteRsrp == 0) {
+            this.lteRsrp = null;
+            this.lteRsrq = null;
+            this.lteRssnr = null;
+            this.lteCqi = null;
+        }
+
+        if (!(signal.networkTypeId == TelephonyManager.NETWORK_TYPE_LTE
+                || signal.networkTypeId == 19)) { // NETWORK_TYPE_LTE_CA
             this.lteRsrp = null;
             this.lteRsrq = null;
             this.lteRssnr = null;

@@ -26,6 +26,7 @@ import android.graphics.Paint.Style;
 import android.graphics.Path;
 import android.graphics.Shader;
 import android.os.Bundle;
+
 import at.specure.android.views.graphview.GraphService;
 import at.specure.android.views.graphview.GraphView;
 
@@ -61,7 +62,7 @@ public class SimpleGraph implements GraphService
     }
 
     public static SimpleGraph addGraph(final GraphView graphView, final long maxNsecs, final GraphData graphData) {
-    	final SimpleGraph graph = SimpleGraph.addGraph(graphView, maxNsecs, graphData.getPathStroke(), graphData.getPathFill(), 
+    	final SimpleGraph graph = SimpleGraph.addGraph(graphView, maxNsecs, graphData.getPathStroke(), graphData.getPathFill(),
     			graphData.getPaintStroke(), graphData.getPaintFill());
     	
     	graph.startX = graphData.getOptions().getFloat(OPTION_STARTX, 0f);
@@ -71,10 +72,10 @@ public class SimpleGraph implements GraphService
     	return graph;
     }
     
-    public static SimpleGraph addGraph(final GraphView graphView, final long maxNsecs, 
-    		final Path pathStroke, final Path pathFill, final Paint paintStroke, final Paint paintFill) 
+    public static SimpleGraph addGraph(final GraphView graphView, final long maxNsecs,
+                                       final Path pathStroke, final Path pathFill, final Paint paintStroke, final Paint paintFill)
     {
-        final SimpleGraph graph = new SimpleGraph(maxNsecs, graphView.getGraphWidth(), graphView.getGraphHeight(), 
+        final SimpleGraph graph = new SimpleGraph(maxNsecs, graphView.getGraphWidth(), graphView.getGraphHeight(),
         		pathStroke, pathFill, paintStroke, paintFill);
         graphView.addGraph(graph);
         return graph;

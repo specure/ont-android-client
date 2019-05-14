@@ -16,27 +16,29 @@
  ******************************************************************************/
 package at.specure.android.screens.preferences;
 
-import android.app.ActionBar;
-import android.app.FragmentManager;
-import android.app.FragmentTransaction;
 import android.content.Intent;
 import android.os.Bundle;
-import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.Toolbar;
 import android.view.MenuItem;
 
+import androidx.appcompat.app.ActionBar;
+import androidx.appcompat.widget.Toolbar;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
 
 import com.specure.opennettest.R;
 
 import at.specure.android.configs.ConfigHelper;
+import at.specure.android.configs.LocaleConfig;
+import at.specure.android.screens.main.BasicActivity;
 
 
-public class PreferenceActivity extends AppCompatActivity {
+public class PreferenceActivity extends BasicActivity {
 
     static final int REQUEST_NDT_CHECK = 1;
     static final int REQUEST_IC_CHECK = 2;
 
     private PreferenceFragment mPrefsFragment;
+    private boolean shouldFinish = false;
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
@@ -51,20 +53,41 @@ public class PreferenceActivity extends AppCompatActivity {
     @Override
     public void onCreate(final Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        shouldFinish = getIntent().getBooleanExtra("finish", false);
+
+
+        if (LocaleConfig.isUserAbleToChangeLanguage(this)) {
+            if (savedInstanceState == null) {
+                LocaleConfig.initializeApp(this, false);
+            }
+        }
+
         setContentView(R.layout.settings_activity);
         setSupportActionBar((Toolbar) findViewById(R.id.toolbar));
-        android.support.v7.app.ActionBar supportActionBar = getDelegate().getSupportActionBar();
+        ActionBar supportActionBar = getDelegate().getSupportActionBar();
+        supportActionBar.setTitle(R.string.page_title_settings);
         if (supportActionBar != null) {
             supportActionBar.setDisplayOptions(ActionBar.DISPLAY_SHOW_HOME | ActionBar.DISPLAY_SHOW_TITLE);
             supportActionBar.setDisplayHomeAsUpEnabled(true);
         }
 
-        FragmentManager mFragmentManager = getFragmentManager();
-        FragmentTransaction mFragmentTransaction = mFragmentManager
+        FragmentManager supportFragmentManager = getSupportFragmentManager();
+        FragmentTransaction fragmentTransaction = supportFragmentManager
                 .beginTransaction();
         mPrefsFragment = new PreferenceFragment();
-        mFragmentTransaction.replace(R.id.preference_activity__content, mPrefsFragment);
-        mFragmentTransaction.commit();
+        fragmentTransaction.replace(R.id.preference_activity__content, mPrefsFragment);
+        fragmentTransaction.commit();
+
+    }
+
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        if (shouldFinish) {
+            this.finish();
+        }
     }
 
     @Override

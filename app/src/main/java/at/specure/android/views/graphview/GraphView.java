@@ -68,7 +68,9 @@ public interface GraphView {
 	}
 
 	public void addGraph(final GraphService graph);
-	
+
+	public void removeAllgraphs();
+
     public int getGraphWidth();
     
     public int getGraphHeight();

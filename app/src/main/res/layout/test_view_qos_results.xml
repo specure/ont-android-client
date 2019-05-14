@@ -24,7 +24,7 @@
                 android:layout_height="16dp"
                 android:src="@drawable/qos_performed" />
 
-            <Space
+            <androidx.legacy.widget.Space
                 android:layout_width="1dp"
                 android:layout_height="10dp" />
 
@@ -33,7 +33,7 @@
                 android:layout_height="16dp"
                 android:src="@drawable/qos_passed" />
 
-            <Space
+            <androidx.legacy.widget.Space
                 android:layout_width="1dp"
                 android:layout_height="10dp" />
 
@@ -62,7 +62,7 @@
                 android:textSize="11sp"
                 android:textStyle="bold" />
 
-            <Space
+            <androidx.legacy.widget.Space
                 android:layout_width="1dp"
                 android:layout_height="10dp" />
 
@@ -74,7 +74,7 @@
                 android:textSize="11sp"
                 android:textStyle="bold" />
 
-            <Space
+            <androidx.legacy.widget.Space
                 android:layout_width="1dp"
                 android:layout_height="10dp" />
 
@@ -108,7 +108,7 @@
                 android:maxLines="1"
                 android:ellipsize="end"/>
 
-            <Space
+            <androidx.legacy.widget.Space
                 android:layout_width="1dp"
                 android:layout_height="10dp" />
 
@@ -123,7 +123,7 @@
                 android:text="@string/qos_result_passed"
                 android:textStyle="bold" />
 
-            <Space
+            <androidx.legacy.widget.Space
                 android:layout_width="1dp"
                 android:layout_height="10dp" />
 

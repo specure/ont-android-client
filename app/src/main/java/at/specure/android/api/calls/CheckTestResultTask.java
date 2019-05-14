@@ -16,19 +16,19 @@
  ******************************************************************************/
 package at.specure.android.api.calls;
 
+import android.app.Activity;
 import android.os.AsyncTask;
 
 import com.google.gson.JsonArray;
 
 import at.specure.android.api.ControlServerConnection;
-import at.specure.android.screens.main.MainActivity;
 import at.specure.android.util.EndTaskListener;
 
 
 public class CheckTestResultTask extends AsyncTask<String, Void, JsonArray>
 {
     
-    private final MainActivity activity;
+    private Activity activity;
     
     private JsonArray resultList;
     
@@ -38,7 +38,7 @@ public class CheckTestResultTask extends AsyncTask<String, Void, JsonArray>
     
     private boolean hasError = false;
     
-    public CheckTestResultTask(final MainActivity activity2)
+    public CheckTestResultTask(final Activity activity2)
     {
         this.activity = activity2;
         

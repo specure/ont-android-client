@@ -18,7 +18,7 @@ package at.specure.android.screens.test_results;
 
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.support.annotation.NonNull;
+import androidx.annotation.NonNull;
 
 import com.specure.opennettest.R;
 

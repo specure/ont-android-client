@@ -16,6 +16,13 @@
  ******************************************************************************/
 package at.specure.android.util;
 
+import android.content.Context;
+import android.content.res.Resources;
+import android.location.Location;
+import android.os.Build;
+
+import com.specure.opennettest.R;
+
 import java.net.Inet4Address;
 import java.net.Inet6Address;
 import java.net.InetAddress;
@@ -24,23 +31,16 @@ import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
 
-import android.content.Context;
-import android.content.res.Resources;
-import android.location.Location;
-import android.os.Build;
-
-import com.specure.opennettest.R;
-
 import at.specure.android.configs.ConfigHelper;
+import at.specure.android.configs.LocaleConfig;
 import at.specure.client.helper.TestStatus;
-
 
 public final class Helperfunctions
 {
-    
-    public static String getLang()
+
+    public static String getLang(Context context)
     {
-        return Locale.getDefault().getLanguage();
+        return LocaleConfig.getLocaleForServerRequest(context);
     }
     
     public static DateFormat getDateFormat(final boolean seconds)
@@ -54,7 +54,7 @@ public final class Helperfunctions
     }
     
     public static String formatTimestampWithTimezone(final Date date, final DateFormat dateFormat, final long time,
-            final String timezoneID)
+                                                     final String timezoneID)
     {
         if (time == 0)
             return null;
@@ -350,5 +350,15 @@ public final class Helperfunctions
         if (Build.VERSION.SDK_INT >= 17 && ssid != null && ssid.startsWith("\"") && ssid.endsWith("\""))
             ssid = ssid.substring(1, ssid.length() - 1);
         return ssid;
+    }
+
+    public static int getColor(int resId, Context context) {
+        int color = 0;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            color = context.getResources().getColor(resId, context.getTheme());
+        } else {
+            color = context.getResources().getColor(resId);
+        }
+        return color;
     }
 }

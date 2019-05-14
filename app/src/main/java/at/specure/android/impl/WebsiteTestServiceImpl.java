@@ -16,9 +16,6 @@
  ******************************************************************************/
 package at.specure.android.impl;
 
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.net.TrafficStats;
@@ -26,6 +23,10 @@ import android.os.Handler;
 import android.os.Process;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import at.specure.android.util.AsyncHtmlContentRetriever;
 import at.specure.android.util.AsyncHtmlContentRetriever.ContentRetrieverListener;
 import at.specure.client.v2.task.service.WebsiteTestService;
@@ -152,7 +153,7 @@ public class WebsiteTestServiceImpl implements WebsiteTestService {
 					}
 					else {
 						trafficTxStart = TrafficStats.getTotalTxBytes();
-						trafficRxStart = TrafficStats.getTotalRxBytes();						
+						trafficRxStart = TrafficStats.getTotalRxBytes();
 					}
 				}
 				
@@ -173,7 +174,7 @@ public class WebsiteTestServiceImpl implements WebsiteTestService {
 							
 							if (listener.onTimeoutReached(WebsiteTestServiceImpl.this)) {
 								System.out.println("WEBSITETESTTASK TIMEOUT");
-								WebsiteTestServiceImpl.this.handler.post(new Runnable() {											
+								WebsiteTestServiceImpl.this.handler.post(new Runnable() {
 									@Override
 									public void run() {
 										WebsiteTestServiceImpl.this.webView.stopLoading();
@@ -206,7 +207,7 @@ public class WebsiteTestServiceImpl implements WebsiteTestService {
 					}
 					
 					@Override
-					public void onPageFinished(WebView view, String url) {						
+					public void onPageFinished(WebView view, String url) {
 						super.onPageFinished(view, url);
 						
 						WebsiteTestServiceImpl.this.isRunning.set(false);
@@ -241,7 +242,7 @@ public class WebsiteTestServiceImpl implements WebsiteTestService {
 					
 					@Override
 					public void onReceivedError(WebView view, int errorCode,
-							String description, String failingUrl) {						
+                                                String description, String failingUrl) {
 						super.onReceivedError(view, errorCode, description, failingUrl);
 						
 						WebsiteTestServiceImpl.this.isRunning.set(false);
@@ -301,11 +302,11 @@ public class WebsiteTestServiceImpl implements WebsiteTestService {
 	private void setEndTrafficCounter() {
 		if (USE_PROCESS_UID_FOR_TRAFFIC_MEASUREMENT) {
 			this.trafficRxEnd = TrafficStats.getUidRxBytes(processUid);
-			this.trafficTxEnd = TrafficStats.getUidTxBytes(processUid);			
+			this.trafficTxEnd = TrafficStats.getUidTxBytes(processUid);
 		}
 		else {
 			this.trafficRxEnd = TrafficStats.getTotalRxBytes();
-			this.trafficTxEnd = TrafficStats.getTotalTxBytes();			
+			this.trafficTxEnd = TrafficStats.getTotalTxBytes();
 		}
 	}
 

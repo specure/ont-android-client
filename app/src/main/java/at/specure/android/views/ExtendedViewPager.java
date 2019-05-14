@@ -17,9 +17,13 @@
 package at.specure.android.views;
 
 import android.content.Context;
-import android.support.v4.view.ViewPager;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
+
+import androidx.viewpager.widget.ViewPager;
+
+import at.specure.android.screens.result.adapter.result.QoSTestDetailPagerAdapter;
+
 
 /**
  * 
@@ -49,7 +53,7 @@ public class ExtendedViewPager extends ViewPager {
 
 	/*
 	 * (non-Javadoc)
-	 * @see android.support.v4.view.ViewPager#onInterceptTouchEvent(android.view.MotionEvent)
+	 * @see androidx.viewpager.widget.ViewPager#onInterceptTouchEvent(android.view.MotionEvent)
 	 */
 	@Override
 	public boolean onInterceptTouchEvent(MotionEvent arg0) {
@@ -74,5 +78,9 @@ public class ExtendedViewPager extends ViewPager {
 	 */
 	public boolean isPagingDisabled() {
 		return this.isPagingDisabled;
+	}
+
+	public void setAdapter(QoSTestDetailPagerAdapter pagerAdapter) {
+		super.setAdapter(pagerAdapter);
 	}
 }

@@ -24,8 +24,6 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.TreeSet;
 
-import org.json.JSONException;
-
 import at.specure.client.v2.task.result.QoSServerResult.DetailType;
 
 /**
@@ -69,9 +67,8 @@ public class QoSServerResultDesc implements Serializable {
 	/**
 	 * 
 	 * @param json
-	 * @throws JSONException
 	 */
-	public QoSServerResultDesc(JsonObject json) throws JSONException {
+	public QoSServerResultDesc(JsonObject json) {
 		this.desc = json.get(JSON_KEY_DESCRIPTION).getAsString();
 		this.testType = QoSTestResultEnum.valueOf(json.get(JSON_KEY_TESTTYPE).getAsString());
 		this.status = DetailType.valueOf(json.get(JSON_KEY_STATUS).getAsString().toUpperCase(Locale.US));

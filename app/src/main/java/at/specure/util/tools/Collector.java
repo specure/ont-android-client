@@ -15,11 +15,12 @@
  *******************************************************************************/
 package at.specure.util.tools;
 
+import com.google.gson.JsonElement;
+
 import java.util.concurrent.TimeUnit;
 
-import org.json.JSONException;
 
-public interface Collector<T, JSONTYPE> {
+public interface Collector<T, JSONTYPE extends JsonElement> {
 	
 	public static class CollectorData<T> {
 		T value;
@@ -74,9 +75,8 @@ public interface Collector<T, JSONTYPE> {
 	 * returns a Json object representing the result of the collector
 	 * @param clean if set to true the current results are wiped out
 	 * @return
-	 * @throws JSONException 
 	 */
-	public JSONTYPE getJsonResult(boolean clean) throws JSONException;
+    public JSONTYPE getJsonResult(boolean clean);
 	
 	/**
 	 * returns a Json object representing the result of the collector.<br>
@@ -85,9 +85,8 @@ public interface Collector<T, JSONTYPE> {
 	 * @param relTimeStamp
 	 * @param timeUnit
 	 * @return
-	 * @throws JSONException
 	 */
-	public JSONTYPE getJsonResult(boolean clean, long relTimeStamp, TimeUnit timeUnit) throws JSONException;
+    public JSONTYPE getJsonResult(boolean clean, long relTimeStamp, TimeUnit timeUnit);
 	
 	/**
 	 * returns the json key string for this collector

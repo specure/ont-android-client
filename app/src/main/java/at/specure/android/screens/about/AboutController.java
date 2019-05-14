@@ -16,23 +16,16 @@
 
 package at.specure.android.screens.about;
 
-import android.annotation.SuppressLint;
-import android.app.Activity;
 import android.content.ClipData;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageInfo;
 import android.net.Uri;
-import android.support.annotation.NonNull;
-import android.support.v4.app.FragmentActivity;
-import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentTransaction;
-import android.support.v7.app.AlertDialog;
+import androidx.annotation.NonNull;
+import androidx.fragment.app.FragmentActivity;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
 import android.util.Log;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.widget.EditText;
 import android.widget.Toast;
 
 import com.google.android.gms.oss.licenses.OssLicensesMenuActivity;
@@ -45,7 +38,6 @@ import java.util.Date;
 import java.util.HashMap;
 
 import at.specure.android.screens.licenses.LicensesActivity;
-import at.specure.android.screens.preferences.PreferenceActivity;
 import at.specure.android.configs.ConfigHelper;
 import at.specure.android.util.TermsFragment;
 
@@ -116,55 +108,6 @@ public class AboutController {
         return controlServerVersion;
     }
 
-    public boolean isLoopModeSecret(@NonNull Context context) {
-        return (context.getResources().getBoolean(R.bool.show_loop_mode_after_secret) && !ConfigHelper.isSecretEntered(context));
-    }
-
-    public void showSecretOnClickAction() {
-        clickCounter++;
-        if (clickCounter == 10) {
-            showDialogToEnterSecret();
-            clickCounter = 0;
-        }
-    }
-
-    private void showDialogToEnterSecret() {
-
-        final Activity activity = aboutInterface.getActivity();
-        if (activity != null) {
-            final AlertDialog.Builder builder = new AlertDialog.Builder(activity);
-
-            LayoutInflater layoutInflater = activity.getLayoutInflater();
-            @SuppressLint("InflateParams") View inflatedView = layoutInflater.inflate(R.layout.enter_secret_layout, null);
-
-            final EditText secretEditText = inflatedView.findViewById(R.id.secret_edit_text);
-
-            builder.setView(inflatedView);
-
-            builder.setPositiveButton(R.string._ok,
-                    new DialogInterface.OnClickListener() {
-                        public void onClick(DialogInterface d, int id) {
-                            String enteredSecret = secretEditText.getText().toString();
-                            String secret = activity.getResources().getString(R.string.secret);
-                            if (secret.equalsIgnoreCase(enteredSecret)) {
-                                ConfigHelper.setSecretEntered(true, activity);
-                                Toast.makeText(activity, R.string.enter_secret_code_success, Toast.LENGTH_SHORT).show();
-                                activity.startActivity(new Intent(activity, PreferenceActivity.class));
-                                d.dismiss();
-                            } else {
-                                Toast.makeText(activity, R.string.enter_secret_code_failed, Toast.LENGTH_SHORT).show();
-                            }
-                        }
-                    })
-                    .setNegativeButton(R.string._cancel,
-                            new DialogInterface.OnClickListener() {
-                                public void onClick(DialogInterface d, int id) {
-                                    d.cancel();
-                                }
-                            });
-            builder.create().show();
-        }
-    }
 
     ArrayList<HashMap<String, String>> getListItems(@NonNull final FragmentActivity activity) {
         final ArrayList<HashMap<String, String>> list = new ArrayList<>();
@@ -241,7 +184,7 @@ public class AboutController {
                     });
                 item = new HashMap<>();
         item.put("title", activity.getString(R.string.about_terms_title));
-        item.put("text1", activity.getString(R.string.about_terms_line1));
+        item.put("text1", "");
         item.put("text2", "");
         list.add(item);
         actions.add(new AboutItem() {

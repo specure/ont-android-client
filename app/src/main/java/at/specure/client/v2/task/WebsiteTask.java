@@ -26,6 +26,7 @@ import at.specure.client.v2.task.result.QoSTestResult;
 import at.specure.client.v2.task.result.QoSTestResultEnum;
 import at.specure.client.v2.task.service.WebsiteTestService;
 import at.specure.client.v2.task.service.WebsiteTestService.RenderingListener;
+import timber.log.Timber;
 
 /**
  * @author lb
@@ -145,6 +146,7 @@ public class WebsiteTask extends AbstractQoSTask {
 
             return result;
         } catch (Exception e) {
+            Timber.e(e, "WEBSITE ERROR");
             throw e;
         } finally {
             onEnd(result);

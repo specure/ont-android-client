@@ -18,8 +18,8 @@ package at.specure.android.api.jsons;
 
 import com.google.gson.annotations.SerializedName;
 
-import at.specure.android.test.SpeedTestStatViewController;
 import at.specure.android.constants.TestResultConst;
+import at.specure.android.test.SpeedTestStatViewController;
 
 /**
  * Created by michal.cadrik on 7/6/2017.

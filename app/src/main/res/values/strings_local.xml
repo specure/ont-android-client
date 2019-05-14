@@ -48,5 +48,6 @@
     <string translatable="false" name="default_control_host_ipv6_only">c01ipv6opendemo.nettest.org</string>
     <string translatable="false" name="default_control_check_ipv4_url">https://opendemo.nettest.org/RMBTControlServer/ip</string>
     <string translatable="false" name="default_control_check_ipv6_url">https://opendemo.nettest.org/RMBTControlServer/ip</string>
+    <string translatable="false" name="default_map_server_url">opendemo.nettest.org</string>
 
 </resources>

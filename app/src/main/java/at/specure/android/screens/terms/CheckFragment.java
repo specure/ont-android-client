@@ -19,9 +19,6 @@ package at.specure.android.screens.terms;
 import android.annotation.SuppressLint;
 import android.os.Bundle;
 import android.os.Handler;
-import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentActivity;
-import android.support.v4.app.FragmentManager;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -33,6 +30,10 @@ import android.widget.CompoundButton;
 import android.widget.CompoundButton.OnCheckedChangeListener;
 import android.widget.TextView;
 
+
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentActivity;
+import androidx.fragment.app.FragmentManager;
 
 import com.specure.opennettest.R;
 
@@ -92,7 +93,7 @@ public class CheckFragment extends Fragment
     
     boolean firstTime = true;
     
-    public static CheckFragment newInstance(final CheckType checkType) {
+    public static androidx.fragment.app.Fragment newInstance(final CheckType checkType) {
     	return new CheckFragment(checkType);
     }
 

@@ -41,7 +41,6 @@ public class TestQosViewsHandler extends ViewsHandler {
         this.viewsToSetGone.add(R.id.test_view_qos_results_container);
         this.viewsToSetGone.add(R.id.main_fragment__top_info_container);
         this.viewsToSetGone.add(R.id.main__bottom_info_default_text);
-        this.viewsToSetGone.add(R.id.test_graph);
         this.viewsToSetGone.add(R.id.start_button_container);
         this.viewsToSetGone.add(R.id.title_page_map_button);
         this.viewsToSetGone.add(R.id.test_view_info_container);

@@ -18,9 +18,8 @@ package at.specure.android.api.calls;
 
 import android.os.AsyncTask;
 
-import at.specure.android.screens.main.MainActivity;
-import at.specure.android.util.EndStringTaskListener;
 import at.specure.android.api.reqres.geolocation.Geolocation;
+import at.specure.android.util.EndStringTaskListener;
 
 public class GetGeolocationTask extends AsyncTask<Void, Void, String> {
     /**
@@ -29,14 +28,6 @@ public class GetGeolocationTask extends AsyncTask<Void, Void, String> {
     private static final String DEBUG_TAG = "GetMapOptionsInfoTask";
     private double MINIMAL_DISTANCE_TO_UPDATE_LOCATION_NAME_IN_KILOMETRES = 0.5;
 
-    /**
-     *
-     */
-    private final MainActivity activity;
-
-    /**
-     *
-     */
     private EndStringTaskListener endTaskListener;
 
     private double lat;
@@ -47,11 +38,7 @@ public class GetGeolocationTask extends AsyncTask<Void, Void, String> {
      */
     private boolean hasError = false;
 
-    /**
-     * @param activity
-     */
-    public GetGeolocationTask(final MainActivity activity, double lat, double lng) {
-        this.activity = activity;
+    public GetGeolocationTask(double lat, double lng) {
         this.lat = lat;
         this.lng = lng;
     }
@@ -88,7 +75,7 @@ public class GetGeolocationTask extends AsyncTask<Void, Void, String> {
      */
     @Override
     protected void onPostExecute(final String result) {
-        if ((result != null) && (endTaskListener != null)) {
+        if (endTaskListener != null) {
             endTaskListener.taskEnded(result);
         }
     }

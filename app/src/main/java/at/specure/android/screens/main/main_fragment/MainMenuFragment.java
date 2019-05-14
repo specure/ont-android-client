@@ -28,11 +28,6 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.provider.Settings;
-import android.support.v4.app.Fragment;
-import android.support.v4.app.NotificationManagerCompat;
-import android.support.v7.app.AlertDialog;
-import android.support.v7.widget.AppCompatSpinner;
-import android.support.v7.widget.CardView;
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.LayoutInflater;
@@ -48,6 +43,12 @@ import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.widget.AppCompatSpinner;
+import androidx.cardview.widget.CardView;
+import androidx.core.app.NotificationManagerCompat;
+import androidx.fragment.app.Fragment;
 
 import com.crashlytics.android.Crashlytics;
 import com.specure.opennettest.R;
@@ -66,7 +67,6 @@ import at.specure.android.screens.main.MeasurementServersAdapter;
 import at.specure.android.screens.main.OnMeasurementServersLoaded;
 import at.specure.android.screens.main.main_fragment.adapters.InfoArrayAdapter;
 import at.specure.android.screens.main.main_fragment.enums.InfoOverlayEnum;
-import at.specure.android.screens.main.main_fragment.graphs_handlers.GraphHandler;
 import at.specure.android.screens.main.main_fragment.runnables.MainInfoRunnable;
 import at.specure.android.screens.main.main_fragment.view_handlers.DefaultViewsHandler;
 import at.specure.android.screens.main.main_fragment.view_handlers.LoopModeViewsHandler;
@@ -75,7 +75,6 @@ import at.specure.android.screens.main.main_fragment.view_handlers.TestQosViewsH
 import at.specure.android.screens.main.main_fragment.view_handlers.TestResultsViewsHandler;
 import at.specure.android.screens.main.main_fragment.view_handlers.TestViewsHandler;
 import at.specure.android.screens.main.main_fragment.view_handlers.ViewsHandler;
-import at.specure.android.test.LoopService;
 import at.specure.android.test.TestService;
 import at.specure.android.test.views.graph.SmoothGraph;
 import at.specure.android.configs.ConfigHelper;
@@ -83,6 +82,7 @@ import at.specure.android.util.EndStringTaskListener;
 import at.specure.android.api.calls.GetGeolocationTask;
 import at.specure.android.util.Helperfunctions;
 import at.specure.android.util.InformationCollector;
+import at.specure.android.util.location.GeoLocationX;
 import at.specure.android.util.net.InterfaceTrafficGatherer;
 import at.specure.android.util.net.InterfaceTrafficGatherer.TrafficClassificationEnum;
 import at.specure.android.util.net.NetworkInfoCollector;
@@ -219,7 +219,7 @@ public class MainMenuFragment extends Fragment implements MainFragmentInterface 
 
         @Override
         public void onClick(View view) {
-            final Intent stopIntent = new Intent(LoopService.ACTION_STOP, null, getContext(), LoopService.class);
+            final Intent stopIntent = new Intent(TestService.ACTION_STOP_LOOP, null, getContext(), TestService.class);
             getMainActivity().startService(stopIntent);
         }
     };
@@ -307,7 +307,6 @@ public class MainMenuFragment extends Fragment implements MainFragmentInterface 
             }
         }
     };
-    private GraphHandler graphHandler;
     private MainInfoRunnable infoRunnable;
     private MainFragmentController mainFragmentController;
     private View testServerIcon;
@@ -505,9 +504,8 @@ public class MainMenuFragment extends Fragment implements MainFragmentInterface 
             case TESTING:
                 stopScreenServices();
 //                if (graphHandler == null) {
-                graphHandler = new GraphHandler(rootView, testDownloadGraphContainer, testUploadGraphContainer);
 //                }
-                mainFragmentController.initializeTesting(graphHandler);
+                mainFragmentController.initializeTesting();
 
                 HashMap<Integer, OnClickListener> testOnClickListeners = new HashMap<>();
                 testViewsHandler = new TestViewsHandler(rootView, testOnClickListeners);
@@ -563,7 +561,7 @@ public class MainMenuFragment extends Fragment implements MainFragmentInterface 
     }
 
     private void getMeasurementServersInfo() {
-        Location loc = informationCollector.getLocationInfo();
+        Location loc = GeoLocationX.getInstance(getMainActivity()).getLastKnownLocation(getMainActivity(), null);
         at.specure.android.api.jsons.Location location = null;
         if (loc != null) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
@@ -1151,7 +1149,7 @@ public class MainMenuFragment extends Fragment implements MainFragmentInterface 
 
     private void showGeolocation() {
         if (informationCollector != null) {
-            Location location = informationCollector.getLocationInfo();
+            Location location = GeoLocationX.getInstance(getMainActivity()).getLastKnownLocation(getMainActivity(), null);
             locationInfoObject = location;
             Log.e("LOCATION", location != null ? location.toString() : " NULL ");
             if (locationView != null) {
@@ -1177,7 +1175,7 @@ public class MainMenuFragment extends Fragment implements MainFragmentInterface 
                     );
 
                     if ((getGeolocationTask == null) || (getGeolocationTask.shouldUpdate(location.getLatitude(), location.getLongitude(), forceUpdate))) {
-                        getGeolocationTask = new GetGeolocationTask(getMainActivity(), location.getLatitude(), location.getLongitude());
+                        getGeolocationTask = new GetGeolocationTask(location.getLatitude(), location.getLongitude());
                         getGeolocationTask.setEndTaskListener(new EndStringTaskListener() {
                             @Override
                             public void taskEnded(String result) {

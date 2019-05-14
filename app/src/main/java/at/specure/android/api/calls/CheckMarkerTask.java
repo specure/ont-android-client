@@ -16,16 +16,14 @@
  ******************************************************************************/
 package at.specure.android.api.calls;
 
-import java.util.Map;
-
 import android.app.Activity;
 import android.os.AsyncTask;
 
 import com.google.gson.JsonArray;
 
 import at.specure.android.api.ControlServerConnection;
-import at.specure.android.screens.main.MainActivity;
 import at.specure.android.util.EndTaskListener;
+import at.specure.androidX.data.map_filter.mappers.MapFilterSaver;
 
 
 public class CheckMarkerTask extends AsyncTask<Void, Void, JsonArray>
@@ -39,18 +37,18 @@ public class CheckMarkerTask extends AsyncTask<Void, Void, JsonArray>
     private EndTaskListener endTaskListener;
     
     private final double lat, lon;
-    private final int zoom, size;
+    private final int zoom, size, maptype;
     
     private boolean hasError = false;
-    
-    public CheckMarkerTask(final Activity activity, final double lat, final double lon, final int zoom,
-                           final int size)
+
+    public CheckMarkerTask(final Activity activity, final double lat, final double lon, final int zoom, final int size, int maptype)
     {
         this.activity = activity;
         this.lat = lat;
         this.lon = lon;
         this.zoom = zoom;
         this.size = size;
+        this.maptype = maptype;
     }
     
     @Override
@@ -58,9 +56,7 @@ public class CheckMarkerTask extends AsyncTask<Void, Void, JsonArray>
     {
         serverConn = new ControlServerConnection(activity.getApplicationContext(), true);
         
-        final Map<String, String> optionMap = ((MainActivity) activity).getCurrentMapOptions();
-        
-        resultList = serverConn.requestMapMarker(lat, lon, zoom, size, optionMap);
+        resultList = serverConn.requestMapMarker(lat, lon, zoom, size, maptype, MapFilterSaver.getActiveMapFilterParams(activity.getApplicationContext()));
         
         return resultList;
     }

@@ -24,8 +24,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-
-import at.specure.client.helper.JSONParser;
+import at.specure.client.helper.JsonParser;
 import at.specure.client.helper.NdtStatus;
 import at.specure.net.measurementlab.ndt.NdtTests;
 
@@ -52,7 +51,7 @@ public class NDTRunner
     
     public static String getNdtHost()
     {
-        final JSONParser jParser = new JSONParser();
+        final JsonParser jParser = new JsonParser();
         final JsonObject obj = jParser.getURL(URI.create(at.specure.client.helper.Config.MLAB_NS));
         try
         {

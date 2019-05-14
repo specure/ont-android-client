@@ -30,6 +30,7 @@ import java.util.concurrent.TimeUnit;
 import at.specure.client.QualityOfServiceTest;
 import at.specure.client.v2.task.result.QoSTestResult;
 import at.specure.client.v2.task.result.QoSTestResultEnum;
+import timber.log.Timber;
 
 /**
  * 
@@ -141,10 +142,12 @@ public class NonTransparentProxyTask extends AbstractQoSTask {
 					}
 					catch (SocketTimeoutException e) {
 						e.printStackTrace();
+						Timber.e(e, "NTPROXY TIMEOUT");
 						result.getResultMap().put(RESULT_STATUS, "TIMEOUT");
 					}
 					catch (Exception e) {
 						e.printStackTrace();
+						Timber.e(e, "NTPROXY ERROR");
 						result.getResultMap().put(RESULT_STATUS, "ERROR");
 					}
 					finally {
@@ -167,6 +170,7 @@ public class NonTransparentProxyTask extends AbstractQoSTask {
 			return result;			
 		}
 		catch (Exception e) {
+			Timber.e(e, "NTPROXY");
 			throw e;
 		}
 		finally {

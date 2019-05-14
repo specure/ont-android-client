@@ -20,8 +20,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import android.os.Bundle;
 import android.os.Handler;
-import android.support.v4.app.Fragment;
-import android.support.v4.view.ViewPager.OnPageChangeListener;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -30,6 +28,10 @@ import android.widget.TabHost;
 import android.widget.TabHost.OnTabChangeListener;
 import android.widget.TabHost.TabSpec;
 import android.widget.TextView;
+
+import androidx.fragment.app.Fragment;
+import androidx.viewpager.widget.ViewPager;
+
 import at.specure.android.screens.result.adapter.result.QoSCategoryPagerAdapter;
 import at.specure.android.views.ExtendedViewPager;
 import at.specure.android.screens.main.MainActivity;
@@ -45,7 +47,7 @@ import com.specure.opennettest.R;
  * @author lb
  *
  */
-public class QoSCategoryPagerFragment extends Fragment implements OnPageChangeListener, OnTabChangeListener {
+public class QoSCategoryPagerFragment extends Fragment implements ViewPager.OnPageChangeListener, OnTabChangeListener {
     
 	public final static String BUNDLE_QOS_RESULTS = "qosresults";
 	
@@ -105,9 +107,9 @@ public class QoSCategoryPagerFragment extends Fragment implements OnPageChangeLi
     	}
 
         viewPager = (ExtendedViewPager) v.findViewById(R.id.pager);
-        viewPager.setAdapter(pagerAdapter);
+//        viewPager.setAdapter(pagerAdapter);
         
-        viewPager.setOnPageChangeListener(this);
+//        viewPager.setOnPageChangeListener(this);
         setCurrentPosition(0);
 
     	scroller = (HorizontalScrollView) v.findViewById(R.id.tabwidget_scrollview);

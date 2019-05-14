@@ -17,6 +17,7 @@
 package at.specure.android.impl;
 
 import android.net.TrafficStats;
+
 import at.specure.client.v2.task.service.TrafficService;
 
 /**

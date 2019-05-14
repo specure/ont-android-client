@@ -11,11 +11,11 @@
     <string name="preferences_category_test">Preferences</string>
     <string name="preferences_category_nerd_mode">Nerd mode</string>
     <string name="preferences_nerd_mode">Nerd mode</string>
-    <string name="preferences_nerd_mode_sum">Turn on andvanced settings</string>
+    <string name="preferences_nerd_mode_sum">Turn on advanced settings</string>
     <string name="preferences_enable_qos">QoS tests</string>
     <string name="preferences_enable_qos_sum">Enable QoS tests</string>
     <string name="preferences_location_settings">Location</string>
-    <string name="preferences_location_settings_sum">Change location settings</string>
+    <string name="preferences_location_settings_sum">Manage the permissions regarding the Location tracking</string>
     <string name="preferences_no_gps">No GPS</string>
     <string name="preferences_no_gps_sum">Do not use GPS during test</string>
     <string name="preferences_tag">Tag</string>
@@ -24,10 +24,8 @@
     <string name="preferences_loop_mode_sum">Test will run in a loop mode</string>
     <string name="preferences_loop_mode_max_tests">Loop max tests</string>
     <string name="preferences_loop_mode_max_tests_sum">Maximum number of tests to run if loop mode is active (0 = run forever)</string>
-    <string name="preferences_loop_mode_min_delay">Loop min delay</string>
-    <string name="preferences_loop_mode_min_delay_sum">Minimum time in seconds between two tests if loop mode is active</string>
-    <string name="preferences_loop_mode_max_delay">Loop max delay</string>
-    <string name="preferences_loop_mode_max_delay_sum">Maximum time in seconds between two tests if loop mode is active</string>
+    <string name="preferences_loop_mode_min_delay">Loop delay</string>
+    <string name="preferences_loop_mode_min_delay_sum">Time in seconds between two tests if loop mode is active</string>
     <string name="preferences_loop_mode_movement">Loop movement</string>
     <string name="preferences_loop_mode_movement_sum">Movement in meters after which a test in loop mode is triggered</string>
     <string name="preferences_loop_mode_gps">Use GPS when loop mode is active</string>
@@ -64,7 +62,6 @@
     <string name="preferences_dev_qos_ssl">QoS server SSL</string>
     <string name="preferences_dev_qos_ssl_sum">Use encrypted connection to QoS server</string>
     <string name="preferences_dev_debug_sysout">Store error output in file</string>
-    <string name="preferences_dev_debug_sysout_sum">Stores error output in a text file located in the \"qosdebug\" folder</string>
     <string name="menu_button_start">START</string>
     <string name="menu_button_start_again">RUN AGAIN</string>
     <string name="menu_button_start_again_details">Run again</string>
@@ -74,11 +71,12 @@
     <string name="menu_button_help">Help</string>
     <string name="menu_button_statistics">Statistics</string>
     <string name="menu_button_settings">Settings</string>
+    <string name="menu_button_badges">Badges</string>
+    <string name="menu_button_survey">Survey</string>
     <string name="menu_button_about">Info</string>
     <string name="menu_button_log">Logging</string>
     <string name="menu_button_share">Share</string>
     <string name="menu_button_netstat">Netstat</string>
-    <string name="menu_signal_strength">Signal \nstrength</string>
     <string name="news_title">News</string>
     <string name="news_no_message">No message text.</string>
     <string name="about_version_title">Version</string>
@@ -87,31 +85,24 @@
     <string name="about_web_title">Web</string>
     <string name="about_email_title">Email</string>
     <string name="about_email_sending">Sending email…</string>
-    <string name="about_terms_title">Privacy Policy</string>
-    <string name="about_terms_line1">Privacy policy and terms of use</string>
-    <string name="about_git_title" translatable="false">Git Repository</string>
-    <string name="about_git_line1" translatable="false">https://github.com/specure/</string>
-    <string name="about_git_link" translatable="false">https://github.com/specure/</string>
+    <string name="about_terms_title">Terms of Service</string>
     <string name="about_dev_title">Development</string>
-    <string name="about_dev_line1" translatable="false">SPECURE GmbH</string>
-    <string name="about_dev_line2" translatable="false">https://www.specure.com/</string>
-    <string name="about_dev_link" translatable="false">https://www.specure.com/</string>
     <string name="about_gms_legal_title">Google Play</string>
     <string name="about_gms_legal_line1">Google Play Services Legal Notice</string>
     <string name="about_test_counter_title">Test Counter</string>
-    <string name="terms">Privacy Policy and Terms of Use</string>
+    <string name="terms">Privacy Policy and Terms of Service</string>
     <string name="terms_accept_button">Agree</string>
     <string name="terms_accept_button_continue">Continue</string>
     <string name="terms_decline_button">Decline</string>
     <string name="terms_ic_header">Publish personal data</string>
-    <string name="terms_ic_accept_text"><b> Publish personal data. </b></string>
     <string name="terms_ndt_header">Optional, more comprehensive NDT-Test</string>
-    <string name="terms_ndt_accept_text"><b> I wish to run the optional NDT-Test. </b></string>
     <string name="terms_ndt_back_button">Back</string>
     <string name="terms_ndt_accept_button">Continue</string>
-    <string name="loop_notification_ticker">Loop mode is active…</string>
+    <string name="terms_ic_accept_text"><b> Publish personal data. </b></string>
+    <string name="terms_ndt_accept_text"><b> I wish to run the optional NDT-Test. </b></string>
+    <string name="loop_notification_ticker">Measurements will be performed periodically. You can check the results in the app.</string>
     <string name="loop_notification_title">Loop mode is active</string>
-    <string name="loop_notification_text">Touch to stop Loop mode</string>
+    <string name="loop_notification_text">Touch to stop Loop mode %d</string>
     <string name="loop_mode_stop">Stop loop mode</string>
     <string name="loop_started">Loop mode started.</string>
     <string name="loop_already_active">Loop mode is already active.</string>
@@ -124,10 +115,10 @@
     <string name="test_location_gps">GPS</string>
     <string name="test_test_server">Test server</string>
     <string name="test_location_network">Network</string>
-    <string name="test_location_dir_n">N</string>
-    <string name="test_location_dir_e">E</string>
-    <string name="test_location_dir_s">S</string>
-    <string name="test_location_dir_w">W</string>
+    <string name="test_location_dir_n" translatable="false">N</string>
+    <string name="test_location_dir_e" translatable="false">E</string>
+    <string name="test_location_dir_s" translatable="false">S</string>
+    <string name="test_location_dir_w" translatable="false">W</string>
     <string name="test_signal_strength">Signal</string>
     <string name="test_ping">Ping</string>
     <string name="test_packet_loss">Packet loss</string>
@@ -145,9 +136,6 @@
     <string name="history_device">Device</string>
     <string name="history_type">Access</string>
     <string name="history_date">Date</string>
-    <string name="history_down">Down \nMbps</string>
-    <string name="history_up">Up \nMbps</string>
-    <string name="history_ping">Ping \nms</string>
     <string name="history_packet_loss">Packet loss:</string>
     <string name="history_jitter">Jitter:</string>
     <string name="history_filter">FILTER</string>
@@ -158,7 +146,7 @@
     <string name="history_context_menu_delete">Remove this measurement?</string>
     <string name="history_delete_item_progress_info">The request is being processed by the server. Please wait...</string>
     <string name="history_delete_item_progress_title">Disassociation</string>
-    <string name="history_delete_item_failed">An error ocurred during the request. This measurement could not be disassociated. Please try again later.</string>
+    <string name="history_delete_item_failed">An error occurred during the request. This measurement could not be disassociated. Please try again later.</string>
     <string name="result_measurement">MEASUREMENT</string>
     <string name="result_net">NETWORK</string>
     <string name="result_details">DETAILS</string>
@@ -176,14 +164,14 @@
     <string name="sync_request_code_desc">Please enter the code shown above on your other device to synchronise them.</string>
     <string name="sync_request_code_context_copy">Copy code</string>
     <!--Map-->
-    <string name="map_filter_header">MAP FILTER</string>
-    <string name="map_choose_header">CHOOSE MAP</string>
-    <string name="map_appearance_header">MAP APPEARANCE</string>
+    <string name="map_filter_header">Map filter</string>
+    <string name="map_choose_header">Choose map</string>
+    <string name="map_appearance_header">Map appearance</string>
     <string name="map_appearance_nosat_title">Normal View</string>
     <string name="map_appearance_nosat_summary">Map shows normal view</string>
     <string name="map_appearance_sat_title">Satellite View</string>
     <string name="map_appearance_sat_summary">Map shows satellite view</string>
-    <string name="map_overlay_header">MAP OVERLAY</string>
+    <string name="map_overlay_header">Map overlay</string>
     <string name="map_overlay_auto_title">Automatic</string>
     <string name="map_overlay_auto_summary">Map switches automatically between heatmap and points</string>
     <string name="map_overlay_heatmap_title">Heatmap</string>
@@ -193,19 +181,19 @@
     <string name="map_overlay_shapes_title">Shapes</string>
     <string name="map_overlay_shapes_summary">Map shows tests as postal code shapes</string>
     <string name="map_overlay_regions_title">Regions</string>
-    <string name="map_overlay_regions_summary"></string>
+    <string name="map_overlay_regions_summary" />
     <string name="map_overlay_municipality_title">Municipality</string>
-    <string name="map_overlay_municipality_summary"></string>
+    <string name="map_overlay_municipality_summary" />
     <string name="map_overlay_settlements_title">Settlements</string>
-    <string name="map_overlay_settlements_summary"></string>
+    <string name="map_overlay_settlements_summary" />
     <string name="map_overlay_whitespots_title">White spots</string>
-    <string name="map_overlay_whitespots_summary"></string>
+    <string name="map_overlay_whitespots_summary" />
     <string name="map_balloon_overlay_header">MEASUREMENTS</string>
     <!--Test-->
     <string name="test_progress_title">Connecting…</string>
     <string name="test_progress_text">The connection to the test server is being established. Please wait...</string>
     <string name="test_progress_text_wait">The test server is currently busy. The test will start shortly. Please wait...</string>
-    <string name="test_bottom_test">Status: {0} \nServer: {1} \nIP: {2} \n{3} \n{4}</string>
+
     <string name="test_bottom_test_status_init">Initializing</string>
     <string name="test_bottom_test_status_ping">Pinging</string>
     <string name="test_bottom_test_status_jitter">Jitter</string>
@@ -217,7 +205,6 @@
     <string name="test_bottom_test_status_end">Finalizing</string>
     <string name="test_bottom_test_status_error">Error</string>
     <string name="test_bottom_test_status_aborted">Aborted</string>
-    <string name="test_bottom_text_empty" translatable="false">\n\n\n</string>
     <string name="test_bottom_test_status_ip">IP:</string>
     <string name="test_bottom_test_status_server">Server:</string>
     <!--QoS values:-->
@@ -230,13 +217,7 @@
     <string name="result_page_title_menu">Result</string>
     <string name="result_page_title_graph">Graph</string>
     <string name="result_page_title_map">Location</string>
-    <string-array name="result_page_title">
-        <item>@string/result_page_title_menu</item>
-        <item>@string/result_page_title_qos</item>
-        <item>@string/result_page_title_test</item>
-        <item>@string/result_page_title_graph</item>
-        <item>@string/result_page_title_map</item>
-    </string-array>
+
     <string name="qos_test_name_website">Reference web page</string>
     <string name="qos_test_name_http_proxy">Unmodified content</string>
     <string name="qos_test_name_non_transparent_proxy">Transparent connection</string>
@@ -264,15 +245,6 @@
     <string name="page_title_sync">Sync</string>
     <string name="page_title_qos_result">QoS results</string>
     <string name="page_title_information_commissioner">Information Commissioner</string>
-    <string-array name="navigation_main_titles">
-        <item>@string/menu_button_title_page</item>
-        <item>@string/page_title_history</item>
-        <item>@string/page_title_map</item>
-        <item>@string/menu_button_statistics</item>
-        <item>@string/page_title_help</item>
-        <item>@string/page_title_information</item>
-        <item>@string/page_title_settings</item>
-    </string-array>
     <string name="result_qos_stats">QoS tests</string>
     <string name="result_qos_error_no_data_available">The QoS test was not executed.</string>
     <string name="title_screen_cpu">CPU</string>
@@ -307,7 +279,6 @@
     <string name="title_screen_info_overlay_mem_total">Total memory</string>
     <string name="title_screen_info_overlay_mem_free">Free memory</string>
     <string name="title_screen_info_overlay_measurement_servers">Measurement servers</string>
-    <string name="title_screen_empty" translatable="false"></string>
     <string name="captive_portal_found">found</string>
     <string name="captive_portal_not_found">not found</string>
     <string name="captive_portal_testing">test running…</string>
@@ -317,8 +288,7 @@
     <string name="test_label_quality_test">Quality-of-service tests</string>
     <string name="netstat_local_address">Local address</string>
     <string name="netstat_remote_address">Remote address</string>
-    <string name="start_data_consumption_warning">WARNING! Usage of Open Nettest can result in a large data volume transfer. In 3G net, the data volume for a single test is 5 to 10 MB. In 4G net, this volume can exceed 100 MB. Specure shall not be deemed responsible for excessive consumption caused by data transfer when using this application. When testing the internet connection using Open Nettest, the user should consider the resulting Internet traffic and accept the consequences of the data transfer.</string>
-    <string name="data_consumption_warning_short">"The test may cause increased \ndata consumption."</string>
+    <string name="start_data_consumption_warning">WARNING! Usage of this application can result in a large data volume transfer. In a 3G network, the data volume for a single test is 5 to 10 MB. In a 4G network, this volume can exceed 100 MB. The application provider shall not be deemed responsible for excessive consumption caused by data transfer when using this application. When testing the internet connection, the user should consider the resulting Internet traffic and accept the consequences of the data transfer.</string>
     <string name="show_detailed_results">Detailed results</string>
 
     <!--	SPLASHSCREEN	-->
@@ -334,8 +304,7 @@
     <string name="open_gps_settings">Do you want open GPS setting?</string>
 
     <string name="zero_measurement_detected">Zero measurement detected.</string>
-    <string name="tac_url">https://nettest.specure.com/en/tc</string>
-    <string name="terms_accept_text">I agree with the Privacy Policy of Specure and Terms of Use for Open Nettest.</string>
+    <string name="terms_accept_text">I agree with the Privacy Policy and the Terms of Service.</string>
     <string name="zero_measurement_not_saved">Zero measurement not saved due to position is not acquired.</string>
     <string name="menu_cell_id">Cell ID</string>
 
@@ -351,8 +320,6 @@
     <string name="qos_result_passed">Passed</string>
     <string name="qos_result_failed">Failed</string>
 
-    <string name="secret" translatable="false">00000000</string>
-
     <string name="enter_secret_code">Enter secret code</string>
     <string name="enter_secret_code_failed">Entered secret code does not match</string>
     <string name="enter_secret_code_success">Additional settings are activated</string>
@@ -361,12 +328,103 @@
     <string name="history_test_date">Test/date</string>
 
     <string name="title_activity_licenses">Open data sources</string>
-    <string name="map_license">Project MoQoS and the tool Open Nettest use and process open data from the following sources:\n\n
-    -RTR-Netztest by RTR-GmbH, Austria, CC BY 3.0 AT\n
-    -AKOS Test Net by AKOS, Slovenia, CC BY-NC-SA 2.5 SI\n
-    -Netmetr by CTU, Czech Republic, CC BY 3.0 CZ\n
-    -Merac Internetu by RU, Slovakia, CC BY 3.0 AT</string>
+
 
     <string name="notifications_disabled">Notifications are disabled</string>
     <string name="operators_country">Operators country</string>
+
+    <string name="start_qos">Start QoS</string>
+    <string name="qos_tests_settings_maunally">Manually</string>
+    <string name="qos_tests_settings_always">Always</string>
+    <string name="qos_tests_settings_new_network">New network</string>
+    <string name="review_description">If you enjoy this app, please share and recommend it so others can find it !</string>
+
+    <string name="permission_explanation_location">We need your location so that we can display your measurements on the map</string>
+
+    <string name="not_able_to_open_gps_settings">Unable to open the GPS settings</string>
+
+    <string name="preferences_connection_details">Connection details</string>
+    <string name="preferences_connection_details_summary">Extended connection details</string>
+    <string name="preferences_connection_details_not_supported">Extended connection details are not supported on this device</string>
+
+    <string name="band_name">Band name</string>
+    <string name="band_channel">Band channel</string>
+    <string name="frequency_UL">Frequency UL</string>
+    <string name="frequency_DL">Frequency DL</string>
+    <string name="bandwidth">Bandwidth</string>
+    <string name="map_my_position">My position</string>
+    <string name="map_filter">Map filter</string>
+    <string name="map_settings">Map settings</string>
+
+    <string name="history_down">Down</string>
+    <string name="history_up">Up</string>
+    <string name="history_ping">Ping</string>
+    <string name="pp_accept_text">I agree with Privacy Policy.</string>
+    <string name="about_pp_title">Privacy Policy</string>
+    <string name="language">Language</string>
+
+    <string name="menu_signal_strength">Signal</string>
+    <string name="data_consumption_warning_short">"Increased data consumption"</string>
+
+    <string name="map_license_line1">Project MoQoS and the tool Open Nettest use and process open data from the following sources:</string>
+    <string name="map_licence_by">by</string>
+    <string-array name="map_licence_country">
+        <item>Austria</item>
+        <item>Slovenia</item>
+        <item>Czech Republic</item>
+        <item>Slovakia</item>
+    </string-array>
+
+    <string name="preferences_category_privacy">Privacy</string>
+
+    <string name="preferences_ads_personalisation">Opt out of Ads Personalisation</string>
+    <string name="preferences_ads_personalisation_sum">Manage the permissions regarding the Advertising ID</string>
+
+    <string name="preferences_persistent_client_uuid">Persistent Client UUID</string>
+    <string name="preferences_persistent_client_uuid_sum">Persistent Client UUID is needed to enable measurement history and synchronisation of the results between devices</string>
+
+    <string name="preferences_crash_analytics">Crash Analytics</string>
+    <string name="preferences_crash_analytics_sum">Enable analytics and send crash traces to us</string>
+
+    <string name="skip">Skip</string>
+    <string name="history__persisten_uuid_disabled_string">Please enable "Persistent Client UUID" to enable the measurement history</string>
+
+    <string name="wizard.button.i_agree_to_all">I Agree To All</string>
+    <string name="wizard.button.essential_settings_only">Essential Settings Only</string>
+    <string name="wizard.button.details">Details</string>
+    <string name="wizard.one_page.title">Welcome to </string>
+    <string name="wizard.one_page.privacy_description">Before you start using the app, we would like you to review the %s and make informed choices about the personal data. You can also revisit it later via the Menu / Info Page. You can always contact us with your privacy concerns at %s.</string>
+    <string name="wizard.one_page.analytics_title">ANALYTICS</string>
+    <string name="wizard.one_page.persistent_client_title">PERSISTENT CLIENT UUID</string>
+    <string name="wizard.one_page.analytics_description">Analytics information is used to understand how our users use the mobile apps and to continuously optimize the service. We also collect crash traces data that help us to statistically evaluate, analyze and resolve crashes and bugs. We also use Advertising identifier to attribute previously served advertising to an app installation and for user analytics.</string>
+    <string name="wizard.one_page.persistent_client_description">Client UUID is a randomly generated ID that is saved with every measurement. Persistent Client UUID means that the ID is the same for your every measurement. It is needed to enable measurement history and synchronization of the results between devices.</string>
+    <string name="wizard.one_page.finish_description">Please make your choice here. You can change it later in Settings.</string>
+    <string name="logging_preference_title">Logging</string>
+    <string name="title_activity_logging">LoggingActivity</string>
+    <string name="logging_showlogs">Show logs</string>
+    <string name="get_log_file">get log file</string>
+    <string name="delete_logs">delete logs</string>
+    <string name="title_badges">Badges</string>
+    <string name="title_badge_detail">Badge Detail</string>
+    <string name="badge">Badge</string>
+    <string name="other">Others</string>
+
+    <string name="badges_earned_date">You earned this badge on</string>
+    <string name="badges_holiday_condition">You can earn this badge on %s.</string>
+    <string name="badges_measurement_condition">You are %s measurements away from your %s badge.</string>
+    <string name="badges_category_holidays">Special Events</string>
+    <string name="badges_category_measurements">Measurements</string>
+    <string name="badges_earned_message">Congratulation, you earned a new badge!</string>
+    <string name="title_filter_list">Filters</string>
+    <string name="title_filter_detail">Filter Detail</string>
+
+
+    <string name="map_filter_type_title">Map type</string>
+    <string name="map_filter_operator_title">Operator</string>
+    <string name="map_filter_period_title">Period</string>
+    <string name="map_filter_technology_title">Technology</string>
+    <string name="loop_notification_text_2">Touch to stop Loop mode, test is running %d</string>
+    <string name="confirm">Confirm</string>
+    <string name="secret">0</string>
+
 </resources>

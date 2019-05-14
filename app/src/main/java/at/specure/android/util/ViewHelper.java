@@ -27,7 +27,7 @@ public class ViewHelper {
 
     public static void enableDisableView(View view, boolean enabled) {
         view.setEnabled(enabled);
-        if ( view instanceof ViewGroup ) {
+        if ( view instanceof ViewGroup) {
             ViewGroup group = (ViewGroup)view;
 
             for ( int idx = 0 ; idx < group.getChildCount() ; idx++ ) {
@@ -39,7 +39,7 @@ public class ViewHelper {
     public static void setFocusableView(View view, boolean focusable) {
         view.setFocusable(focusable);
         view.setFocusableInTouchMode(focusable);
-        if ( view instanceof ViewGroup ) {
+        if ( view instanceof ViewGroup) {
             ViewGroup group = (ViewGroup)view;
 
             for ( int idx = 0 ; idx < group.getChildCount() ; idx++ ) {
@@ -50,7 +50,7 @@ public class ViewHelper {
 
     public static void setClickableView(View view, boolean clickable) {
         view.setClickable(clickable);
-        if ( view instanceof ViewGroup ) {
+        if ( view instanceof ViewGroup) {
             ViewGroup group = (ViewGroup)view;
 
             for ( int idx = 0 ; idx < group.getChildCount() ; idx++ ) {

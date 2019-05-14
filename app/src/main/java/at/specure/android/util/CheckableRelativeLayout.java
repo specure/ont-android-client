@@ -33,9 +33,9 @@ import android.widget.RelativeLayout;
 public class CheckableRelativeLayout extends /* LinearLayout */RelativeLayout implements Checkable
 {
     
-    private CheckedTextView mCheckedTextView;
     private final Drawable mCheckDrawable;
     private final Drawable mRadioDrawable;
+    private CheckedTextView mCheckedTextView;
     private boolean mIsChecked;
     
     /**
@@ -95,28 +95,41 @@ public class CheckableRelativeLayout extends /* LinearLayout */RelativeLayout im
     {
         return mIsChecked;
     }
-    
+
     /*
      * (non-Javadoc)
-     * 
+     *
+     * @see android.widget.Checkable#setChecked(boolean)
+     */
+    @Override
+    public void setChecked(final boolean checked) {
+        mIsChecked = checked;
+
+        if (mCheckedTextView != null)
+            mCheckedTextView.setChecked(mIsChecked);
+    }
+
+    /*
+     * (non-Javadoc)
+     *
      * @see android.view.View#onAttachedToWindow()
      */
     @Override
     protected void onAttachedToWindow()
     {
         super.onAttachedToWindow();
-        
+
         // Check if there is a valid GUI element that can visualize the current
         // check-state.
         if (mCheckedTextView != null)
         {
             final ViewParent p = getParent();
-            
+
             // Check if the parent of this list item is a ListView
             if (p instanceof ListView)
             {
                 final int choiceMode = ((ListView) p).getChoiceMode();
-                
+
                 // Decide which check-state notation to visualize (check box,
                 // radio button or none).
                 switch (choiceMode)
@@ -124,12 +137,12 @@ public class CheckableRelativeLayout extends /* LinearLayout */RelativeLayout im
                 case ListView.CHOICE_MODE_MULTIPLE:
                     mCheckedTextView.setCheckMarkDrawable(mCheckDrawable);
                     break;
-                
-                case ListView.CHOICE_MODE_SINGLE:
+
+                    case ListView.CHOICE_MODE_SINGLE:
                     mCheckedTextView.setCheckMarkDrawable(mRadioDrawable);
                     break;
-                
-                default:
+
+                    default:
                     mCheckedTextView.setCheckMarkDrawable(null);
                     break;
                 }
@@ -139,28 +152,14 @@ public class CheckableRelativeLayout extends /* LinearLayout */RelativeLayout im
     
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see android.view.View#onFinishInflate()
      */
     @Override
     protected void onFinishInflate()
     {
         super.onFinishInflate();
-        mCheckedTextView = (CheckedTextView) findViewById(android.R.id.text1);
-    }
-    
-    /*
-     * (non-Javadoc)
-     * 
-     * @see android.widget.Checkable#setChecked(boolean)
-     */
-    @Override
-    public void setChecked(final boolean checked)
-    {
-        mIsChecked = checked;
-        
-        if (mCheckedTextView != null)
-            mCheckedTextView.setChecked(mIsChecked);
+        mCheckedTextView = findViewById(android.R.id.text1);
     }
     
     /*

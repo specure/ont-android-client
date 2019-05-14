@@ -28,8 +28,8 @@ public interface Config
     public static final String RMBT_CLIENT_TYPE = "MOBILE";
     public static final String RMBT_CLIENT_NAME = "RMBT";
     public static final String RMBT_SETTINGS_FILENAME = "TestClient";
-    public static final String RMBT_DEV_UNLOCK_PACKAGE_NAME = "package_to_unlock";
-//    public static final String RMBT_DEV_UNLOCK_PACKAGE_NAME = "package_to_unlock";
+    public static final String RMBT_DEV_UNLOCK_PACKAGE_NAME = "com.specure.nettest.ru.unlockW";
+//    public static final String RMBT_DEV_UNLOCK_PACKAGE_NAME = "com.specure.nettest.ru.unlock";
     // public static final String RMBT_AGB_FILENAME = "RMBTAgbs";
     
     /*********************

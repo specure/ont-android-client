@@ -19,7 +19,6 @@ package at.specure.android.screens.terms;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.os.Bundle;
-import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -27,6 +26,8 @@ import android.view.ViewGroup;
 import android.webkit.WebView;
 import android.widget.Button;
 import android.widget.TextView;
+
+import androidx.fragment.app.Fragment;
 
 import com.specure.opennettest.R;
 
@@ -71,7 +72,6 @@ public class TermsCheckFragment extends Fragment
             firstTime = false;
 
         final WebView tcWvl = (WebView) view.findViewById(R.id.termsCheckWebViewLong);
-        tcWvl.loadData(ConfigHelper.getTaCString(activity.getApplicationContext()),"text/html","utf-8");
         //tcWvl.loadUrl("https://www.meracinternetu.sk/sk/tc");
 
         if (! firstTime)

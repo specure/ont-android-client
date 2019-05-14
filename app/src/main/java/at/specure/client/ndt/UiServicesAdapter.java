@@ -16,7 +16,6 @@
  ******************************************************************************/
 package at.specure.client.ndt;
 
-
 import at.specure.net.measurementlab.ndt.UiServices;
 
 public class UiServicesAdapter implements UiServices

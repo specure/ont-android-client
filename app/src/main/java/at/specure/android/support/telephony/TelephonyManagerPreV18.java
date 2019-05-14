@@ -15,12 +15,16 @@
  *******************************************************************************/
 package at.specure.android.support.telephony;
 
-import java.util.ArrayList;
-import java.util.List;
-
+import android.annotation.SuppressLint;
+import android.content.Context;
 import android.telephony.CellLocation;
 import android.telephony.TelephonyManager;
 import android.telephony.gsm.GsmCellLocation;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import static at.specure.android.configs.PermissionHandler.isCoarseLocationPermitted;
 
 /**
  * 
@@ -29,19 +33,26 @@ import android.telephony.gsm.GsmCellLocation;
  */
 public class TelephonyManagerPreV18 extends TelephonyManagerSupport {
 
-	public TelephonyManagerPreV18(TelephonyManager telephonyManager) {
+	Context context;
+
+	public TelephonyManagerPreV18(TelephonyManager telephonyManager, Context context) {
 		super(telephonyManager);
+		this.context = context;
 	}
 
 	@Override
 	public List<CellInfoSupport> getAllCellInfo() {
 		final List<CellInfoSupport> wrappedList = new ArrayList<CellInfoSupport>();
 
-		final CellLocation cellLocation = telephonyManager.getCellLocation();
-		if (cellLocation != null && cellLocation instanceof GsmCellLocation) {
-			wrappedList.add(new CellInfoPreV18((GsmCellLocation) cellLocation));
+		boolean accessToLocationGranted = isCoarseLocationPermitted(context);
+
+		if (accessToLocationGranted) {
+			//it is checked in static method above
+			@SuppressLint("MissingPermission") final CellLocation cellLocation = telephonyManager.getCellLocation();
+			if (cellLocation != null && cellLocation instanceof GsmCellLocation) {
+				wrappedList.add(new CellInfoPreV18((GsmCellLocation) cellLocation));
+			}
 		}
-	
 		return wrappedList;
 	}
 }

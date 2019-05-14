@@ -25,6 +25,7 @@ import at.specure.android.impl.MemInfoAndroidImpl;
 import at.specure.android.screens.main.InfoCollector;
 import at.specure.android.util.Helperfunctions;
 import at.specure.android.util.InformationCollector;
+import at.specure.android.util.location.GeoLocationX;
 import at.specure.android.util.net.NetworkFamilyEnum;
 import at.specure.android.configs.LoopModeConfig;
 import at.specure.android.util.net.RealTimeInformation;
@@ -83,7 +84,7 @@ public class MainInfoRunnable implements Runnable {
                 }
             }
 
-            Location loc = informationCollector.getLocationInfo();
+            Location loc = GeoLocationX.getInstance(informationCollector.getContext()).getLastKnownLocation(informationCollector.getContext(), null);
             infoCollector.setLocation(loc);
 
             int loopModeMaxTests = LoopModeConfig.getLoopModeMaxTests(informationCollector.getContext());

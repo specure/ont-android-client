@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="zero_measurement_detect_explanation">Detect places with weak or no signal</string>
+    <string name="zero_measurement_detect_title">Zero measurements detection</string>
+
+</resources>

@@ -18,6 +18,8 @@ package at.specure.android.api.jsons;
 
 import com.google.gson.annotations.SerializedName;
 
+import at.specure.androidX.data.operators.MapFilterOperator;
+
 /**
  * Created by michal.cadrik on 10/24/2017.
  */
@@ -48,5 +50,11 @@ public class FilterOperator {
     @SerializedName("id_provider")
     public String id;
 
+    public FilterOperator(MapFilterOperator operator) {
+        isDefault = operator.isDefault == null ? false : operator.isDefault;
+        detail = operator.detail;
+        title = operator.title;
+        id = operator.providerNumber == null ? "" : operator.title;
+    }
 }
 

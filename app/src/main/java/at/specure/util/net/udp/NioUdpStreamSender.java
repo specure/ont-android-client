@@ -40,11 +40,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public class NioUdpStreamSender implements StreamSender<DatagramChannel> {
 
-    UdpStreamSenderSettings<DatagramChannel> settings;
-
-    UdpStreamCallback callback;
-
     final AtomicBoolean isRunning = new AtomicBoolean(false);
+    UdpStreamSenderSettings<DatagramChannel> settings;
+    UdpStreamCallback callback;
 
     public NioUdpStreamSender(UdpStreamSenderSettings<DatagramChannel> settings, UdpStreamCallback udpStreamCallback) {
         this.settings = settings;
@@ -145,7 +143,7 @@ public class NioUdpStreamSender implements StreamSender<DatagramChannel> {
                 if (!readyKeys.isEmpty()) {
                     Iterator<SelectionKey> iterator = readyKeys.iterator();
                     while (iterator.hasNext()) {
-                        SelectionKey key = (SelectionKey) iterator.next();
+                        SelectionKey key = iterator.next();
                         iterator.remove();
                         if (key.isReadable() && (packetsRcv < settings.packets) && key.isValid()) {
                             buffer.clear();

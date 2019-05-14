@@ -16,6 +16,8 @@
  ******************************************************************************/
 package at.specure.client;
 
+import androidx.annotation.NonNull;
+
 import java.io.FilterOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -35,7 +37,7 @@ public class OutputStreamCounter extends FilterOutputStream
     }
     
     @Override
-    public void write(final byte[] buffer, final int offset, final int length) throws IOException
+    public void write(@NonNull final byte[] buffer, final int offset, final int length) throws IOException
     {
         out.write(buffer, offset, length);
         count += length;

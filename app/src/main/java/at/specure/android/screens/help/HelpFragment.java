@@ -17,11 +17,10 @@
 package at.specure.android.screens.help;
 
 import android.annotation.SuppressLint;
-import android.app.Activity;
+import androidx.fragment.app.FragmentActivity;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
-import android.support.v4.app.Fragment;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
@@ -31,6 +30,8 @@ import android.webkit.DownloadListener;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+
+import androidx.fragment.app.Fragment;
 
 import com.specure.opennettest.R;
 
@@ -69,7 +70,7 @@ public class HelpFragment extends Fragment
         if (url == null || url.length() == 0)
             url = this.getString(R.string.url_help);
         
-        final Activity activity = getActivity();
+        final FragmentActivity activity = getActivity();
         
         final WebView webview = new WebView(activity)
         {

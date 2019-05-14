@@ -22,16 +22,6 @@
     android:gravity="center_horizontal"
     android:orientation="vertical">
 
-    <at.specure.android.views.graphview.CustomizableGraphView
-        android:id="@+id/test_graph"
-        android:layout_width="0dp"
-        android:layout_height="0dp" />
-
-    <com.jjoe64.graphview.GraphView
-        android:id="@+id/test_progress__small_graph"
-        android:layout_width="0dp"
-        android:layout_height="0dp" />
-
     <ScrollView
         android:id="@+id/main__scroll_view"
         android:layout_width="match_parent"
@@ -643,7 +633,7 @@
                                     android:gravity="end"
                                     android:text="@string/test_test_server" />
 
-                                <android.support.v7.widget.AppCompatSpinner
+                                <androidx.appcompat.widget.AppCompatSpinner
                                     android:id="@+id/main_fragment__test_server_name"
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
@@ -658,7 +648,7 @@
 
                             </LinearLayout>
 
-                            <Space
+                            <androidx.legacy.widget.Space
                                 android:layout_width="8dp"
                                 android:layout_height="1dp" />
 
@@ -673,7 +663,7 @@
 
                         </LinearLayout>
 
-                        <Space
+                        <androidx.legacy.widget.Space
                             android:layout_width="1dp"
                             android:layout_height="6dp" />
 
@@ -716,7 +706,7 @@
 
                             </LinearLayout>
 
-                            <Space
+                            <androidx.legacy.widget.Space
                                 android:layout_width="8dp"
                                 android:layout_height="1dp" />
 
@@ -732,7 +722,7 @@
 
                         </LinearLayout>
 
-                        <Space
+                        <androidx.legacy.widget.Space
                             android:layout_width="1dp"
                             android:layout_height="6dp" />
 
@@ -771,7 +761,7 @@
 
                             </LinearLayout>
 
-                            <Space
+                            <androidx.legacy.widget.Space
                                 android:layout_width="8dp"
                                 android:layout_height="1dp" />
 
@@ -789,7 +779,7 @@
 
                         </LinearLayout>
 
-                        <Space
+                        <androidx.legacy.widget.Space
                             android:layout_width="1dp"
                             android:layout_height="6dp" />
 
@@ -804,7 +794,7 @@
 
             <!---->
 
-            <android.support.v7.widget.CardView
+            <androidx.cardview.widget.CardView
                 android:id="@+id/info_overlay"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -837,7 +827,7 @@
                         android:layout_height="wrap_content" />
 
                 </LinearLayout>
-            </android.support.v7.widget.CardView>
+            </androidx.cardview.widget.CardView>
 
             <LinearLayout
                 android:id="@+id/main__bottom_info"
@@ -918,7 +908,7 @@
                         android:gravity="bottom|center_horizontal"
                         android:visibility="gone" />
 
-                    <android.support.v4.widget.Space
+                    <androidx.legacy.widget.Space
                         android:layout_width="wrap_content"
                         android:layout_height="6dp"
                         android:animateLayoutChanges="true" />

@@ -16,23 +16,24 @@
  ******************************************************************************/
 package at.specure.android.api.calls;
 
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.concurrent.ConcurrentMap;
-
 import android.os.AsyncTask;
-import android.util.Log;
 
+import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.concurrent.ConcurrentMap;
+
 import at.specure.android.api.ControlServerConnection;
 import at.specure.android.configs.ConfigHelper;
 import at.specure.android.screens.main.MainActivity;
 import at.specure.android.util.EndTaskListener;
+import timber.log.Timber;
 
 
 /**
@@ -237,7 +238,8 @@ public class CheckSettingsTask extends AsyncTask<Void, Void, JsonArray>
                     		ConfigHelper.setControlServerVersion(activity, controlServerVersion);
                     	}
                     }
-                    
+
+
                     // ///////////////////////////////////////////////////////
                     // HISTORY / FILTER
                     
@@ -260,9 +262,9 @@ public class CheckSettingsTask extends AsyncTask<Void, Void, JsonArray>
                     // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
                     
                     activity.setSettings(historyDevices, historyNetworks);
-                    
-                    activity.setHistoryDirty(true);
-                    
+
+                    ConfigHelper.setHistoryIsDirty(activity, true);
+
                 }
                 catch (final JsonParseException e)
                 {
@@ -271,7 +273,7 @@ public class CheckSettingsTask extends AsyncTask<Void, Void, JsonArray>
                 
             }
             else
-                Log.i(DEBUG_TAG, "LEERE LISTE");
+                Timber.i("LEERE LISTE");
         }
         finally
         {

@@ -20,7 +20,6 @@ import android.content.Context;
 
 import com.specure.opennettest.R;
 
-
 /**
  * Created by michal.cadrik on 8/30/2017.
  */

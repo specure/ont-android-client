@@ -28,7 +28,6 @@ import com.google.gson.JsonParseException;
 import com.specure.opennettest.R;
 
 import android.os.Bundle;
-import android.support.v4.app.Fragment;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -38,6 +37,8 @@ import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.SimpleAdapter;
 import android.widget.TextView;
+
+import androidx.fragment.app.Fragment;
 
 import at.specure.android.screens.main.MainActivity;
 import at.specure.android.api.calls.CheckTestResultDetailTask;
@@ -131,7 +132,7 @@ public class TestResultDetailFragment extends Fragment implements EndTaskListene
         if ((testResultDetailTask == null || testResultDetailTask != null || testResultDetailTask.isCancelled())
                 && args.getString(ARG_UID) != null)
         {
-            testResultDetailTask = new CheckTestResultDetailTask(activity, SPEEDTEST);
+            testResultDetailTask = new CheckTestResultDetailTask(activity, at.specure.android.screens.result.adapter.result.ResultDetailType.SPEEDTEST);
             
             testResultDetailTask.setEndTaskListener(this);
             testResultDetailTask.execute(args.getString(ARG_UID));

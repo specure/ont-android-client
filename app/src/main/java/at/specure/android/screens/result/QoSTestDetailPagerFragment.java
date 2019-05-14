@@ -20,8 +20,6 @@ import java.io.Serializable;
 import java.util.List;
 
 import android.os.Bundle;
-import android.support.v4.app.Fragment;
-import android.support.v4.view.ViewPager.OnPageChangeListener;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -30,6 +28,9 @@ import android.widget.TabHost;
 import android.widget.TabHost.OnTabChangeListener;
 import android.widget.TabHost.TabSpec;
 import android.widget.TextView;
+
+import androidx.fragment.app.Fragment;
+import androidx.viewpager.widget.ViewPager;
 
 import com.specure.opennettest.R;
 
@@ -40,7 +41,7 @@ import at.specure.client.v2.task.result.QoSServerResult;
 import at.specure.client.v2.task.result.QoSServerResultDesc;
 
 
-public class QoSTestDetailPagerFragment extends Fragment implements OnPageChangeListener, OnTabChangeListener {
+public class QoSTestDetailPagerFragment extends Fragment implements ViewPager.OnPageChangeListener, OnTabChangeListener {
     
 	public final static String BUNDLE_QOS_RESULT_LIST = "result_list";
 	

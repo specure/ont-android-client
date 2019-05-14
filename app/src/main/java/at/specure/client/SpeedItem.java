@@ -33,8 +33,8 @@ public class SpeedItem
         this.time = time;
         this.bytes = bytes;
     }
-    
-    public JsonObject toJSON() throws JsonParseException
+
+    public JsonObject toJson() throws JsonParseException
     {
         final JsonObject result = new JsonObject();
         result.addProperty("direction", upload ? "upload" : "download");

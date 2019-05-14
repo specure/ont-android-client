@@ -17,7 +17,6 @@
 package at.specure.android.api.calls;
 
 import android.os.AsyncTask;
-import android.util.Log;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
@@ -34,10 +33,11 @@ import at.specure.android.api.jsons.Location;
 import at.specure.android.api.jsons.MeasurementServer;
 import at.specure.android.screens.main.MainActivity;
 import at.specure.android.util.MeasurementTaskEndedListener;
+import timber.log.Timber;
 
 public class GetMeasurementServersTask extends AsyncTask<Location, Void, List<MeasurementServer>> {
 
-    private static final long REFRESH_MILLISECONDS_INTERVAL = 60000*60; // one hour interval
+    private static final long REFRESH_MILLISECONDS_INTERVAL = 60000 * 5; // 5 minutes interval
     private final MainActivity activity;
     private List<MeasurementServer> servers;
     private ControlServerConnection serverConn;
@@ -45,11 +45,13 @@ public class GetMeasurementServersTask extends AsyncTask<Location, Void, List<Me
     private long timestamp = new Date().getTime();
 
     private static final String DEBUG_TAG = "GetMeasurementServTask";
+    private Location location;
 
     public GetMeasurementServersTask(final MainActivity activity) {
         this.activity = activity;
         this.timestamp = new Date().getTime();
         this.servers = new ArrayList<>();
+        this.location = null;
     }
 
     public void setOnCompleteListener(MeasurementTaskEndedListener listener) {
@@ -62,17 +64,19 @@ public class GetMeasurementServersTask extends AsyncTask<Location, Void, List<Me
         try {
             serverConn = new ControlServerConnection(activity);
 
-            JsonArray response = serverConn.requestGetMeasurementServers(params[0]);
+            location = params[0];
+            JsonArray response = serverConn.requestGetMeasurementServers(params[0], activity);
             Gson gson = new Gson();
             Type listType = new TypeToken<ArrayList<MeasurementServer>>() {
             }.getType();
 
             MeasurementServer[] measurementServers = gson.fromJson(response, MeasurementServer[].class);
+
             List<MeasurementServer> list = Arrays.asList(measurementServers);
 
             return servers = list;
         } catch (Exception e) {
-            Log.e(DEBUG_TAG, "ERROR GETTING MEASUREMENT SERVER");
+            Timber.e( "ERROR GETTING MEASUREMENT SERVER");
             return servers = new ArrayList<>();
         }
     }
@@ -89,7 +93,7 @@ public class GetMeasurementServersTask extends AsyncTask<Location, Void, List<Me
     protected void onPostExecute(final List<MeasurementServer> newsList) {
 
         try {
-            Log.d(DEBUG_TAG, "" + newsList);
+            Timber.d("%s", newsList);
 
             if (newsList != null && newsList.size() > 0 && !serverConn.hasError()) {
                 servers = newsList;
@@ -102,9 +106,9 @@ public class GetMeasurementServersTask extends AsyncTask<Location, Void, List<Me
         }
     }
 
-    public boolean shouldRun() {
+    public boolean shouldRun(Location newlocation) {
         long newTimestamp = new Date().getTime();
-        if (newTimestamp - REFRESH_MILLISECONDS_INTERVAL > this.timestamp) {
+        if ((location == null && newlocation != null) || newTimestamp - REFRESH_MILLISECONDS_INTERVAL > this.timestamp) {
             return true;
         } else {
             return false;

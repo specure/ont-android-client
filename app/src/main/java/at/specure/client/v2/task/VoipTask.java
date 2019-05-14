@@ -37,12 +37,15 @@ import java.util.regex.Pattern;
 import at.specure.client.QualityOfServiceTest;
 import at.specure.client.v2.task.result.QoSTestResult;
 import at.specure.client.v2.task.result.QoSTestResultEnum;
-import at.specure.util.net.rtp.RealtimeTransportProtocol;
+import at.specure.util.net.rtp.RealtimeTransportProtocol.PayloadType;
+import at.specure.util.net.rtp.RealtimeTransportProtocol.RtpException;
 import at.specure.util.net.rtp.RtpPacket;
 import at.specure.util.net.rtp.RtpUtil;
-import at.specure.util.net.udp.StreamSender;
+import at.specure.util.net.rtp.RtpUtil.RtpControlData;
+import at.specure.util.net.rtp.RtpUtil.RtpQoSResult;
 import at.specure.util.net.udp.StreamSender.UdpStreamCallback;
-
+import me.eugeniomarletti.kotlin.metadata.shadow.serialization.deserialization.FlexibleTypeDeserializer;
+import timber.log.Timber;
 
 /**
  * @author lb
@@ -82,7 +85,7 @@ public class VoipTask extends AbstractQoSTask {
 
     private int bitsPerSample = 0;
 
-    private RealtimeTransportProtocol.PayloadType payloadType = null;
+    private PayloadType payloadType = null;
 
     private static long DEFAULT_TIMEOUT = 3000000000L; //3s
 
@@ -94,7 +97,7 @@ public class VoipTask extends AbstractQoSTask {
 
     private static int DEFAULT_BITS_PER_SAMPLE = 8; //8 bits per sample
 
-    private static RealtimeTransportProtocol.PayloadType DEFAULT_PAYLOAD_TYPE = RealtimeTransportProtocol.PayloadType.PCMA;
+    private static PayloadType DEFAULT_PAYLOAD_TYPE = PayloadType.PCMA;
 
     public static String PARAM_BITS_PER_SAMLE = "bits_per_sample";
 
@@ -152,11 +155,14 @@ public class VoipTask extends AbstractQoSTask {
 
     public static String RESULT_SEQUENCE_ERRORS = "sequence_error";
 
+    private final boolean ignoreErrors;
+
     /**
      * @param taskDesc
      */
-    public VoipTask(QualityOfServiceTest nnTest, TaskDesc taskDesc, int threadId) {
+    public VoipTask(QualityOfServiceTest nnTest, TaskDesc taskDesc, int threadId, Long customTimeout, boolean ignoreErrors) {
         super(nnTest, taskDesc, threadId, threadId);
+        this.ignoreErrors = ignoreErrors;
         String value = ((JsonElement) taskDesc.getParams().get(PARAM_DURATION)).getAsString();
         this.callDuration = value != null ? Long.valueOf(value) : DEFAULT_CALL_DURATION;
 
@@ -166,8 +172,12 @@ public class VoipTask extends AbstractQoSTask {
         value = ((JsonElement) taskDesc.getParams().get(PARAM_PORT_OUT)).getAsString();
         this.outgoingPort = value != null ? Integer.valueOf(value) : null;
 
-        value = ((JsonElement) taskDesc.getParams().get(PARAM_TIMEOUT)).getAsString();
-        this.timeout = value != null ? Long.valueOf(value) : DEFAULT_TIMEOUT;
+        if (customTimeout == null) {
+            value = ((JsonElement) taskDesc.getParams().get(PARAM_TIMEOUT)).getAsString();
+            this.timeout = value != null ? Long.valueOf(value) : DEFAULT_TIMEOUT;
+        } else {
+            this.timeout = customTimeout;
+        }
 
         value = null;
         if (taskDesc.getParams().containsKey(PARAM_DELAY)) {
@@ -191,7 +201,7 @@ public class VoipTask extends AbstractQoSTask {
         if (taskDesc.getParams().containsKey(PARAM_PAYLOAD)) {
             value = ((JsonElement) taskDesc.getParams().get(PARAM_PAYLOAD)).getAsString();
         }
-        this.payloadType = value != null ? RealtimeTransportProtocol.PayloadType.getByCodecValue(Integer.valueOf(value), DEFAULT_PAYLOAD_TYPE) : DEFAULT_PAYLOAD_TYPE;
+        this.payloadType = value != null ? PayloadType.getByCodecValue(Integer.valueOf(value), DEFAULT_PAYLOAD_TYPE) : DEFAULT_PAYLOAD_TYPE;
     }
 
     /**
@@ -216,11 +226,12 @@ public class VoipTask extends AbstractQoSTask {
             final Random r = new Random();
             final int initialSequenceNumber = r.nextInt(10000);
             final CountDownLatch latch = new CountDownLatch(1);
-            final Map<Integer, RtpUtil.RtpControlData> rtpControlDataList = new HashMap<Integer, RtpUtil.RtpControlData>();
+            final Map<Integer, RtpControlData> rtpControlDataList = new HashMap<Integer, RtpUtil.RtpControlData>();
 
             final ControlConnectionResponseCallback callback = new ControlConnectionResponseCallback() {
 
                 public void onResponse(String response, String request) {
+                    Timber.e("Ignore errors: %s", ignoreErrors);
                     if (response != null && response.startsWith("OK")) {
                         final Matcher m = VOIP_OK_PATTERN.matcher(response);
                         if (m.find()) {
@@ -242,8 +253,8 @@ public class VoipTask extends AbstractQoSTask {
                                         final byte[] data = dp.getData();
                                         try {
                                             final RtpPacket rtp = new RtpPacket(data);
-                                            rtpControlDataList.put(rtp.getSequnceNumber(), new RtpUtil.RtpControlData(rtp, receivedNs));
-                                        } catch (RealtimeTransportProtocol.RtpException e) {
+                                            rtpControlDataList.put(rtp.getSequnceNumber(), new RtpControlData(rtp, receivedNs));
+                                        } catch (RtpException e) {
                                             e.printStackTrace();
                                         }
                                     }
@@ -259,26 +270,33 @@ public class VoipTask extends AbstractQoSTask {
                                         TimeUnit.MILLISECONDS.convert(callDuration, TimeUnit.NANOSECONDS),
                                         TimeUnit.MILLISECONDS.convert(delay, TimeUnit.NANOSECONDS),
                                         TimeUnit.MILLISECONDS.convert(timeout, TimeUnit.NANOSECONDS), true, receiveCallback);
+
                             } catch (InterruptedException e) {
-                                result.getResultMap().put(RESULT_STATUS, "TIMEOUT");
-                                e.printStackTrace();
-                                Crashlytics.logException(new Exception("VoipTask - Interrupted - timeout"));
+                                if (!ignoreErrors) {
+                                    result.getResultMap().put(RESULT_STATUS, "TIMEOUT");
+                                    e.printStackTrace();
+                                    Crashlytics.logException(new Exception("VoipTask - Interrupted - timeout"));
+                                }
 
                             } catch (TimeoutException e) {
-                                result.getResultMap().put(RESULT_STATUS, "TIMEOUT");
-                                e.printStackTrace();
-                                try {
-                                    Crashlytics.logException(new Exception("VoipTask - timeout"));
-                                } catch (Exception e1) {
-                                    //do nothing
+                                if (!ignoreErrors) {
+                                    result.getResultMap().put(RESULT_STATUS, "TIMEOUT");
+                                    e.printStackTrace();
+                                    try {
+                                        Crashlytics.logException(new Exception("VoipTask - timeout"));
+                                    } catch (Exception e1) {
+                                        //do nothing
+                                    }
                                 }
                             } catch (Exception e) {
-                                result.getResultMap().put(RESULT_STATUS, "ERROR");
-                                e.printStackTrace();
-                                try {
-                                    Crashlytics.logException(new Exception("VoipTask - error"));
-                                } catch (Exception e1) {
-                                    //do nothing
+                                if (!ignoreErrors) {
+                                    result.getResultMap().put(RESULT_STATUS, "ERROR");
+                                    e.printStackTrace();
+                                    try {
+                                        Crashlytics.logException(new Exception("VoipTask - error"));
+                                    } catch (Exception e1) {
+                                        //do nothing
+                                    }
                                 }
                             } finally {
                                 if (dgsock != null && !dgsock.isClosed()) {
@@ -287,7 +305,9 @@ public class VoipTask extends AbstractQoSTask {
                             }
                         }
                     } else {
-                        result.getResultMap().put(RESULT_STATUS, "ERROR");
+                        if (!ignoreErrors) {
+                            result.getResultMap().put(RESULT_STATUS, "ERROR");
+                        }
                     }
 
                     latch.countDown();
@@ -352,7 +372,7 @@ public class VoipTask extends AbstractQoSTask {
                 resultLatch.await(CONTROL_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS);
             }
 
-            final RtpUtil.RtpQoSResult rtpResults = rtpControlDataList.size() > 0 ? RtpUtil.calculateQoS(rtpControlDataList, initialSequenceNumber, sampleRate) : null;
+            final RtpQoSResult rtpResults = rtpControlDataList.size() > 0 ? RtpUtil.calculateQoS(rtpControlDataList, initialSequenceNumber, sampleRate) : null;
 
             final String prefix = RESULT_VOIP_PREFIX + RESULT_INCOMING_PREFIX;
             if (rtpResults != null) {

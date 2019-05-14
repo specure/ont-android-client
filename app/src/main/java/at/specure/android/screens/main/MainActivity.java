@@ -29,7 +29,6 @@
  ******************************************************************************/
 package at.specure.android.screens.main;
 
-import android.app.ActivityManager;
 import android.app.ProgressDialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -52,14 +51,7 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
 import android.preference.PreferenceManager;
-import android.support.annotation.NonNull;
-import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentTransaction;
-import android.support.v4.widget.DrawerLayout;
-import android.support.v7.app.ActionBarDrawerToggle;
-import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.Toolbar;
+import androidx.annotation.NonNull;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.Menu;
@@ -74,6 +66,14 @@ import android.widget.AdapterView.OnItemClickListener;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.Toast;
+
+import androidx.appcompat.app.ActionBarDrawerToggle;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
+import androidx.drawerlayout.widget.DrawerLayout;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentTransaction;
 
 import com.crashlytics.android.Crashlytics;
 import com.google.android.gms.maps.model.LatLng;
@@ -100,7 +100,6 @@ import java.util.Set;
 import at.specure.android.api.calls.CheckHistoryTask;
 import at.specure.android.api.calls.CheckNewsTask;
 import at.specure.android.api.calls.CheckSettingsTask;
-import at.specure.android.api.calls.GetMapOptionsInfoTask;
 import at.specure.android.api.calls.GetMapOptionsProvidersTask;
 import at.specure.android.api.calls.GetMeasurementServersTask;
 import at.specure.android.api.calls.LogTask;
@@ -128,7 +127,6 @@ import at.specure.android.screens.result.TestResultDetailFragment;
 import at.specure.android.screens.result.adapter.result.OnCompleteListener;
 import at.specure.android.screens.terms.CheckFragment;
 import at.specure.android.screens.terms.TermsCheckFragment;
-import at.specure.android.test.LoopService;
 import at.specure.android.test.TestService;
 import at.specure.android.util.DebugPrintStream;
 import at.specure.android.util.EndBooleanTaskListener;
@@ -142,6 +140,8 @@ import at.specure.client.v2.task.result.QoSServerResult.DetailType;
 import at.specure.client.v2.task.result.QoSServerResultCollection;
 import at.specure.client.v2.task.result.QoSServerResultDesc;
 import io.fabric.sdk.android.Fabric;
+
+import static androidx.fragment.app.FragmentTransaction.TRANSIT_FRAGMENT_OPEN;
 
 /**
  * @author
@@ -160,7 +160,7 @@ public class MainActivity extends AppCompatActivity implements MapProperties, Dr
     /**
      *
      */
-    private android.support.v4.app.FragmentManager fm;
+    private FragmentManager fm;
 
     /**
      *
@@ -180,11 +180,6 @@ public class MainActivity extends AppCompatActivity implements MapProperties, Dr
     private GetMeasurementServersTask measurementServersTask;
 
     private SendZeroMeasurementsTask sendZeroMeasurementsTask;
-
-    /**
-     *
-     */
-    private GetMapOptionsInfoTask getMapOptionsInfoTask;
 
     /**
      *
@@ -269,10 +264,7 @@ public class MainActivity extends AppCompatActivity implements MapProperties, Dr
      */
     private boolean historyDirty = true;
 
-    /**
-     *
-     */
-    private MapOverlay mapOverlayType = MapOverlay.AUTO;
+
 
     /**
      *
@@ -421,7 +413,7 @@ public class MainActivity extends AppCompatActivity implements MapProperties, Dr
         window.setFormat(PixelFormat.RGBA_8888);
         window.addFlags(WindowManager.LayoutParams.FLAG_DITHER);
 
-        PreferenceManager.setDefaultValues(this, R.xml.preferences, false);
+        androidx.preference.PreferenceManager.setDefaultValues(this, R.xml.preferences, false);
 
 
         final String uuid = ConfigHelper.getUUID(getApplicationContext());
@@ -749,7 +741,7 @@ public class MainActivity extends AppCompatActivity implements MapProperties, Dr
         if (measurementServersTask != null && measurementServersTask.getStatus() == AsyncTask.Status.RUNNING)
             return;
 
-        if (forceLoad || (measurementServersTask == null) || measurementServersTask.shouldRun()) {
+        if (forceLoad || (measurementServersTask == null) || measurementServersTask.shouldRun(location)) {
 
             //run sending zero measurements
             setSendZeroMeasurements();
@@ -798,13 +790,7 @@ public class MainActivity extends AppCompatActivity implements MapProperties, Dr
     /**
      *
      */
-    public void fetchMapOptions() {
-        if (getMapOptionsInfoTask != null && getMapOptionsInfoTask.getStatus() == AsyncTask.Status.RUNNING)
-            return;
 
-        getMapOptionsInfoTask = new GetMapOptionsInfoTask(this);
-        getMapOptionsInfoTask.execute();
-    }
 
     /**
      * @param popStack
@@ -822,7 +808,6 @@ public class MainActivity extends AppCompatActivity implements MapProperties, Dr
         if (loopMode) {
             //TOTO - HistoryDirty
             setHistoryDirty(true);
-            startService(new Intent(this, LoopService.class));
             return MainScreenState.LOOP_MODE_ACTIVE;
         } else {
 //            FragmentTransaction ft;
@@ -842,25 +827,13 @@ public class MainActivity extends AppCompatActivity implements MapProperties, Dr
     }
 
     public boolean isLoopModeRunning() {
-        return isMyServiceRunning(LoopService.class);
-    }
-
-    private boolean isMyServiceRunning(Class<?> serviceClass) {
-        ActivityManager manager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
-        for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
-            if (serviceClass.getName().startsWith(service.service.getClassName())) {
-                if (this.getPackageName().equalsIgnoreCase(service.service.getPackageName())) {
-                    return true;
-                }
-            }
-        }
         return false;
     }
 
     public void showTermsCheck() {
         popBackStackFull();
 
-        final FragmentTransaction ft = fm.beginTransaction();
+        final androidx.fragment.app.FragmentTransaction ft = fm.beginTransaction();
         ft.replace(R.id.fragment_content, TermsCheckFragment.getInstance(null), AppConstants.PAGE_TITLE_TERMS_CHECK);
         ft.commit();
     }
@@ -894,14 +867,14 @@ public class MainActivity extends AppCompatActivity implements MapProperties, Dr
      * information commissioner check
      */
     public void showIcCheck() {
-        final FragmentTransaction ft = fm.beginTransaction();
+        final androidx.fragment.app.FragmentTransaction ft = fm.beginTransaction();
         ft.replace(R.id.fragment_content, CheckFragment.newInstance(CheckFragment.CheckType.INFORMATION_COMMISSIONER), AppConstants.PAGE_TITLE_CHECK_INFORMATION_COMMISSIONER);
         ft.addToBackStack(AppConstants.PAGE_TITLE_CHECK_INFORMATION_COMMISSIONER);
         ft.commit();
     }
 
     public void showNdtCheck() {
-        final FragmentTransaction ft = fm.beginTransaction();
+        final androidx.fragment.app.FragmentTransaction ft = fm.beginTransaction();
         ft.replace(R.id.fragment_content, CheckFragment.newInstance(CheckFragment.CheckType.NDT), AppConstants.PAGE_TITLE_NDT_CHECK);
         ft.addToBackStack(AppConstants.PAGE_TITLE_NDT_CHECK);
         ft.commit();
@@ -926,17 +899,16 @@ public class MainActivity extends AppCompatActivity implements MapProperties, Dr
 
         popBackStackFull();
 
-        FragmentTransaction ft;
+        androidx.fragment.app.FragmentTransaction ft;
         ft = fm.beginTransaction();
         ft.replace(R.id.fragment_content, new MainMenuFragment(), AppConstants.PAGE_TITLE_MAIN);
-        ft.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN);
+        ft.setTransition(TRANSIT_FRAGMENT_OPEN);
         ft.commit();
 
         checkNews(getApplicationContext());
         checkSettings(false, null);
         //checkIp();
         waitForSettings(true, false, false);
-        fetchMapOptions();
         historyResultLimit = Config.HISTORY_RESULTLIMIT_DEFAULT;
 
         if (!duringCreate && geoLocation != null)
@@ -972,7 +944,7 @@ public class MainActivity extends AppCompatActivity implements MapProperties, Dr
     }
 
     public void showResultDetail(final String testUUid) {
-        FragmentTransaction ft;
+        androidx.fragment.app.FragmentTransaction ft;
 
         final Fragment fragment = new TestResultDetailFragment();
 
@@ -984,7 +956,7 @@ public class MainActivity extends AppCompatActivity implements MapProperties, Dr
         ft = fm.beginTransaction();
         ft.replace(R.id.fragment_content, fragment, AppConstants.PAGE_TITLE_RESULT_DETAIL);
         ft.addToBackStack(AppConstants.PAGE_TITLE_RESULT_DETAIL);
-        ft.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN);
+        ft.setTransition(TRANSIT_FRAGMENT_OPEN);
         ft.commit();
 
         refreshActionBar(AppConstants.PAGE_TITLE_RESULT_DETAIL);
@@ -993,19 +965,19 @@ public class MainActivity extends AppCompatActivity implements MapProperties, Dr
     public void showAbout() {
         popBackStackFull();
 
-        FragmentTransaction ft;
+        androidx.fragment.app.FragmentTransaction ft;
         ft = fm.beginTransaction();
 
         ft.replace(R.id.fragment_content, new AboutFragment(), AppConstants.PAGE_TITLE_ABOUT);
         ft.addToBackStack(AppConstants.PAGE_TITLE_ABOUT);
-        ft.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN);
+        ft.setTransition(TRANSIT_FRAGMENT_OPEN);
 
         ft.commit();
         refreshActionBar(AppConstants.PAGE_TITLE_ABOUT);
     }
 
     public void showExpandedResultDetail(QoSServerResultCollection testResultArray, DetailType detailType, int position) {
-        FragmentTransaction ft;
+        androidx.fragment.app.FragmentTransaction ft;
 
         //final RMBTResultDetailPagerFragment fragment = new RMBTResultDetailPagerFragment();
         final QoSCategoryPagerFragment fragment = new QoSCategoryPagerFragment();
@@ -1016,15 +988,21 @@ public class MainActivity extends AppCompatActivity implements MapProperties, Dr
         ft = fm.beginTransaction();
         ft.replace(R.id.fragment_content, fragment, AppConstants.PAGE_TITLE_RESULT_QOS);
         ft.addToBackStack("result_detail_expanded");
-        ft.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN);
+        ft.setTransition(TRANSIT_FRAGMENT_OPEN);
         ft.commit();
 
         fragment.setCurrentPosition(position);
         refreshActionBar(AppConstants.PAGE_TITLE_RESULT_QOS);
     }
 
+    public void updateTitle(String title) {
+        if (toolbar != null) {
+            toolbar.setTitle(title);
+        }
+    }
+
     public void showQoSTestDetails(List<QoSServerResult> resultList, List<QoSServerResultDesc> descList, int index) {
-        FragmentTransaction ft;
+        androidx.fragment.app.FragmentTransaction ft;
 
         //final RMBTResultDetailPagerFragment fragment = new RMBTResultDetailPagerFragment();
         final QoSTestDetailPagerFragment fragment = new QoSTestDetailPagerFragment();
@@ -1036,7 +1014,7 @@ public class MainActivity extends AppCompatActivity implements MapProperties, Dr
         ft = fm.beginTransaction();
         ft.replace(R.id.fragment_content, fragment, AppConstants.PAGE_TITLE_TEST_DETAIL_QOS);
         ft.addToBackStack(AppConstants.PAGE_TITLE_TEST_DETAIL_QOS);
-        ft.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN);
+        ft.setTransition(TRANSIT_FRAGMENT_OPEN);
         ft.commit();
 
         refreshActionBar(AppConstants.PAGE_TITLE_TEST_DETAIL_QOS);
@@ -1106,7 +1084,7 @@ public class MainActivity extends AppCompatActivity implements MapProperties, Dr
             popBackStackFull();
         }
 
-        FragmentTransaction ft;
+        androidx.fragment.app.FragmentTransaction ft;
 
 
         ft = fm.beginTransaction();
@@ -1118,7 +1096,7 @@ public class MainActivity extends AppCompatActivity implements MapProperties, Dr
         fragment.setArguments(args);
         ft.replace(R.id.fragment_content, fragment, titleId);
         ft.addToBackStack(titleId);
-        ft.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN);
+        ft.setTransition(TRANSIT_FRAGMENT_OPEN);
 
         ft.commit();
         refreshActionBar(titleId);
@@ -1128,7 +1106,7 @@ public class MainActivity extends AppCompatActivity implements MapProperties, Dr
      *
      */
     public void showSync() {
-        FragmentTransaction ft;
+        androidx.fragment.app.FragmentTransaction ft;
         ft = fm.beginTransaction();
 
        /* Show sync fragment */
@@ -1189,10 +1167,6 @@ public class MainActivity extends AppCompatActivity implements MapProperties, Dr
             loadingDialog = null;
         }
 
-        if (getMapOptionsInfoTask != null) {
-            getMapOptionsInfoTask.cancel(true);
-            getMapOptionsInfoTask = null;
-        }
         if (historyTask != null) {
             historyTask.cancel(true);
             historyTask = null;
@@ -1273,7 +1247,6 @@ public class MainActivity extends AppCompatActivity implements MapProperties, Dr
     /**
      *
      */
-    @Override
     public Map<String, String> getCurrentMapOptions() {
         return currentMapOptions;
     }
@@ -1696,13 +1669,6 @@ public class MainActivity extends AppCompatActivity implements MapProperties, Dr
             callback.historyUpdated(!(historyStorageList.isEmpty() && historyStorageList.isEmpty()) ? HistoryUpdatedCallback.SUCCESSFUL : HistoryUpdatedCallback.LIST_EMPTY);
     }
 
-    public void setMapOverlayType(final MapOverlay mapOverlayType) {
-        this.mapOverlayType = mapOverlayType;
-    }
-
-    public MapOverlay getMapOverlayType() {
-        return mapOverlayType;
-    }
 
     /**
      * @return

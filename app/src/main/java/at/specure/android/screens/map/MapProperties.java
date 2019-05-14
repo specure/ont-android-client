@@ -18,7 +18,7 @@ package at.specure.android.screens.map;
 
 import android.content.Context;
 
-
+import com.specure.opennettest.BuildConfig;
 import com.specure.opennettest.R;
 
 import java.util.HashMap;
@@ -28,6 +28,8 @@ import java.util.Map;
  * @author alladin-IT GmbH
  */
 public interface MapProperties {
+
+    public static final String MapServerUrl = "/" + BuildConfig.mapServerUrl;
 
     /**
      *
@@ -57,15 +59,17 @@ public interface MapProperties {
     /**
      *
      */
-    public static final String MARKER_PATH = "/RMBTMapServer/tiles/markers";
+    public static final String MARKER_PATH = MapServerUrl + "/V2/tiles/markers";
 
     /**
      *
      */
-    public static final String MAP_OPTIONS_PATH = "/RMBTMapServer/tiles/info";
+    public static final String MAP_OPTIONS_PATH = MapServerUrl + "/tiles/info";
 
-    public static final String MAP_OPERATORS_FILTER_PATH = "/RMBTMapServer/tiles/mapFilterOperators";
+    public static final String MAP_OPERATORS_FILTER_PATH = MapServerUrl + "/tiles/mapFilterOperators";
 
+    public static final String MAP_OPERATORS_FILTER_PATH_V2 = MapServerUrl + "/V2/tiles/mapFilterOperators";
+    public static final String MAP_OPTIONS_PATH_V2 = MapServerUrl + "/V2/tiles/info";
     /**
      *
      */
@@ -94,99 +98,6 @@ public interface MapProperties {
     public static final int MAP_AUTO_SWITCH_VALUE = 14;
 
 
-    interface ParameterizableMapOverlay {
-        Map<String, String> getAdditionalParameters();
-    }
-
-    /**
-     * @author lb
-     */
-    public enum MapOverlay implements ParameterizableMapOverlay {
-        AUTO,
-        HEATMAP("/RMBTMapServer/tiles/heatmap"),
-        POINTS("/RMBTMapServer/tiles/points"),
-        REGIONS("/RMBTMapServer/tiles/shapes", true, R.bool.show_map_filter_regions) {
-            @Override
-            public Map<String, String> getAdditionalParameters() {
-                final Map<String, String> map = super.getAdditionalParameters();
-                map.put("shapetype", "regions");
-                return map;
-            }
-        },
-        MUNICIPALITY("/RMBTMapServer/tiles/shapes", true, R.bool.show_map_filter_municipality) {
-            @Override
-            public Map<String, String> getAdditionalParameters() {
-                final Map<String, String> map = super.getAdditionalParameters();
-                map.put("shapetype", "municipality");
-                return map;
-            }
-        },
-        SETTLEMENTS("/RMBTMapServer/tiles/shapes", true, R.bool.show_map_filter_settlements) {
-            @Override
-            public Map<String, String> getAdditionalParameters() {
-                final Map<String, String> map = super.getAdditionalParameters();
-                map.put("shapetype", "settlements");
-                return map;
-            }
-        },
-        WHITESPOTS("/RMBTMapServer/tiles/shapes", true, R.bool.show_map_filter_whitespots) {
-            @Override
-            public Map<String, String> getAdditionalParameters() {
-                final Map<String, String> map = super.getAdditionalParameters();
-                map.put("shapetype", "whitespots");
-                return map;
-            }
-        };
-
-        protected final String path;
-        protected final boolean isShapeLayer;
-        protected final int showInFilters;
-
-        MapOverlay() {
-            this("", false, 0);
-        }
-
-        MapOverlay(final String path) {
-            this(path, false, 0);
-        }
-
-        MapOverlay(final String path, final boolean isShapeLayer, int showResource) {
-            this.path = path;
-            this.isShapeLayer = isShapeLayer;
-            this.showInFilters = showResource;
-        }
-
-        public String getPath() {
-            return path;
-        }
-
-        public boolean isShapeLayer() {
-            return isShapeLayer;
-        }
-
-        public boolean showInFilters(Context context) {
-            if (this.showInFilters != 0) {
-                return context.getResources().getBoolean(this.showInFilters);
-            } else {
-                return false;
-            }
-        }
-
-        @Override
-        public Map<String, String> getAdditionalParameters() {
-            return new HashMap<String, String>();
-        }
-
-        public static MapOverlay getByPath(final String path) {
-            for (final MapOverlay o : MapOverlay.values()) {
-                if (o.getPath().equals(path)) {
-                    return o;
-                }
-            }
-
-            return null;
-        }
-    }
 
     /**
      *
@@ -198,5 +109,4 @@ public interface MapProperties {
      */
     public static final double TAB_DIAMETER_FACTOR = 2;
 
-    public Map<String, String> getCurrentMapOptions();
 }

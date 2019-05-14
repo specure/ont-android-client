@@ -29,6 +29,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import timber.log.Timber;
+
 /**
  * udp stream sender used by the udp and voip qos test
  *
@@ -131,7 +133,7 @@ public class UdpStreamSender implements StreamSender<DatagramSocket> {
                         DatagramPacket dp = new DatagramPacket(buffer, buffer.length);
                         int soTimeout = (int) TimeUnit.MILLISECONDS.convert(settings.responseSoTimeout, settings.timeUnit);
                         settings.socket.setSoTimeout(soTimeout);
-                        Log.e("SOCKET_TIMEOUT", "" + soTimeout);
+                        Timber.e("SOCKET_TIMEOUT %s", soTimeout);
                         settings.socket.receive(dp);
                         if (callback != null) {
                             callback.onReceive(dp);

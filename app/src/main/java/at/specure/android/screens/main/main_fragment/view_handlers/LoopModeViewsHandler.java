@@ -17,7 +17,6 @@
 package at.specure.android.screens.main.main_fragment.view_handlers;
 
 import android.content.Context;
-import android.support.v4.content.ContextCompat;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -45,7 +44,6 @@ public class LoopModeViewsHandler extends ViewsHandler {
         this.viewsToSetGone.add(R.id.main_fragment__top_info_container_measurement);
         this.viewsToSetGone.add(R.id.main__bottom_info_default_text);
         this.viewsToSetGone.add(R.id.test_view_qos_container);
-        this.viewsToSetGone.add(R.id.test_graph);
         this.viewsToSetGone.add(R.id.title_page_map_button);
         this.viewsToSetGone.add(R.id.text_view_upper_test);
 

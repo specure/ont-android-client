@@ -24,15 +24,41 @@ import com.google.gson.annotations.SerializedName;
 
 public class MeasurementServerGet {
 
+
+    // API V1
     @SerializedName("location")
     Location location;
 
+    // API V1
     @SerializedName("client")
     String clientName;
 
+    // API V2
+    @SerializedName("language")
+    String language;
+
+    /**
+     * API V1 constructor
+     *
+     * @param location
+     * @param clientName
+     */
     public MeasurementServerGet(Location location, String clientName) {
         this.location = location;
         this.clientName = clientName;
+    }
+
+    /**
+     * API V2 constructor
+     *
+     * @param location
+     * @param clientName
+     * @param language
+     */
+    public MeasurementServerGet(Location location, String clientName, String language) {
+        this.location = location;
+        this.clientName = clientName;
+        this.language = language;
     }
 
     public Location getLocation() {
@@ -49,5 +75,13 @@ public class MeasurementServerGet {
 
     public void setClientName(String clientName) {
         this.clientName = clientName;
+    }
+
+    public String getLanguage() {
+        return language;
+    }
+
+    public void setLanguage(String language) {
+        this.language = language;
     }
 }

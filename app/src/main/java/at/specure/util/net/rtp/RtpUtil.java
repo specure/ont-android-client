@@ -15,6 +15,8 @@
  *******************************************************************************/
 package at.specure.util.net.rtp;
 
+import android.os.Build;
+
 import java.io.Closeable;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -30,11 +32,12 @@ import java.util.TreeSet;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import androidx.annotation.NonNull;
 import at.specure.util.ByteUtil;
 import at.specure.util.net.udp.NioUdpStreamSender;
-import at.specure.util.net.udp.StreamSender;
+import at.specure.util.net.udp.StreamSender.UdpStreamCallback;
+import at.specure.util.net.udp.StreamSender.UdpStreamSenderSettings;
 import at.specure.util.net.udp.UdpStreamSender;
-
 
 /**
  * 
@@ -46,7 +49,7 @@ public class RtpUtil {
 	
 	public static <T extends Closeable> T runVoipStream(T socket, final boolean closeOnFinish, InetAddress targetHost, int targetPort, int sampleRate,
                                                         int bps, RealtimeTransportProtocol.PayloadType payloadType, long sequenceNumber, int ssrc,
-                                                        long callDuration, final long delay, final long timeout, final boolean useNio, final StreamSender.UdpStreamCallback receiveCallback) throws InterruptedException, TimeoutException, IOException {
+                                                        long callDuration, final long delay, final long timeout, final boolean useNio, final UdpStreamCallback receiveCallback) throws InterruptedException, TimeoutException, IOException {
 		return RtpUtil.runVoipStream(socket, closeOnFinish, targetHost, targetPort, null, sampleRate, bps, payloadType, sequenceNumber, ssrc, callDuration, delay, timeout, useNio, receiveCallback);
 	}
 
@@ -74,21 +77,21 @@ public class RtpUtil {
 	@SuppressWarnings("unchecked")
 	public static <T extends Closeable> T runVoipStream(T socket, final boolean closeOnFinish, InetAddress targetHost, int targetPort, final Integer incomingPort, int sampleRate,
                                                         int bps, RealtimeTransportProtocol.PayloadType payloadType, long sequenceNumber, int ssrc,
-                                                        long callDuration, final long delay, final long timeout, final boolean useNio, final StreamSender.UdpStreamCallback receiveCallback) throws InterruptedException, TimeoutException, IOException {
+                                                        long callDuration, final long delay, final long timeout, final boolean useNio, final UdpStreamCallback receiveCallback) throws InterruptedException, TimeoutException, IOException {
 		
 		final int payloadSize = (int) (sampleRate / (1000 / delay) * (bps / 8));
 		final Random r = new Random();
 		final int payloadTimestamp = (int) (sampleRate / (1000 / delay));
 		final RtpPacket initialRtpPacket = new RtpPacket(payloadType, 0, new long[] {}, (int) sequenceNumber, 0, ssrc);
 		final int numPackets = (int) (callDuration / delay);
-		final StreamSender.UdpStreamSenderSettings<T> settings = new StreamSender.UdpStreamSenderSettings<T>(socket, closeOnFinish, targetHost, targetPort, numPackets, delay, timeout, TimeUnit.MILLISECONDS, false, 0);
+		final UdpStreamSenderSettings<T> settings = new UdpStreamSenderSettings<T>(socket, closeOnFinish, targetHost, targetPort, numPackets, delay, timeout, TimeUnit.MILLISECONDS, false, 0);
 		settings.setIncomingPort(incomingPort);
 		
 		if (receiveCallback == null) {
 			settings.setWriteOnly(true);
 		}
 
-		final StreamSender.UdpStreamCallback callback = new StreamSender.UdpStreamCallback() {
+		final UdpStreamCallback callback = new UdpStreamCallback() {
 			
 			@Override
 			public boolean onSend(DataOutputStream dataOut, int packetNumber)
@@ -125,11 +128,15 @@ public class RtpUtil {
 		};
 		
 		if (!useNio) {
-			final UdpStreamSender udpStreamSender = new UdpStreamSender((StreamSender.UdpStreamSenderSettings<DatagramSocket>) settings, callback);
-			return (T) udpStreamSender.send();
+			final UdpStreamSender udpStreamSender = new UdpStreamSender((UdpStreamSenderSettings<DatagramSocket>) settings, callback);
+			if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+				return (T) udpStreamSender.send();
+			} else {
+				return null;
+			}
 		}
 		else {
-			final NioUdpStreamSender udpStreamSender = new NioUdpStreamSender((StreamSender.UdpStreamSenderSettings<DatagramChannel>) settings, callback);
+			final NioUdpStreamSender udpStreamSender = new NioUdpStreamSender((UdpStreamSenderSettings<DatagramChannel>) settings, callback);
 			return (T) udpStreamSender.send();			
 		}
 	}
@@ -183,7 +190,7 @@ public class RtpUtil {
 				final long delta = Math.abs(calculateDelta(i, j, sampleRate));
 				final float jitter = prevJitter + ((float)delta - prevJitter) / 16f;
 				jitterMap.put(x, jitter);
-				maxDelta = Math.max(delta, maxDelta);;
+				maxDelta = Math.max(delta, maxDelta);
 				skew += TimeUnit.NANOSECONDS.convert((long) (((float)(j.rtpPacket.getTimestamp() - i.rtpPacket.getTimestamp()) / (float)sampleRate) * 1000f), TimeUnit.MILLISECONDS) - tsDiff;
 				maxJitter = Math.max((long)jitter, maxJitter);
 				meanJitter += jitter;
@@ -259,7 +266,7 @@ public class RtpUtil {
 		}
 		
 		@Override
-		public int compareTo(RtpSequence o) {
+		public int compareTo(@NonNull RtpSequence o) {
 			return Long.valueOf(timestampNs).compareTo(o.timestampNs); 
 		}
 		

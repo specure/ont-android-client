@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="preferences_dev_debug_sysout_sum">Stores error output in a text file located in the \"qosdebug\" folder</string>
+    <string name="test_bottom_test">Status: {0} \nServer: {1} \nIP: {2} \n{3} \n{4}</string>
+
+    <string-array name="map_licence_products">
+        <item>RTR-Netztest</item>
+        <item>AKOS Test Net</item>
+        <item>Netmetr</item>
+        <item>Merac Internetu</item>
+    </string-array>
+
+    <string-array name="map_licence_companies">
+        <item>RTR-GmbH</item>
+        <item>AKOS</item>
+        <item>CZ.NIC</item>
+        <item>Specure GmbH</item>
+    </string-array>
+
+    <string-array name="map_licence_licenses">
+        <item>CC BY 3.0 AT</item>
+        <item>CC BY-NC-SA 2.5 SI</item>
+        <item>CC BY 3.0 CZ</item>
+        <item>CC BY 4.0</item>
+    </string-array>
+
+</resources>

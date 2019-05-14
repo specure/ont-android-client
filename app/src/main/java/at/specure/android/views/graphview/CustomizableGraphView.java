@@ -16,9 +16,6 @@
  ******************************************************************************/
 package at.specure.android.views.graphview;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import android.content.Context;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
@@ -36,8 +33,11 @@ import android.view.View;
 
 import com.specure.opennettest.R;
 
-import at.specure.android.util.net.NetworkUtil.MinMax;
+import java.util.ArrayList;
+import java.util.List;
 
+import at.specure.android.util.net.NetworkUtil.MinMax;
+import timber.log.Timber;
 
 /**
  * 
@@ -46,53 +46,24 @@ import at.specure.android.util.net.NetworkUtil.MinMax;
  */
 public class CustomizableGraphView extends View implements GraphView {
 
-	public static class PositionedGraphLabel extends GraphView.GraphLabel {
-		private int x;
-		private int y;
-		
-		public PositionedGraphLabel(String text, String color, int x, int y) {
-			super(text, color);
-			this.x = x;
-			this.y = y;
-		}
-
-		public int getX() {
-			return x;
-		}
-
-		public void setX(int x) {
-			this.x = x;
-		}
-
-		public int getY() {
-			return y;
-		}
-
-		public void setY(int y) {
-			this.y = y;
-		}
-
-		@Override
-		public String toString() {
-			return "PositionedGraphLabel [x=" + x + ", y=" + y + ", color="
-					+ color + ", text=" + text + "]";
-		}
-	}
-	
+    public final static int LABELLIST_ALL = 0;
+    public final static int LABELLIST_HORIZONTAL_MIN = 1;
+    public final static int LABELLIST_HORIZONTAL_MAX = 2;
+    public final static int LABELLIST_VERTICAL_MIN = 3;
+    public final static int LABELLIST_VERTICAL_MAX = 4;
+    private static String DEFAULT_H_LABEL_COLOR = "#C8ffffff";
+    private static String DEFAULT_V_LABEL_COLOR = "#C8ffffff";
+    final int relW = 593;
+    final int relH = 237;
     private boolean recycled;
-    
     private List<GraphService> graphs = new ArrayList<GraphService>();
     private int width;
     private int height;
-    
     private float scale = 1f;
-    
     private Paint bitmapPaint;
-    
     private int graphWidth;
     private int graphHeight;
     private float graphStrokeWidth;
-    
     private Bitmap genBackgroundBitmap;
     private Bitmap gridBitmap;
     private int gridCells = 7;
@@ -101,9 +72,7 @@ public class CustomizableGraphView extends View implements GraphView {
     private float gridY;
     private float graphX;
     private float graphY;
-
     private String title;
-    
     private List<GraphLabel> labelHMinList = new ArrayList<GraphLabel>();
     private List<GraphLabel> labelHMaxList = new ArrayList<GraphLabel>();
     private List<GraphLabel> labelVMinList = new ArrayList<GraphLabel>();
@@ -111,11 +80,7 @@ public class CustomizableGraphView extends View implements GraphView {
     private List<GraphLabel> labelRowList = new ArrayList<GraphLabel>();
     private List<GraphLabel> labelInfoVerticalList = new ArrayList<GraphLabel>();
     private List<PositionedGraphLabel> labelList = new ArrayList<PositionedGraphLabel>();
-    private static String DEFAULT_H_LABEL_COLOR = "#C8ffffff";
-    private static String DEFAULT_V_LABEL_COLOR = "#C8ffffff";
-    
     private String labelInfoHorizontal;
-
 	private int internalPaddingTop;
 	private boolean showLog10Lines = true;
     
@@ -128,7 +93,7 @@ public class CustomizableGraphView extends View implements GraphView {
 	 * <li>labelv - y-axis label</li>
  	 * <li>labelv_min - y-axis min value</li>
 	 * <li>labelv_max - y-axis max value</li>
-	 * <li>grid_cells - number of cells</li>
+     * <li>grid_cells - number of cellsInfos</li>
 	 * <li>grid_rows - number of rows</li>
 	 * <li>show_log10_lines - draws log10 grid lines for each row<li>
 	 * </ul>
@@ -148,110 +113,118 @@ public class CustomizableGraphView extends View implements GraphView {
         labelInfoHorizontal = getAttributeValue(attrs, "labelh", "->");
         final String labelInfoVertical = getAttributeValue(attrs, "labelv", null);
         if (labelInfoVertical != null) {
-        	labelInfoVerticalList.add(new GraphView.GraphLabel(labelInfoVertical, DEFAULT_V_LABEL_COLOR));
+        	labelInfoVerticalList.add(new GraphLabel(labelInfoVertical, DEFAULT_V_LABEL_COLOR));
         }
-        
+
         labelHMin = getAttributeValue(attrs, "labelh_min", "0");
-        labelHMinList.add(new GraphView.GraphLabel(labelHMin, DEFAULT_H_LABEL_COLOR));
-        
+        labelHMinList.add(new GraphLabel(labelHMin, DEFAULT_H_LABEL_COLOR));
+
         labelHMax = getAttributeValue(attrs, "labelh_max", "10");
-        labelHMaxList.add(new GraphView.GraphLabel(labelHMax, DEFAULT_H_LABEL_COLOR));
+        labelHMaxList.add(new GraphLabel(labelHMax, DEFAULT_H_LABEL_COLOR));
 
         labelVMin = getAttributeValue(attrs, "labelv_min", null);
         if (labelVMin != null) {
-        	labelVMinList.add(new GraphView.GraphLabel(labelVMin, DEFAULT_V_LABEL_COLOR));
+        	labelVMinList.add(new GraphLabel(labelVMin, DEFAULT_V_LABEL_COLOR));
         }
-        
+
         labelVMax = getAttributeValue(attrs, "labelv_max", null);
         if (labelVMax != null) {
-        	labelVMaxList.add(new GraphView.GraphLabel(labelVMax, DEFAULT_V_LABEL_COLOR));
+        	labelVMaxList.add(new GraphLabel(labelVMax, DEFAULT_V_LABEL_COLOR));
         }
 
         this.gridCells = Integer.valueOf(getAttributeValue(attrs, "grid_cells", "7"));
         this.gridRows = Float.valueOf(getAttributeValue(attrs, "grid_rows", "4"));
         this.showLog10Lines = Boolean.valueOf(getAttributeValue(attrs, "show_log10_lines", "true"));
-        
+
         title = getAttributeValue(attrs, "title", null);
 
         repaint(context);
     }
-    
-    final int relW = 593;
-    final int relH = 237;
+
+    public CustomizableGraphView(final Context context, final AttributeSet attrs) {
+        this(context, attrs, 0);
+    }
+
+    public CustomizableGraphView(final Context context) {
+        this(context, null, 0);
+    }
     
     public void repaint(final Context context) {
         final Resources res = context.getResources();
-        
+
         bitmapPaint = new Paint();
         bitmapPaint.setFilterBitmap(true);
-              
+
         internalPaddingTop = 0;
-        
-        final Bitmap backgroundBitmap = BitmapFactory.decodeResource(res, R.drawable.test_box_small);
-        width = backgroundBitmap.getWidth();
-        height = backgroundBitmap.getHeight();
+
+//        final Bitmap backgroundBitmap = BitmapFactory.decodeResource(res, R.drawable.test_box_small);
+//        width = backgroundBitmap.getWidth();
+//        height = backgroundBitmap.getHeight();
+
+        width = 593;
+        height = 237;
 
         if (genBackgroundBitmap != null) {
         	genBackgroundBitmap.recycle();
         	genBackgroundBitmap = null;
         }
-        
+
         genBackgroundBitmap = Bitmap.createBitmap(width, height, Config.ARGB_8888);
         final Canvas canvas = new Canvas(genBackgroundBitmap);
-        
+
         final Paint paint = new Paint();
         paint.setAntiAlias(true);
         paint.setTypeface(Typeface.DEFAULT_BOLD);
         paint.setTextSize(coordFH(15, relH));
-        
+
         for (int i = 0; i < labelHMinList.size(); i++) {
-        	GraphView.GraphLabel label = labelHMinList.get(i);
+        	GraphLabel label = labelHMinList.get(i);
             paint.setColor(Color.parseColor(label.getColor()));
             paint.setTextAlign(Align.LEFT);
-            canvas.drawText(label.getText(), coordFW(88 + i * 60, relW), coordFH(220, relH), paint);        	
+            canvas.drawText(label.getText(), coordFW(88 + i * 60, relW), coordFH(220, relH), paint);
         }
-        
+
         for (int i = 0; i < labelHMaxList.size(); i++) {
-        	GraphView.GraphLabel label = labelHMaxList.get(i);
+        	GraphLabel label = labelHMaxList.get(i);
             paint.setColor(Color.parseColor(label.getColor()));
             paint.setTextAlign(Align.RIGHT);
-            canvas.drawText(label.getText(), coordFW(567 - i * 60, relW), coordFH(220, relH), paint);        	
+            canvas.drawText(label.getText(), coordFW(567 - i * 60, relW), coordFH(220, relH), paint);
         }
 
         paint.setTextAlign(Align.CENTER);
         canvas.drawText(labelInfoHorizontal, coordFW(326, relW), coordFH(220, relH), paint);
-        
+
         paint.setTextAlign(Align.LEFT);
         paint.setColor(Color.parseColor("#C800f940"));
 
-        final int vLabelStartY = (labelInfoVerticalList.size() % 2 == 0 ? 140 : 130) - (20 * labelInfoVerticalList.size()); 
+        final int vLabelStartY = (labelInfoVerticalList.size() % 2 == 0 ? 140 : 130) - (20 * labelInfoVerticalList.size());
         for (int i = 0; i < labelInfoVerticalList.size(); i++) {
-        	final GraphView.GraphLabel label = labelInfoVerticalList.get(i);
+        	final GraphLabel label = labelInfoVerticalList.get(i);
         	paint.setColor(Color.parseColor(label.getColor()));
             canvas.drawText(String.format("– %s", label.getText()), coordFW(2, relW), coordFH(vLabelStartY + i * 20, relH), paint);
         }
-        
+
         for (int i = 0; i < labelList.size(); i++) {
         	final PositionedGraphLabel label = labelList.get(i);
             paint.setColor(Color.parseColor(label.getColor()));
             paint.setTextAlign(Align.LEFT);
             canvas.drawText(label.getText(), label.getX(), label.getY(), paint);
-        }     
-   
+        }
+
         paint.setTextAlign(Align.RIGHT);
         for (int i = 0; i < labelVMinList.size(); i++) {
-        	final  GraphView.GraphLabel label = labelVMinList.get(i);
+        	final GraphLabel label = labelVMinList.get(i);
             paint.setColor(Color.parseColor(label.getColor()));
             canvas.drawText(label.getText(), coordFW(relW, relW), coordFH(190 - i * 20, relH), paint);
         }
         for (int i = 0; i < labelVMaxList.size(); i++) {
-        	final GraphView.GraphLabel label = labelVMaxList.get(i);
+        	final GraphLabel label = labelVMaxList.get(i);
             paint.setColor(Color.parseColor(label.getColor()));
             canvas.drawText(label.getText(), coordFW(relW, relW), coordFH(38 + i * 20, relH), paint);
         }
 
         paint.setColor(Color.parseColor("#C8f8a000"));
-        
+
         if (title != null) {
         	paint.setTextAlign(Align.LEFT);
         	paint.setTextSize(coordFH(18, relH));
@@ -259,7 +232,7 @@ public class CustomizableGraphView extends View implements GraphView {
         	paint.setShadowLayer(0.5f, 2, 2, Color.parseColor("#FF000000"));
             canvas.drawText(title, coordFW(112, relW), coordFH(38, relH), paint);
         }
-        
+
 //        gridBitmap = getBitmap(res, R.drawable.test_grid);
         gridBitmap = generateGridBitmap();
         gridX = coordFW(55, relW);
@@ -271,16 +244,6 @@ public class CustomizableGraphView extends View implements GraphView {
         graphStrokeWidth = coordFW(4, relW);
     }
     
-    public CustomizableGraphView(final Context context, final AttributeSet attrs)
-    {
-        this(context, attrs, 0);
-    }
-    
-    public CustomizableGraphView(final Context context)
-    {
-        this(context, null, 0);
-    }
-    
     protected Bitmap generateGridBitmap() {
     	return generateGridBitmap(null);
     }
@@ -290,22 +253,22 @@ public class CustomizableGraphView extends View implements GraphView {
     	int y = 0;
     	int h = 180;
     	int w = 500;
-    	
-    	float startX = coordFW(x, relW);
-    	float endX = coordFW(w, relW);
+
+        float startX = coordFW(x, relW);
+        float endX = coordFW(w, relW);
     	float startY =  coordFH(y, relW);
     	float endY = coordFH(h, relH);
-    	
-    	int partH = Math.round((float)(h-y) / (float)gridRows);
-    	int partW = Math.round((float)(w-x) / (float)gridCells); 
-    	
+
+        int partH = Math.round((float) (h - y) / gridRows);
+        int partW = Math.round((float) (w - x) / (float) gridCells);
+
     	Bitmap grid = Bitmap.createBitmap(width, height, Config.ARGB_8888);
     	Canvas gridCanvas = new Canvas(grid);
     	Paint p = new Paint();
     	p.setColor(getContext().getResources().getColor(R.color.app_text_color));
     	p.setAlpha(100);
     	p.setStyle(Style.STROKE);
-    	
+
         final Paint paintNames = new Paint();
         paintNames.setAntiAlias(true);
         paintNames.setTypeface(Typeface.DEFAULT_BOLD);
@@ -322,9 +285,9 @@ public class CustomizableGraphView extends View implements GraphView {
                     endX,
                     coordFH(posY, relH),
                     p);
-    		
-    		if (showLog10Lines) {
-    			p.setAlpha(30);
+
+            if (showLog10Lines) {
+                p.setAlpha(30);
 	    		for (int logy = 1; logy < 10; logy++) {
 	    			final int log = (int) (Math.log10(logy) * partH);
 	        		gridCanvas.drawLine(
@@ -333,11 +296,11 @@ public class CustomizableGraphView extends View implements GraphView {
                             endX-20,
                             coordFH(h - (partH * cy) - log+5, relH),
                             p);
-	
-	    		}
-				p.setAlpha(100);
-    		}    		
-    	}
+
+                }
+                p.setAlpha(100);
+            }
+        }
 
     	// this is top line
 //    	if (!NumberUtil.isInteger(gridRows)) {
@@ -346,7 +309,7 @@ public class CustomizableGraphView extends View implements GraphView {
 
     	if (labelRowList != null && canvas != null) {
     		for (int i = 0; i < labelRowList.size(); i++) {
-    			final  GraphView.GraphLabel label = labelRowList.get(i);
+    			final GraphLabel label = labelRowList.get(i);
             	paintNames.setColor(Color.parseColor(label.getColor()));
             	canvas.drawText(
             	        label.getText(),
@@ -356,13 +319,13 @@ public class CustomizableGraphView extends View implements GraphView {
     		}
 		}
 
-    	
-    	for (int cx = 1; cx < gridCells; cx++) {
-    		final float posX = coordFW(partW * cx, relW) + startX;
-    		gridCanvas.drawLine(posX, startY, posX, endY, p);    		
-    	}
-    	
-    	return grid;
+
+        for (int cx = 1; cx < gridCells; cx++) {
+            final float posX = coordFW(partW * cx, relW) + startX;
+            gridCanvas.drawLine(posX, startY, posX, endY, p);
+        }
+
+        return grid;
     }
     
     public void updateGrid(int cells, float rows) {
@@ -399,18 +362,18 @@ public class CustomizableGraphView extends View implements GraphView {
     {
         return graphHeight;
     }
-    
+
     public float getGraphStrokeWidth()
     {
         return graphStrokeWidth;
     }
-    
+
     @Override
     protected void onMeasure(final int widthMeasureSpec, final int heightMeasureSpec)
     {
         final int paddingH = getPaddingLeft() + getPaddingRight();
         final int paddingW = getPaddingTop() + getPaddingBottom();
-        
+
         // super.onMeasure(widthMeasureSpec, heightMeasureSpec);
         int w = MeasureSpec.getSize(widthMeasureSpec);
         final int newW = width + paddingH;
@@ -420,16 +383,16 @@ public class CustomizableGraphView extends View implements GraphView {
             if (newW < w)
                 w = newW;
             break;
-        
-        case MeasureSpec.EXACTLY:
+
+            case MeasureSpec.EXACTLY:
             break;
-        
-        case MeasureSpec.UNSPECIFIED:
+
+            case MeasureSpec.UNSPECIFIED:
             w = newW;
             break;
         }
         scale = (float) (w - getPaddingLeft() - getPaddingRight()) / width;
-        
+
         int h = MeasureSpec.getSize(heightMeasureSpec);
         final int newH = Math.round(height * scale) + paddingW;
         switch (MeasureSpec.getMode(heightMeasureSpec))
@@ -438,15 +401,15 @@ public class CustomizableGraphView extends View implements GraphView {
             if (newH < h)
                 h = newH;
             break;
-        
-        case MeasureSpec.EXACTLY:
+
+            case MeasureSpec.EXACTLY:
             break;
-        
-        case MeasureSpec.UNSPECIFIED:
+
+            case MeasureSpec.UNSPECIFIED:
             h = newH;
             break;
         }
-        
+
         setMeasuredDimension(w, h);
     }
     
@@ -456,35 +419,35 @@ public class CustomizableGraphView extends View implements GraphView {
     	try {
 	        if (recycled)
 	            return;
-	
-	        repaint(getContext());
-	        final int canvasSave = canvas.save();
+
+            repaint(getContext());
+            final int canvasSave = canvas.save();
 	        canvas.translate(getPaddingLeft(), getPaddingTop());
 	        canvas.translate(0, internalPaddingTop);
 	        canvas.scale(scale, scale);
-	        
-	        if (!genBackgroundBitmap.isRecycled()) {
-	        	canvas.drawBitmap(genBackgroundBitmap, 0, 0, bitmapPaint);
+
+            if (!genBackgroundBitmap.isRecycled()) {
+                canvas.drawBitmap(genBackgroundBitmap, 0, 0, bitmapPaint);
 	        }
-	  
-	       	gridBitmap = null;
-	       	gridBitmap = generateGridBitmap(canvas);
-	        
-	    	canvas.drawBitmap(gridBitmap, gridX, gridY, bitmapPaint);
-	        
-	        final int canvasSave2 = canvas.save();
-	        canvas.translate(graphX, graphY);
-	
-	        for (final GraphService graph : graphs)
-	            graph.draw(canvas);
-	        
-	        canvas.restoreToCount(canvasSave2);
-	//        if (!reflectionBitmap.isRecycled()) {
+
+            gridBitmap = null;
+            gridBitmap = generateGridBitmap(canvas);
+
+            canvas.drawBitmap(gridBitmap, gridX, gridY, bitmapPaint);
+
+            final int canvasSave2 = canvas.save();
+            canvas.translate(graphX, graphY);
+
+            for (final GraphService graph : graphs)
+                graph.draw(canvas);
+
+            canvas.restoreToCount(canvasSave2);
+            //        if (!reflectionBitmap.isRecycled()) {
 	//        	canvas.drawBitmap(reflectionBitmap, reflectionX, reflectionY, bitmapPaint);
 	//        }
-	        
-	        canvas.restoreToCount(canvasSave);
-    	}
+
+            canvas.restoreToCount(canvasSave);
+        }
     	catch (Exception e) {
     		e.printStackTrace();
     	}
@@ -494,49 +457,48 @@ public class CustomizableGraphView extends View implements GraphView {
     {
         graphs.add(graph);
     }
-    
+
+    @Override
+    public void removeAllgraphs() {
+        graphs.clear();
+    }
+
     public void recycle()
     {
-        Log.d("GraphView", "recycling");
+        Timber.d("recycling");
         recycled = true;
         genBackgroundBitmap.recycle();
         genBackgroundBitmap = null;
         gridBitmap.recycle();
         gridBitmap = null;
     }
-    
+
     public String getAttributeValue(AttributeSet attr, String attrName, String defaultValue) {
     	String value;
     	int resId = attr.getAttributeResourceValue(null, attrName, -1);
-    	
+
         if (resId < 0) {
         	value = attr.getAttributeValue(null, attrName);
         }
         else {
         	value = getContext().getResources().getString(resId);
         }
-        
+
         return (value != null ? value : defaultValue);
     }
-    
+
     /**
-     * 
+     *
      * @return
      */
     public List<GraphService> getGraphs() {
     	return graphs;
     }
-    
+
     public int getGraphSize() {
     	return (graphs == null ? 0 : graphs.size());
     }
 
-    public final static int LABELLIST_ALL = 0;
-    public final static int LABELLIST_HORIZONTAL_MIN = 1;
-    public final static int LABELLIST_HORIZONTAL_MAX = 2;
-    public final static int LABELLIST_VERTICAL_MIN = 3;
-    public final static int LABELLIST_VERTICAL_MAX = 4;
-    
     public void clearLabels(int labelList) {
     	switch (labelList) {
     	case LABELLIST_ALL:
@@ -545,21 +507,21 @@ public class CustomizableGraphView extends View implements GraphView {
     		getLabelVMaxList().clear();
     		getLabelVMinList().clear();
     		break;
-    		
-    	case LABELLIST_HORIZONTAL_MAX:
-    		getLabelHMaxList().clear();
+
+            case LABELLIST_HORIZONTAL_MAX:
+                getLabelHMaxList().clear();
     		break;
-    		
-    	case LABELLIST_HORIZONTAL_MIN:
-    		getLabelHMinList().clear();
+
+            case LABELLIST_HORIZONTAL_MIN:
+                getLabelHMinList().clear();
     		break;
-    		
-    	case LABELLIST_VERTICAL_MAX:
-    		getLabelVMaxList().clear();
+
+            case LABELLIST_VERTICAL_MAX:
+                getLabelVMaxList().clear();
     		break;
-    		
-    	case LABELLIST_VERTICAL_MIN:
-    		getLabelVMinList().clear();
+
+            case LABELLIST_VERTICAL_MIN:
+                getLabelVMinList().clear();
     		break;
     	}
     }
@@ -567,37 +529,37 @@ public class CustomizableGraphView extends View implements GraphView {
 	public void addLabelHMin(String labelHMin) {
 		addLabelHMin(labelHMin, DEFAULT_H_LABEL_COLOR);
 	}
-	
-	public void addLabelHMin(String labelHMin, String color) {
-		this.labelHMinList.add(new GraphView.GraphLabel(labelHMin, color));
+
+    public void addLabelHMin(String labelHMin, String color) {
+        this.labelHMinList.add(new GraphLabel(labelHMin, color));
 	}
 
-	public void addLabelHMax(String labelHMax) {
-		addLabelHMax(labelHMax, DEFAULT_H_LABEL_COLOR);
+    public void addLabelHMax(String labelHMax) {
+        addLabelHMax(labelHMax, DEFAULT_H_LABEL_COLOR);
 	}
 
 	public void addLabelHMax(String labelHMax, String color) {
-		this.labelHMaxList.add(new GraphView.GraphLabel(labelHMax, color));
+		this.labelHMaxList.add(new GraphLabel(labelHMax, color));
 	}
 
 	public void addLabelVMin(String labelVMin) {
 		addLabelVMin(labelVMin, DEFAULT_V_LABEL_COLOR);
 	}
-	
-	public void addLabelVMin(String labelVMin, String color) {
-		this.labelVMinList.add(new GraphView.GraphLabel(labelVMin, color));
+
+    public void addLabelVMin(String labelVMin, String color) {
+        this.labelVMinList.add(new GraphLabel(labelVMin, color));
 	}
 
-	public void addLabelVMax(String labelVMax) {
-		addLabelVMax(labelVMax, DEFAULT_V_LABEL_COLOR);
-	}
-	
-	public void addLabelVMax(String labelVMax, String color) {
-		this.labelVMaxList.add(new GraphView.GraphLabel(labelVMax, color));
+    public void addLabelVMax(String labelVMax) {
+        addLabelVMax(labelVMax, DEFAULT_V_LABEL_COLOR);
 	}
 
-	public String getLabelInfoHorizontal() {
-		return labelInfoHorizontal;
+    public void addLabelVMax(String labelVMax, String color) {
+        this.labelVMaxList.add(new GraphLabel(labelVMax, color));
+	}
+
+    public String getLabelInfoHorizontal() {
+        return labelInfoHorizontal;
 	}
 
 	public void setLabelInfoHorizontal(String labelInfoHorizontal) {
@@ -651,26 +613,26 @@ public class CustomizableGraphView extends View implements GraphView {
 	public void setLabelList(List<PositionedGraphLabel> labelList) {
 		this.labelList = labelList;
 	}
-	
-	public void addLabel(float x, float y, String text, String color) {
-		PositionedGraphLabel label = createPositionedGraphLabel(x, y, text, color);
+
+    public void addLabel(float x, float y, String text, String color) {
+        PositionedGraphLabel label = createPositionedGraphLabel(x, y, text, color);
     	labelList.add(label);
 	}
 	
 	public PositionedGraphLabel createPositionedGraphLabel(float x, float y, String text, String color) {
         final float relW = 593;
         final float relH = 220;
-        
+
         final int posx = (int) coordFW((int) (83f + x * 500f) , (int) relW);
         final int posy = (int) coordFH((int) (220f - y * 207f), (int) relH);
-        
-    	return new PositionedGraphLabel(text, color, posx, posy);		
-	}
 
-	@Override
-	public void setSignalRange(int min, int max) {
-		labelVMaxList.add(new GraphView.GraphLabel(String.valueOf(max), "#C8f8a000"));
-		labelVMinList.add(new GraphView.GraphLabel(String.valueOf(min), "#C8f8a000"));
+        return new PositionedGraphLabel(text, color, posx, posy);
+    }
+
+    @Override
+    public void setSignalRange(int min, int max) {
+		labelVMaxList.add(new GraphLabel(String.valueOf(max), "#C8f8a000"));
+		labelVMinList.add(new GraphLabel(String.valueOf(min), "#C8f8a000"));
 	}
 
 	@Override
@@ -691,9 +653,9 @@ public class CustomizableGraphView extends View implements GraphView {
 		catch (Exception e) {
 			e.printStackTrace();
 		}
-		
-		return null;
-	}
+
+        return null;
+    }
 
 	@Override
 	public List<GraphLabel> getRowLinesLabelList() {
@@ -712,4 +674,37 @@ public class CustomizableGraphView extends View implements GraphView {
 	public void setShowLog10Lines(boolean showLog10Lines) {
 		this.showLog10Lines = showLog10Lines;
 	}
+
+    public static class PositionedGraphLabel extends GraphLabel {
+        private int x;
+        private int y;
+
+        public PositionedGraphLabel(String text, String color, int x, int y) {
+            super(text, color);
+            this.x = x;
+            this.y = y;
+        }
+
+        public int getX() {
+            return x;
+        }
+
+        public void setX(int x) {
+            this.x = x;
+        }
+
+        public int getY() {
+            return y;
+        }
+
+        public void setY(int y) {
+            this.y = y;
+        }
+
+        @Override
+        public String toString() {
+            return "PositionedGraphLabel [x=" + x + ", y=" + y + ", color="
+                    + color + ", text=" + text + "]";
+        }
+    }
 }

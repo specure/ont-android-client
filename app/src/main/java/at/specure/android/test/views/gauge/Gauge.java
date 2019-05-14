@@ -16,9 +16,6 @@
  ******************************************************************************/
 package at.specure.android.test.views.gauge;
 
-import java.text.Format;
-import java.text.NumberFormat;
-
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -32,7 +29,13 @@ import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.Region;
 import android.graphics.drawable.Drawable;
-import android.util.Log;
+
+import androidx.annotation.NonNull;
+
+import java.text.Format;
+import java.text.NumberFormat;
+
+import timber.log.Timber;
 
 public class Gauge extends Drawable
 {
@@ -54,14 +57,11 @@ public class Gauge extends Drawable
     final Paint overlayPaint = new Paint();
     final Paint erasePaint;
     final RectF ovalRect;
-    float startAngle;
-    float maxAngle;
-    
     final Format formatter = NumberFormat.getPercentInstance();
-    
     final int width;
     final int height;
-    
+    float startAngle;
+    float maxAngle;
     Rect bounds;
     
     double value = 0;
@@ -69,14 +69,14 @@ public class Gauge extends Drawable
     boolean hasOverlayColor = false;
     
     public Gauge(final float startAngle, final float maxAngle, final Bitmap background, final Bitmap dynamic,
-            final Bitmap foreground, final float x1, final float y1, final float x2, final float y2, final int foregroundColor, 
-            final int backgroundColor) {
+                 final Bitmap foreground, final float x1, final float y1, final float x2, final float y2, final int foregroundColor,
+                 final int backgroundColor) {
     	this(startAngle, maxAngle, background, dynamic, foreground, x1, y1, x2, y2, foregroundColor, backgroundColor, Integer.MIN_VALUE);
     }
     
     public Gauge(final float startAngle, final float maxAngle, final Bitmap background, final Bitmap dynamic,
-            final Bitmap foreground, final float x1, final float y1, final float x2, final float y2, final int foregroundColor, 
-            final int backgroundColor, final int overlayColor)
+                 final Bitmap foreground, final float x1, final float y1, final float x2, final float y2, final int foregroundColor,
+                 final int backgroundColor, final int overlayColor)
     {
         this.startAngle = startAngle;
         this.maxAngle = maxAngle;
@@ -98,11 +98,11 @@ public class Gauge extends Drawable
         
         if (overlayColor != Integer.MIN_VALUE) {
         	hasOverlayColor = true;
-            overlayPaint.setColorFilter(new PorterDuffColorFilter(overlayColor, Mode.SRC_ATOP));            
+            overlayPaint.setColorFilter(new PorterDuffColorFilter(overlayColor, Mode.SRC_ATOP));
             overlayPaint.setFilterBitmap(true);
         }
 
-        Log.d(LOG, "density background: " + background.getDensity());
+        Timber.d( "density background: %s" ,background.getDensity());
         
         erasePaint = new Paint();
         erasePaint.setXfermode(new PorterDuffXfermode(Mode.DST_OUT));
@@ -124,7 +124,7 @@ public class Gauge extends Drawable
     }
     
     @Override
-    public void draw(final Canvas canvas)
+    public void draw(@NonNull final Canvas canvas)
     {
         final Rect r = getBounds();
         

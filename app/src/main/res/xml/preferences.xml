@@ -37,12 +37,6 @@
             android:layout="@layout/preferences_item"
             android:title="@string/preferences_ic" />
 
-        <Preference
-            android:key="location_settings"
-            android:layout="@layout/preferences_item"
-            android:summary="@string/preferences_location_settings_sum"
-            android:title="@string/preferences_location_settings" />
-
         <CheckBoxPreference
             android:defaultValue="false"
             android:key="dont_show_menu_before_exit"
@@ -65,18 +59,26 @@
             android:title="@string/preferences_ipv4_only" />
 
         <CheckBoxPreference
-            android:defaultValue="false"
+            android:defaultValue="true"
             android:key="enable_qos"
             android:layout="@layout/preferences_item"
             android:summary="@string/preferences_enable_qos_sum"
             android:title="@string/preferences_enable_qos" />
 
+
+        <Preference
+            android:key="connection_details"
+            android:layout="@layout/preferences_item"
+            android:summary="@string/preferences_connection_details_summary"
+            android:title="@string/preferences_connection_details" />
+
+
         <EditTextPreference
             android:key="tag"
-            android:title="@string/preferences_tag"
-            android:summary="@string/preferences_tag_sum"
             android:layout="@layout/preferences_item"
-            />
+            android:summary="@string/preferences_tag_sum"
+            android:title="@string/preferences_tag" />
+
 
     </PreferenceCategory>
 
@@ -91,34 +93,26 @@
             android:summary="@string/preferences_loop_mode_sum"
             android:title="@string/preferences_loop_mode" />
 
-        <EditTextPreference
+        <at.specure.android.views.LoopTestCountPickerPreference
             android:defaultValue="@integer/default_loop_max_tests"
             android:inputType="number"
-            android:key="loop_mode_max_tests"
+            android:key="loop_mode_max_tests_picker"
             android:layout="@layout/preferences_item"
             android:summary="@string/preferences_loop_mode_max_tests_sum"
             android:title="@string/preferences_loop_mode_max_tests" />
 
-        <EditTextPreference
+        <at.specure.android.views.LoopDelayPickerPreference
             android:defaultValue="@integer/default_loop_min_delay"
             android:inputType="number"
-            android:key="loop_mode_min_delay"
+            android:key="loop_mode_min_delay_picker"
             android:layout="@layout/preferences_item"
             android:summary="@string/preferences_loop_mode_min_delay_sum"
             android:title="@string/preferences_loop_mode_min_delay" />
 
-        <EditTextPreference
-            android:defaultValue="@integer/default_loop_max_delay"
-            android:inputType="number"
-            android:key="loop_mode_max_delay"
-            android:layout="@layout/preferences_item"
-            android:summary="@string/preferences_loop_mode_max_delay_sum"
-            android:title="@string/preferences_loop_mode_max_delay" />
-
-        <EditTextPreference
+        <at.specure.android.views.LoopMovementPickerPreference
             android:defaultValue="@integer/default_loop_max_movement"
             android:inputType="number"
-            android:key="loop_mode_movement"
+            android:key="loop_mode_max_movement_picker"
             android:layout="@layout/preferences_item"
             android:summary="@string/preferences_loop_mode_movement_sum"
             android:title="@string/preferences_loop_mode_movement" />
@@ -137,6 +131,39 @@
             android:defaultValue="true"
             android:layout="@layout/preferences_item"
             />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        android:layout="@layout/preferences_category"
+        android:title="@string/preferences_category_privacy">
+
+        <Preference
+            android:key="location_settings"
+            android:layout="@layout/preferences_item"
+            android:summary="@string/preferences_location_settings_sum"
+            android:title="@string/preferences_location_settings" />
+
+        <CheckBoxPreference
+            android:key="ads_personalisation"
+            android:layout="@layout/preferences_item"
+            android:defaultValue="true"
+            android:summary="@string/preferences_ads_personalisation_sum"
+            android:title="@string/preferences_ads_personalisation" />
+
+        <CheckBoxPreference
+            android:defaultValue="true"
+            android:key="persistent_client_uuid_enabled"
+            android:layout="@layout/preferences_item"
+            android:summary="@string/preferences_persistent_client_uuid"
+            android:title="@string/preferences_persistent_client_uuid_sum" />
+
+        <CheckBoxPreference
+            android:key="crash_analytics_enabled"
+            android:title="@string/preferences_crash_analytics"
+            android:summary="@string/preferences_crash_analytics_sum"
+            android:defaultValue="true"
+            android:layout="@layout/preferences_item" />
 
     </PreferenceCategory>
 

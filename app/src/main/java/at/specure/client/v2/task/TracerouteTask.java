@@ -16,7 +16,9 @@
  ******************************************************************************/
 package at.specure.client.v2.task;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -24,14 +26,12 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import org.json.JSONArray;
-import org.json.JSONObject;
-
 import at.specure.client.QualityOfServiceTest;
 import at.specure.client.TestClient;
 import at.specure.client.v2.task.result.QoSTestResult;
 import at.specure.client.v2.task.result.QoSTestResultEnum;
 import at.specure.util.tools.TracerouteService;
+import at.specure.util.tools.TracerouteService.HopDetail;
 
 /**
  * 
@@ -108,10 +108,10 @@ public class TracerouteTask extends AbstractQoSTask {
 	  		pingTool.setHost(host);
 	  		pingTool.setMaxHops(maxHops);
 
-	  		final List<TracerouteService.HopDetail> pingDetailList = new ArrayList<TracerouteService.HopDetail>();
+	  		final List<HopDetail> pingDetailList = new ArrayList<TracerouteService.HopDetail>();
 	  		pingTool.setResultListObject(pingDetailList);
 
-	  		final Future<List<TracerouteService.HopDetail>> traceFuture = TestClient.getCommonThreadPool().submit(pingTool);
+	  		final Future<List<HopDetail>> traceFuture = TestClient.getCommonThreadPool().submit(pingTool);
 	  		
 	  		try {
 	  			traceFuture.get(timeout, TimeUnit.NANOSECONDS);
@@ -129,11 +129,11 @@ public class TracerouteTask extends AbstractQoSTask {
 	  		}
 	  		finally {
 	  			if (pingDetailList != null) {
-		  			JSONArray resultArray = new JSONArray();
-		  			for (final TracerouteService.HopDetail p : pingDetailList) {
-		  				JSONObject json = p.toJson();
+                    JsonArray resultArray = new JsonArray();
+		  			for (final HopDetail p : pingDetailList) {
+                        JsonObject json = p.toJson();
 		  				if (json != null) {
-		  					resultArray.put(json);
+                            resultArray.add(json);
 		  				}
 		  			}
 		  			

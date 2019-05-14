@@ -41,6 +41,7 @@ import at.specure.client.v2.task.result.QoSTestResultEnum;
 import at.specure.client.v2.task.service.TestProgressListener.TestProgressEvent;
 import at.specure.client.v2.task.service.TestSettings;
 import at.specure.client.v2.task.service.TrafficService;
+import timber.log.Timber;
 
 /**
  * @author lb
@@ -49,38 +50,45 @@ public class VoipTest extends QualityOfServiceTest implements Callable<QoSResult
 
     private final TestClient client;
 
-    private final AtomicInteger progress = new AtomicInteger();
-    private final AtomicInteger testCount = new AtomicInteger();
-    private final AtomicInteger concurrentGroupCount = new AtomicInteger();
-    private final AtomicReference<QoSTestEnum> status = new AtomicReference<QoSTestEnum>();
+    protected final AtomicInteger progress = new AtomicInteger();
+    protected final AtomicInteger testCount = new AtomicInteger();
+    protected final AtomicInteger concurrentGroupCount = new AtomicInteger();
+    final AtomicReference<QoSTestEnum> status = new AtomicReference<QoSTestEnum>();
     private final AtomicReference<QoSTestErrorEnum> errorStatus = new AtomicReference<QoSTestErrorEnum>(QoSTestErrorEnum.NONE);
 
-    private final ExecutorService executor;
-    private final ExecutorCompletionService<QoSTestResult> executorService;
+    protected final ExecutorService executor;
+    protected final ExecutorCompletionService<QoSTestResult> executorService;
 
-    private final TestSettings qoSTestSettings;
+    protected final TestSettings qoSTestSettings;
 
     final TreeMap<Integer, List<AbstractQoSTask>> concurrentTasks = new TreeMap<Integer, List<AbstractQoSTask>>();
     final TreeMap<QoSTestResultEnum, List<AbstractQoSTask>> testMap = new TreeMap<QoSTestResultEnum, List<AbstractQoSTask>>();
     final TreeMap<String, QoSControlConnection> controlConnectionMap = new TreeMap<String, QoSControlConnection>();
+    private Long customTimeout = null;
+    private boolean ignoreErrors = false;
 
-    private TreeMap<QoSTestResultEnum, QualityOfServiceTest.Counter> testGroupCounterMap = new TreeMap<QoSTestResultEnum, QualityOfServiceTest.Counter>();
+    protected TreeMap<QoSTestResultEnum, QualityOfServiceTest.Counter> testGroupCounterMap = new TreeMap<QoSTestResultEnum, QualityOfServiceTest.Counter>();
 
     private boolean onlyVoipTest = false;
 
-    public VoipTest(TestClient client, TestSettings nnTestSettings, boolean onlyVoipTest) {
-        this(client, nnTestSettings);
+    public VoipTest(TestClient client, TestSettings nnTestSettings, boolean onlyVoipTest, Long customTimeout, boolean ignoreErrors) {
+        this(client, nnTestSettings, ignoreErrors);
         this.onlyVoipTest = onlyVoipTest;
+        this.customTimeout = customTimeout;
     }
 
     protected String getTestId() {
         return TestClient.TASK_VOIP;
     }
+
     /**
      * @param client
      */
-    public VoipTest(TestClient client, TestSettings nnTestSettings) {
+    public VoipTest(TestClient client, TestSettings nnTestSettings, boolean ignoreErrors) {
         super(client, nnTestSettings, 0);
+        this.ignoreErrors = ignoreErrors;
+
+        Timber.e("Ignore errors: %s", ignoreErrors);
         System.out.println("\n\n---- Initializing VOIP Tests ----\n");
         this.onlyVoipTest = true;
         this.client = client;
@@ -106,7 +114,7 @@ public class VoipTest extends QualityOfServiceTest implements Callable<QoSResult
             String taskId = (String) taskDesc.getParams().get(TaskDesc.QOS_TEST_IDENTIFIER_KEY);
             AbstractQoSTask test = null;
             if (getTestId().equals(taskId)) {
-                test = new VoipTask(this, taskDesc, threadCounter++);
+                test = new VoipTask(this, taskDesc, threadCounter++, customTimeout, ignoreErrors);
             }
 
             if (test != null) {
@@ -383,11 +391,11 @@ public class VoipTest extends QualityOfServiceTest implements Callable<QoSResult
         }
     }
 
-    private void openControlConnections(int concurrencyGroup) {
+    protected void openControlConnections(int concurrencyGroup) {
         manageControlConnections(concurrencyGroup, true);
     }
 
-    private void closeControlConnections(int concurrencyGroup) {
+    protected void closeControlConnections(int concurrencyGroup) {
         manageControlConnections(concurrencyGroup, false);
     }
 

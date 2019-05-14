@@ -102,7 +102,8 @@ public abstract class AbstractRMBTTest {
             final SSLSocket sslSocket = (SSLSocket) s;
             final SSLSession session = sslSocket.getSession();
             if (testResult != null) {
-            	testResult.encryption = String.format(Locale.US, "%s (%s)", session.getProtocol(), session.getCipherSuite());
+                String encryption = String.format(Locale.US, "%s (%s)", session.getProtocol(), session.getCipherSuite());
+                testResult.encryption = encryption;
             }
         }
         

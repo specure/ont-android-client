@@ -35,9 +35,9 @@ public class DebugPrintStream extends PrintStream {
 
 	@Override
 	public void println(Object o) {
-		showLocation(false, (String) o.toString());
-	    //super.println(o);
-	}
+        showLocation(false, o.toString());
+        //super.println(o);
+    }
 
 	 
 	@Override

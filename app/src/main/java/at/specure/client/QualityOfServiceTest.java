@@ -112,7 +112,7 @@ public class QualityOfServiceTest implements Callable<QoSResultCollector> {
 			String taskId = (String) taskDesc.getParams().get(TaskDesc.QOS_TEST_IDENTIFIER_KEY);
 			AbstractQoSTask test = null;
 			if (onlyVoipTest) {
-				test = new VoipTask(this, taskDesc, threadCounter++);
+				test = new VoipTask(this, taskDesc, threadCounter++, null, true);
 			} else {
 				if (TestClient.TASK_HTTP.equals(taskId)) {
 					test = new HttpProxyTask(this, taskDesc, threadCounter++);
@@ -121,7 +121,7 @@ public class QualityOfServiceTest implements Callable<QoSResultCollector> {
 					test = new NonTransparentProxyTask(this, taskDesc, threadCounter++);
 				}
 				else if (TestClient.TASK_DNS.equals(taskId)) {
-					test = new DnsTask(this, taskDesc, threadCounter++);
+                    test = new DnsTask(this, taskDesc, threadCounter++, getRMBTClient().getContext());
 				}
 				else if (TestClient.TASK_TCP.equals(taskId)) {
 					test = new TcpTask(this, taskDesc, threadCounter++);
@@ -130,7 +130,7 @@ public class QualityOfServiceTest implements Callable<QoSResultCollector> {
 					test = new UdpTask(this, taskDesc, threadCounter++);
 				}
 				else if (TestClient.TASK_VOIP.equals(taskId)) {
-					test = new VoipTask(this, taskDesc, threadCounter++);
+					test = new VoipTask(this, taskDesc, threadCounter++, null, false);
 				}
 				else if (TestClient.TASK_TRACEROUTE.equals(taskId)) {
 					if (nnTestSettings != null && nnTestSettings.getTracerouteServiceClazz() != null) {

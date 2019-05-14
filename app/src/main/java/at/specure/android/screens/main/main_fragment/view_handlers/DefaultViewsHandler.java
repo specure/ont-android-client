@@ -52,7 +52,6 @@ public class DefaultViewsHandler extends ViewsHandler {
         this.viewsToSetGone.add(R.id.test_view_qos_container);
         this.viewsToSetGone.add(R.id.increased_consumption_button_text);
         this.viewsToSetGone.add(R.id.info_signal_strength_extra);
-        this.viewsToSetGone.add(R.id.test_graph);
         this.viewsToSetGone.add(R.id.test_view_info_container);
 
         this.viewsToSetInvisble.add(R.id.main_fragment__cell_id_container);
