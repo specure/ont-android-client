@@ -5,3 +5,6 @@ This project contains the source code of the following Android Apps:
 * Nettfart Mobile, https://play.google.com/store/apps/details?id=no.nkom.nettfart.beta
 * Open Nettest, https://play.google.com/store/apps/details?id=com.specure.nettest
 * Ratel NetTest, https://play.google.com/store/apps/details?id=com.specure.rmbt.ratel
+
+## License
+This project is released under the [Apache 2.0 license.](LICENSE.txt)
