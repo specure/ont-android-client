@@ -6,6 +6,8 @@ import android.os.Bundle;
 import android.os.Parcel;
 import android.os.Parcelable;
 
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Set;
 
 import at.specure.android.configs.PreferenceConfig;

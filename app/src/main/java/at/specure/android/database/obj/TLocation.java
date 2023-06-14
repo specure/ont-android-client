@@ -22,9 +22,9 @@ import android.content.Context;
 import android.database.Cursor;
 import android.net.Uri;
 
+import at.specure.android.api.jsons.Location;
 import at.specure.android.database.Contract;
 import at.specure.android.database.DatabaseHelper;
-import at.specure.android.api.jsons.Location;
 
 /**
  * Created by michal.cadrik on 8/10/2017.

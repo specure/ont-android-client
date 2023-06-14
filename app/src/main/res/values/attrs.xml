@@ -1,0 +1,52 @@
+<resources>
+
+    <!-- Declare custom theme attributes that allow changing which styles are
+         used for button bars depending on the API level.
+         ?android:attr/buttonBarStyle is new as of API 11 so this is
+         necessary to support previous API levels. -->
+    <declare-styleable name="ButtonBarContainerTheme">
+        <attr name="metaButtonBarStyle" format="reference" />
+        <attr name="metaButtonBarButtonStyle" format="reference" />
+    </declare-styleable>
+
+    <declare-styleable name="PagerIndicator">
+        <attr name="selected_bullet" format="reference" />
+        <attr name="unselected_bullet" format="reference" />
+    </declare-styleable>
+
+    <declare-styleable name="CustomGauge">
+        <attr name="gaugePointSize" format="integer" />
+        <attr name="gaugeValue" format="integer" />
+        <attr name="gaugeScaleCount" format="integer" />
+        <attr name="gaugeShowScale" format="boolean" />
+        <attr name="gaugeScaleSize" format="dimension" />
+        <attr name="gaugeScaleWidth" format="dimension" />
+        <attr name="gaugeScaleColor" format="color" />
+        <attr name="gaugeStringsSize" format="dimension" />
+        <attr name="gaugeStringsPadding" format="dimension" />
+        <attr name="gaugePointStartColor" format="color" />
+        <attr name="gaugePointEndColor" format="color" />
+        <attr name="gaugeStrokeInnerColor" format="color" />
+        <attr name="gaugeStrokeCentralColor" format="color" />
+        <attr name="gaugeStrokeOuterColor" format="color" />
+        <attr name="gaugeStrokeInnerWidth" format="dimension" />
+        <attr name="gaugeStrokeCentralWidth" format="dimension" />
+        <attr name="gaugeStrokeOuterWidth" format="dimension" />
+        <attr name="gaugeDividerPositionHidden" format="reference" />
+        <attr name="gaugeColors" format="reference" />
+        <attr name="gaugeStrings" format="reference" />
+        <attr name="gaugeStringsShifts" format="reference" />
+        <attr name="gaugeStrokeCap" format="string" />
+        <attr name="gaugeStartAngle" format="integer" />
+        <attr name="gaugeSweepAngle" format="integer" />
+        <attr name="gaugeStartValue" format="integer" />
+        <attr name="gaugeEndValue" format="integer" />
+        <attr name="gaugeDividerSize" format="integer" />
+        <attr name="gaugeDividerColor" format="color" />
+        <attr name="gaugeDividerStep" format="integer" />
+        <attr name="gaugeDividerDrawFirst" format="boolean" />
+        <attr name="gaugeDividerDrawLast" format="boolean" />
+        <attr name="gaugeShowGaugeArrow" format="boolean" />
+    </declare-styleable>
+
+</resources>

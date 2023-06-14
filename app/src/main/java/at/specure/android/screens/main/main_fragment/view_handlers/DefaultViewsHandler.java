@@ -19,20 +19,24 @@ package at.specure.android.screens.main.main_fragment.view_handlers;
 import android.content.Context;
 import android.graphics.PorterDuff;
 import android.graphics.drawable.Drawable;
-import android.os.Handler;
 import android.view.View;
 import android.widget.ImageView;
-import android.widget.ScrollView;
 import android.widget.TextView;
 
 import com.specure.opennettest.R;
-
 import java.util.HashMap;
+
+import at.specure.android.views.CustomGauge;
+
+import static androidx.core.content.ContextCompat.getColor;
+import static at.specure.android.screens.main.main_fragment.MainMenuFragment.PROGRESS_SEGMENTS_PROGRESS_RING;
+import static at.specure.android.screens.main.main_fragment.MainMenuFragment.PROGRESS_SEGMENTS_QOS;
 
 /**
  * Class handling UI for default state of the main screen fragment
  * Created by michal.cadrik on 10/12/2017.
  */
+
 public class DefaultViewsHandler extends ViewsHandler {
 
 
@@ -43,27 +47,48 @@ public class DefaultViewsHandler extends ViewsHandler {
         this.viewsToSetVisible.add(R.id.main_fragment__top_info_container);
         this.viewsToSetVisible.add(R.id.main__bottom_info_default_text);
         this.viewsToSetVisible.add(R.id.start_button_container);
-        this.viewsToSetGone.add(R.id.text_view_upper_test);
 
         this.viewsToSetGone.add(R.id.text_view_lower_test);
         this.viewsToSetGone.add(R.id.show_detailed_result_button);
         this.viewsToSetGone.add(R.id.test_view_qos_results_container);
-        this.viewsToSetVisible.add(R.id.main_fragment__top_info_container_measurement);
+        this.viewsToSetGone.add(R.id.main_fragment__top_info_container_measurement);
         this.viewsToSetGone.add(R.id.test_view_qos_container);
         this.viewsToSetGone.add(R.id.increased_consumption_button_text);
         this.viewsToSetGone.add(R.id.info_signal_strength_extra);
+        this.viewsToSetGone.add(R.id.test_graph);
+        this.viewsToSetGone.add(R.id.graph_container);
+        this.viewsToSetGone.add(R.id.text_view_upper_test);
         this.viewsToSetGone.add(R.id.test_view_info_container);
 
+        this.viewsToSetInvisble.add(R.id.measurement_graphs_container);
         this.viewsToSetInvisble.add(R.id.main_fragment__cell_id_container);
     }
 
     @Override
     public void initializeViews(View rootView, Context context) {
         super.setViewVisibility();
-        if (rootView != null) {
+        if ((rootView != null) && (context != null)) {
 
             ImageView startButton = rootView.findViewById(R.id.title_page_start_button);
             setOnClickListener(startButton);
+
+            CustomGauge gaugeUpper = rootView.findViewById(R.id.gauge_upper);
+            if (gaugeUpper != null) {
+                gaugeUpper.setmStrokeInnerColor(getColor(context, R.color.gauge_basic));
+                gaugeUpper.setGaugeStrings(0);
+                gaugeUpper.setDividerSize(0);
+                gaugeUpper.setValue(PROGRESS_SEGMENTS_PROGRESS_RING);
+                gaugeUpper.invalidate();
+            }
+
+            CustomGauge gaugeLower = rootView.findViewById(R.id.gauge_lower);
+            if (gaugeLower != null) {
+                gaugeLower.setmStrokeInnerColor(getColor(context, R.color.gauge_basic));
+                gaugeLower.setValue(PROGRESS_SEGMENTS_QOS);
+                gaugeLower.setShowScale(false);
+                gaugeLower.setMaxValue();
+                gaugeLower.invalidate();
+            }
 
             //enable clicking
             enableClickingOnButtons(rootView);
@@ -72,14 +97,13 @@ public class DefaultViewsHandler extends ViewsHandler {
             TextView startButtonText = rootView.findViewById(R.id.start_button_text);
             if (startButtonText != null) {
                 startButtonText.setText(R.string.menu_button_start);
-                startButtonText.setTextSize(30);
+                startButtonText.setTextSize(20);
             }
 
             PorterDuff.Mode mMode = PorterDuff.Mode.SRC_ATOP;
 
             ImageView increasedConsumptionInfoButton = rootView.findViewById(R.id.increased_consumption_button);
             final TextView increasedConsumptionInfoText = rootView.findViewById(R.id.increased_consumption_button_text);
-            final ScrollView scrollView = rootView.findViewById(R.id.main__scroll_view);
 
             if ((increasedConsumptionInfoButton != null) &&(increasedConsumptionInfoText != null)) {
                 Drawable increasedConsumptionDrawable = context.getResources().getDrawable(R.drawable.ic_action_help);
@@ -91,15 +115,6 @@ public class DefaultViewsHandler extends ViewsHandler {
                         int visibility = increasedConsumptionInfoText.getVisibility();
                         if (visibility == View.GONE) {
                             increasedConsumptionInfoText.setVisibility(View.VISIBLE);
-                            new Handler().postDelayed(new Runnable() {
-                                @Override
-                                public void run() {
-                                    if (scrollView != null) {
-                                        scrollView.fullScroll(View.FOCUS_DOWN);
-                                    }
-                                }
-                            }, 500);
-
                         } else {
                             increasedConsumptionInfoText.setVisibility(View.GONE);
                         }

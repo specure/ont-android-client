@@ -27,7 +27,6 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.os.Handler;
 import android.os.IBinder;
-import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.WindowManager;
@@ -35,14 +34,14 @@ import android.widget.Toast;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonParseException;
-import com.specure.opennettest.R;
 
-import java.text.MessageFormat;
 import java.util.Locale;
 
 import at.specure.android.api.calls.CheckTestResultDetailTask;
 import at.specure.android.configs.ConfigHelper;
+import at.specure.android.configs.TestConfig;
 import at.specure.android.screens.main.MainActivity;
+import at.specure.android.screens.main.main_fragment.graphs_handlers.GraphHandler;
 import at.specure.android.screens.result.adapter.result.ResultDetailType;
 import at.specure.android.test.ChangeableSpeedTestStatus;
 import at.specure.android.test.SpeedTestStatViewController;
@@ -52,29 +51,32 @@ import at.specure.android.test.runnables.ResultSwitcher;
 import at.specure.android.test.runnables.UITestUpdater;
 import at.specure.android.util.EndTaskListener;
 import at.specure.android.util.Helperfunctions;
+import at.specure.android.util.InformationCollector;
 import at.specure.android.util.net.NetworkUtil;
 import at.specure.client.helper.IntermediateResult;
 import at.specure.client.helper.NdtStatus;
 import at.specure.client.helper.TestStatus;
 import at.specure.client.v2.task.QoSTestEnum;
 import at.specure.client.v2.task.result.QoSServerResultCollection;
+import timber.log.Timber;
 
 import static at.specure.android.screens.main.main_fragment.MainMenuFragment.MAX_COUNTER_WITHOUT_RESULT;
 import static at.specure.android.screens.main.main_fragment.MainMenuFragment.PERCENT_FORMAT;
 import static at.specure.android.screens.main.main_fragment.MainMenuFragment.PROGRESS_SEGMENTS_PROGRESS_RING;
 import static at.specure.android.screens.main.main_fragment.MainMenuFragment.PROGRESS_SEGMENTS_QOS;
 import static at.specure.android.screens.main.main_fragment.MainMenuFragment.PROGRESS_SEGMENTS_TOTAL;
-import static at.specure.android.screens.result.ResultDetailType.QUALITY_OF_SERVICE_TEST;
-import static at.specure.android.util.InformationCollector.SINGAL_TYPE_NO_SIGNAL;
+import static at.specure.android.util.InformationCollector.SIGNAL_TYPE_NO_SIGNAL;
 import static at.specure.client.helper.TestStatus.DOWN;
 import static at.specure.client.helper.TestStatus.ERROR;
 import static at.specure.client.helper.TestStatus.INIT;
 import static at.specure.client.helper.TestStatus.INIT_UP;
+import static at.specure.client.helper.TestStatus.PACKET_LOSS_AND_JITTER;
 import static at.specure.client.helper.TestStatus.PING;
 import static at.specure.client.helper.TestStatus.UP;
 import static at.specure.client.helper.TestStatus.WAIT;
 
-/**This is main controller for the main fragment
+/**
+ * This is main controller for the main fragment
  * Created by michal.cadrik on 10/23/2017.
  */
 
@@ -82,7 +84,8 @@ public class MainFragmentController implements ServiceConnection, UIUpdateInterf
 
     private static final String TAG = "MainFragContr";
     private final String waitText;
-    MainFragmentInterface mainFragmentInterface;
+    private final GraphInterface graphInterface;
+    private MainFragmentInterface mainFragmentInterface;
     private AlertDialog testErrorDialog;
     private AlertDialog testAbortDialog;
     private ProgressDialog testProgressDialog;
@@ -97,6 +100,7 @@ public class MainFragmentController implements ServiceConnection, UIUpdateInterf
     private boolean testShowQoSErrorToast;
     private UITestUpdater updateUITask;
     private Handler testHandler;
+    private GraphHandler graphHandler;
     private boolean stopLoop;
     private ResultSwitcher testResultSwitcherRunnable;
     private QoSTestEnum lastQoSTestStatus;
@@ -110,19 +114,26 @@ public class MainFragmentController implements ServiceConnection, UIUpdateInterf
     private final DialogInterface.OnKeyListener backKeyListener = new DialogInterface.OnKeyListener() {
         @Override
         public boolean onKey(DialogInterface dialog, int keyCode, KeyEvent event) {
-            if (keyCode == KeyEvent.KEYCODE_BACK)
-                return onMainBackPressed();
-            return false;
+            return keyCode == KeyEvent.KEYCODE_BACK && onMainBackPressed();
         }
     };
+    private InformationCollector informationCollector;
+    private boolean running;
+    private TestService.RMBTBinder binder;
 
-    public MainFragmentController(MainFragmentInterface mainFragmentInterface) {
+    MainFragmentController(MainFragmentInterface mainFragmentInterface, GraphInterface graphInterface, String waitText) {
         this.mainFragmentInterface = mainFragmentInterface;
-        waitText = mainFragmentInterface.getContext().getResources().getString(R.string.test_progress_text_wait);
+        this.graphInterface = graphInterface;
+        this.waitText = waitText;
     }
 
-    public boolean onMainBackPressed() {
-        Log.d("RMBTTestFragment", "onbackpressed");
+    private static void dismissDialog(Dialog dialog) {
+        if (dialog != null)
+            dialog.dismiss();
+    }
+
+    boolean onMainBackPressed() {
+        Timber.d("onbackpressed");
         if (mainFragmentInterface != null) {
             final Activity activity = mainFragmentInterface.getMainActivity();
             if (activity == null)
@@ -133,7 +144,7 @@ public class MainFragmentController implements ServiceConnection, UIUpdateInterf
                 else {
                     // to be sure test is stopped:
                     final Intent service = new Intent(TestService.ACTION_ABORT_TEST, null, activity, TestService.class);
-                    activity.startService(service);
+                        activity.startService(service);
                     testTestService = null;
                 }
                 dismissDialogs();
@@ -145,22 +156,23 @@ public class MainFragmentController implements ServiceConnection, UIUpdateInterf
                 testAbortDialog = null;
             } else {
                 final AlertDialog.Builder builder = new AlertDialog.Builder(activity);
-                builder.setTitle(R.string.test_dialog_abort_title);
-                builder.setMessage(R.string.test_dialog_abort_text);
-                builder.setPositiveButton(R.string.test_dialog_abort_yes, new DialogInterface.OnClickListener() {
+                builder.setTitle(mainFragmentInterface.getAbortDialogTitleId());
+                builder.setMessage(mainFragmentInterface.getAbortDialogTextId());
+                builder.setPositiveButton(mainFragmentInterface.getAbortDialogPositiveButtonText(), new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(final DialogInterface dialog, final int which) {
-                        if (testTestService != null)
+                        if (testTestService != null) {
                             isTestStoppedByUser = true;
-                        testTestService.stopTest();
+                            testTestService.stopTest();
+                        }
                         final Intent service = new Intent(TestService.ACTION_ABORT_TEST, null, activity, TestService.class);
-                        activity.startService(service);
+                            activity.startService(service);
                         testTestService = null;
                         unbindTestingService();
                         mainFragmentInterface.changeScreenState(MainScreenState.DEFAULT, "TestAbortDialogPositive", true);
                     }
                 });
-                builder.setNegativeButton(R.string.test_dialog_abort_no, null);
+                builder.setNegativeButton(mainFragmentInterface.getAbortDialogNegativeButtonText(), null);
 
                 dismissDialogs();
                 testAbortDialog = builder.show();
@@ -170,8 +182,7 @@ public class MainFragmentController implements ServiceConnection, UIUpdateInterf
         return false;
     }
 
-
-    public void dismissDialogs() {
+    void dismissDialogs() {
         dismissDialog(testErrorDialog);
         testErrorDialog = null;
         dismissDialog(testAbortDialog);
@@ -180,18 +191,13 @@ public class MainFragmentController implements ServiceConnection, UIUpdateInterf
         testProgressDialog = null;
     }
 
-    public static void dismissDialog(Dialog dialog) {
-        if (dialog != null)
-            dialog.dismiss();
-    }
-
-    public void showErrorDialog(int errorMessageId) {
+    private void showErrorDialog(int errorMessageId, int dialogTitleId) {
         if (updateUITask != null) {
             updateUITask.setStopLoop(true);
         }
 
         final AlertDialog.Builder builder = new AlertDialog.Builder(mainFragmentInterface.getMainActivity());
-        builder.setTitle(R.string.test_dialog_error_title);
+        builder.setTitle(dialogTitleId);
         builder.setMessage(errorMessageId);
         builder.setNeutralButton(android.R.string.ok, null);
         this.dismissDialogs();
@@ -206,26 +212,21 @@ public class MainFragmentController implements ServiceConnection, UIUpdateInterf
         testErrorDialog.show();
     }
 
-    public void bindTestingService() {
+    void bindTestingService() {
         MainActivity activity = mainFragmentInterface.getMainActivity();
         if (activity != null) {
-            activity.setToolbarVisible(View.INVISIBLE);
-            activity.setLockNavigationDrawer(true);
 
+            unbindTestingService();//because there can be some bounded services
             // Bind to TestService
             final Intent serviceIntent = new Intent(activity, TestService.class);
-            activity.bindService(serviceIntent, this, Context.BIND_AUTO_CREATE);
+            boolean b = activity.bindService(serviceIntent, this, Context.BIND_AUTO_CREATE);
 
-            // start UI updates according to a test process
-            updateUITask = new UITestUpdater(qosMode, stopLoop, this, testTestService, testHandler);
-            testHandler.post(updateUITask);
-
-            //getActivity().getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
-            activity.getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+            Timber.d("TUUI: STS set at bind testing services");
+            testSpeedTestStatViewController = new SpeedTestStatViewController(mainFragmentInterface.getMainActivity());
         }
     }
 
-    public void unbindTestingService() {
+    void unbindTestingService() {
         MainActivity activity = mainFragmentInterface.getMainActivity();
         if (updateUITask != null) {
             updateUITask.setStopLoop(true);
@@ -241,7 +242,7 @@ public class MainFragmentController implements ServiceConnection, UIUpdateInterf
         try {
             activity.unbindService(this);
         } catch (Exception e) {
-            Log.e("TEST SERVICE", "unbinding not registered service");
+            Timber.e("TEST SERVICE unbinding not registered service");
         }
 
         if (activity != null) {
@@ -249,6 +250,7 @@ public class MainFragmentController implements ServiceConnection, UIUpdateInterf
             activity.setLockNavigationDrawer(false);
             activity.getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         }
+        Timber.d("TUUI: STS set tu null at unbind testing services");
         testSpeedTestStatViewController = null;
     }
 
@@ -259,17 +261,39 @@ public class MainFragmentController implements ServiceConnection, UIUpdateInterf
 
     @Override
     public void onServiceConnected(final ComponentName name, final IBinder service) {
-        Log.d(TAG, "service connected");
+        Timber.d("service connected");
         final TestService.RMBTBinder binder = (TestService.RMBTBinder) service;
         this.testTestService = binder.getService();
-        if (updateUITask != null) {
-            updateUITask.setRMBTService(this.testTestService);
+        if ((testTestService != null) && testTestService.isTestRunning() && !testTestService.isLoopModeRunning()) {
+            MainActivity activity = mainFragmentInterface.getMainActivity();
+            if (activity != null) {
+                activity.setToolbarVisible(View.INVISIBLE);
+                activity.setLockNavigationDrawer(true);
+                activity.getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+            }
+
+            // start UI updates according to a test process
+            if (testHandler == null) {
+                testHandler = new Handler();
+            }
+            if (updateUITask == null) {
+                updateUITask = new UITestUpdater(qosMode, stopLoop, this, testTestService, testHandler);
+            } else {
+                updateUITask.setRMBTService(this.testTestService);
+            }
+            testHandler.post(updateUITask);
+
+            //getActivity().getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
+
         }
+        /*if (updateUITask != null) {
+            updateUITask.setRMBTService(this.testTestService);
+        }*/
     }
 
     @Override
     public void onServiceDisconnected(final ComponentName name) {
-        Log.d(TAG, "service disconnected");
+        Timber.d("service disconnected");
         this.testTestService = null;
         if (updateUITask != null) {
             updateUITask.setRMBTService(null);
@@ -279,11 +303,20 @@ public class MainFragmentController implements ServiceConnection, UIUpdateInterf
     @Override
     @SuppressWarnings("unchecked")
     public void updateTestUI() {
-        String teststatus;
         testUpdateCounter++;
 
         if (testTestService == null)
             return;
+
+        if (testTestService.isLoopModeRunning()) {
+            if ((mainFragmentInterface.getScreenState() == MainScreenState.DEFAULT)) {
+                mainFragmentInterface.changeScreenState(MainScreenState.LOOP_MODE_ACTIVE, "UIUpdate - maxcounter1", true);
+            }
+        } else {
+            if ((mainFragmentInterface.getScreenState() == MainScreenState.DEFAULT) && (testTestService.isTestRunning())) {
+                mainFragmentInterface.changeScreenState(MainScreenState.TESTING, "UIUpdate - maxcounter0", true);
+            }
+        }
 
         testIntermediateResult = testTestService.getIntermediateResult(testIntermediateResult);
 
@@ -293,13 +326,13 @@ public class MainFragmentController implements ServiceConnection, UIUpdateInterf
                     testProgressDialog.dismiss();
                     testProgressDialog = null;
                 }
-                if (!testTestService.isLoopMode()) {
-                    this.showErrorDialog(R.string.test_dialog_error_control_server_conn);
+                if (!testTestService.isLoopModeRunning()) {
+                    this.showErrorDialog(mainFragmentInterface.getErrorControlServerConnectionStringId(), mainFragmentInterface.getTestErrorTitleId());
                     return;
                 }
             }
 
-            if (!testTestService.isTestRunning() && testUpdateCounter > MAX_COUNTER_WITHOUT_RESULT)
+            if (!testTestService.isTestRunning() && testUpdateCounter > MAX_COUNTER_WITHOUT_RESULT && !testTestService.isLoopModeRunning())
                 mainFragmentInterface.changeScreenState(MainScreenState.DEFAULT, "UIUpdate - maxcounter", true);
             return;
         }
@@ -312,7 +345,7 @@ public class MainFragmentController implements ServiceConnection, UIUpdateInterf
                     wait = 0;
                 if (wait != testLastShownWaitTime) {
                     testLastShownWaitTime = wait;
-                    testProgressDialog.setMessage(MessageFormat.format(waitText, wait));
+                    testProgressDialog.setMessage(waitText);
                 }
             }
             return;
@@ -323,18 +356,17 @@ public class MainFragmentController implements ServiceConnection, UIUpdateInterf
             testProgressDialog = null;
         }
 
-        boolean forceUpdate = false;
-
         if (testTestService.getNdtStatus() == NdtStatus.RUNNING) {
             final String ndtStatus = String.format(Locale.US, "NDT (%d%%)", Math.round(testTestService.getNDTProgress() * 100));
             if (testLastStatusString == null || !ndtStatus.equals(testLastStatusString)) {
-                forceUpdate = true;
                 testLastStatusString = ndtStatus;
             }
         } else if (testLastStatus != testIntermediateResult.status) {
             testLastStatus = testIntermediateResult.status;
-            testLastStatusString = Helperfunctions.getTestStatusString(getContext().getResources(), testIntermediateResult.status);
-            forceUpdate = true;
+            Context context = getContext();
+            if (context != null) {
+                testLastStatusString = Helperfunctions.getTestStatusString(context.getResources(), testIntermediateResult.status);
+            }
         }
 
         this.setSignalValue();
@@ -371,8 +403,11 @@ public class MainFragmentController implements ServiceConnection, UIUpdateInterf
                 progressValue = (double) progressSegments / PROGRESS_SEGMENTS_PROGRESS_RING;
                 correctProgressValue = progressValue;
                 totalProgressValue = correctProgressValue * PROGRESS_SEGMENTS_PROGRESS_RING / (double) PROGRESS_SEGMENTS_TOTAL;
-                Log.e("SIGNAL", "totalProgressValue: " + progressSegments);
+                Timber.e("SIGNAL totalProgressValue: %s", progressSegments);
                 speedValueRelative = testIntermediateResult.downBitPerSecLog;
+                if (graphHandler != null) {
+                    graphHandler.addNewDownloadValue(speedValueRelative, progressSegments, relativeSignal);
+                }
                 break;
 
             case INIT_UP:
@@ -380,6 +415,9 @@ public class MainFragmentController implements ServiceConnection, UIUpdateInterf
                 progressValue = (double) progressSegments / PROGRESS_SEGMENTS_PROGRESS_RING;
                 correctProgressValue = progressValue;
                 totalProgressValue = correctProgressValue * PROGRESS_SEGMENTS_PROGRESS_RING / (double) PROGRESS_SEGMENTS_TOTAL;
+                if (graphHandler != null) {
+                    graphHandler.addNewSignalValue(progressSegments, relativeSignal);
+                }
                 break;
 
             case UP:
@@ -388,13 +426,17 @@ public class MainFragmentController implements ServiceConnection, UIUpdateInterf
                 progressValue = (double) progressSegments / PROGRESS_SEGMENTS_PROGRESS_RING;
                 correctProgressValue = progressValue;
                 totalProgressValue = correctProgressValue * PROGRESS_SEGMENTS_PROGRESS_RING / (double) PROGRESS_SEGMENTS_TOTAL;
-                Log.e("SIGNAL", "totalProgressValue: " + progressSegments);
+                Timber.e("SIGNAL totalProgressValue: %s", progressSegments);
 
+                if (graphHandler != null) {
+                    graphHandler.addNewUploadValue(speedValueRelative, progressSegments, relativeSignal);
+                }
                 break;
 
             case SPEEDTEST_END:
             case QOS_TEST_RUNNING:
-                if (mainFragmentInterface != null) {
+
+                if ((mainFragmentInterface != null) && (mainFragmentInterface.getContext() != null)) {
                     if (ConfigHelper.isQosEnabled(mainFragmentInterface.getContext())) {
                         qosMode = true;
                         mainFragmentInterface.changeScreenState(MainScreenState.QOS_TESTING, "UI update", false);
@@ -408,7 +450,9 @@ public class MainFragmentController implements ServiceConnection, UIUpdateInterf
 
                         mainFragmentInterface.setQosTestProgress(0, true);
 
-                        updateUITask.setQoSModeEnabled(true);
+                        if (updateUITask != null) {
+                            updateUITask.setQoSModeEnabled(true);
+                        }
                         qosMode = true;
                     }
                 }
@@ -419,8 +463,10 @@ public class MainFragmentController implements ServiceConnection, UIUpdateInterf
             case ABORTED:
                 if (testIntermediateResult.status == ERROR) // && !ConfigHelper.isRepeatTest(getActivity()))
                 {
-                    if (!testTestService.isLoopMode())
-                        this.showErrorDialog(R.string.test_dialog_error_text);
+                    if (!testTestService.isLoopModeRunning())
+                        this.showErrorDialog(mainFragmentInterface.getTestErrorStringId(), mainFragmentInterface.getTestErrorTitleId());
+                    unbindTestingService();
+                    testTestService = null;
                     return;
                 }
 
@@ -429,17 +475,20 @@ public class MainFragmentController implements ServiceConnection, UIUpdateInterf
         }
 
 
-        mainFragmentInterface.setSpeedGaugeProgress((int) (speedValueRelative * PROGRESS_SEGMENTS_PROGRESS_RING));
-        mainFragmentInterface.setSignalValue(signal);
+        if (mainFragmentInterface != null) {
+            mainFragmentInterface.setSpeedGaugeProgress((int) (speedValueRelative * PROGRESS_SEGMENTS_PROGRESS_RING));
+            mainFragmentInterface.setSignalValue(signal);
+        }
 
-        Log.e("PROGRESS SEGMENTS", progressSegments + "");
-        Log.e("SpeedValueRelative", speedValueRelative + "");
+
+        Timber.e("PROGRESS SEGMENTS %s", progressSegments);
+        Timber.e("SpeedValueRelative %s", speedValueRelative);
 
 
         if (lastProgressSegments < progressSegments) {
             lastProgressSegments = progressSegments;
             mainFragmentInterface.setTestProgress(progressSegments);
-            Log.e("TOTAL PROGRESS", totalProgressValue + "" + correctProgressValue);
+            Timber.e("TOTAL PROGRESS %s %s", totalProgressValue , correctProgressValue);
             mainFragmentInterface.setTestTextProgress(PERCENT_FORMAT.format(totalProgressValue));
         }
 
@@ -469,7 +518,6 @@ public class MainFragmentController implements ServiceConnection, UIUpdateInterf
                     testIntermediateResult.status.equals(PING) ?
                             SpeedTestStatViewController.FLAG_SHOW_PROGRESSBAR : SpeedTestStatViewController.FLAG_HIDE_PROGRESSBAR);
             mainFragmentInterface.setPingText(pingStr);
-
         }
 
         final String downStr;
@@ -483,13 +531,9 @@ public class MainFragmentController implements ServiceConnection, UIUpdateInterf
             getSpeedTestStatus().setResultDownString(downStr,
                     testIntermediateResult.status.equals(DOWN) ?
                             SpeedTestStatViewController.FLAG_SHOW_PROGRESSBAR : SpeedTestStatViewController.FLAG_HIDE_PROGRESSBAR);
-            mainFragmentInterface.updateDownloadGraph(downStr.split(" ")[0], R.string.test_bottom_test_status_down, R.string.test_mbps);
-
-
-//            if (testIntermediateResult.status == DOWN) {
-//                mainFragmentInterface.setTestTextProgress(SpeedTestStatViewController.InfoStat.DOWNLOAD.format(testIntermediateResult.downBitPerSec));
-//            }
-
+            if (graphInterface != null) {
+                graphInterface.updateDownloadGraph(downStr.split(" ")[0], graphInterface.getDownloadStatusStringId(), graphInterface.getUnitStringId());
+            }
         }
 
         final String upStr;
@@ -503,12 +547,9 @@ public class MainFragmentController implements ServiceConnection, UIUpdateInterf
             getSpeedTestStatus().setResultUpString(upStr,
                     testIntermediateResult.status.equals(UP) || testIntermediateResult.status.equals(INIT_UP) ?
                             SpeedTestStatViewController.FLAG_SHOW_PROGRESSBAR : SpeedTestStatViewController.FLAG_HIDE_PROGRESSBAR);
-            mainFragmentInterface.updateUploadGraph(upStr.split(" ")[0], R.string.test_bottom_test_status_up, R.string.test_mbps);
-
-
-//            if ((testIntermediateResult.status == UP)) {// || (intermediateResult.status == TestStatus.INIT_UP))  {
-//                mainFragmentInterface.setTestTextProgress(SpeedTestStatViewController.InfoStat.DOWNLOAD.format(testIntermediateResult.upBitPerSec));
-//            }
+            if (graphInterface != null) {
+                graphInterface.updateUploadGraph(upStr.split(" ")[0], graphInterface.getUploadStatusStringId(), graphInterface.getUnitStringId());
+            }
         }
 
         final String jitterStr;
@@ -518,8 +559,14 @@ public class MainFragmentController implements ServiceConnection, UIUpdateInterf
             jitterStr = SpeedTestStatViewController.InfoStat.JITTER.format(testIntermediateResult.jitter);
         }
 
+        Timber.d("TUUI: prepare to set STS: " + getSpeedTestStatus() + "    TIR: " + testIntermediateResult);
         if ((getSpeedTestStatus() != null) && (testIntermediateResult != null)) {
-            mainFragmentInterface.setJitterText(jitterStr);
+            if (testIntermediateResult.status.ordinal() > PACKET_LOSS_AND_JITTER.ordinal()) {
+                Timber.d("TUUI: prepare to set jitter: " + jitterStr);
+                mainFragmentInterface.setJitterText(jitterStr);
+            } else {
+                mainFragmentInterface.setJitterText("-");
+            }
             getSpeedTestStatus().setResultJitterString(jitterStr,
                     testIntermediateResult.status.equals(TestStatus.PACKET_LOSS_AND_JITTER) ?
                             SpeedTestStatViewController.FLAG_SHOW_PROGRESSBAR : SpeedTestStatViewController.FLAG_HIDE_PROGRESSBAR);
@@ -548,7 +595,11 @@ public class MainFragmentController implements ServiceConnection, UIUpdateInterf
         if ((testIntermediateResult.packetLossDown >= 0) && (testIntermediateResult.packetLossUp >= 0)) {
             long meanPacketLoss = (testIntermediateResult.packetLossDown + testIntermediateResult.packetLossUp) / 2;
             String packetLossStr = SpeedTestStatViewController.InfoStat.PACKET_LOSS_DOWN.format(meanPacketLoss);
-            mainFragmentInterface.setPacketLossText(packetLossStr);
+            if (testIntermediateResult.status.ordinal() > PACKET_LOSS_AND_JITTER.ordinal()) {
+                mainFragmentInterface.setPacketLossText(packetLossStr);
+            } else {
+                mainFragmentInterface.setPacketLossText("-");
+            }
         } else {
             mainFragmentInterface.setPacketLossText("-");
         }
@@ -575,7 +626,8 @@ public class MainFragmentController implements ServiceConnection, UIUpdateInterf
 
                 QoSTestEnum _status = testTestService.getQoSTestStatus();
                 if (_status == null) {
-                    _status = lastQoSTestStatus == null ? QoSTestEnum.START : lastQoSTestStatus;
+//                    _status = lastQoSTestStatus == null ? QoSTestEnum.START : lastQoSTestStatus;
+                    _status = QoSTestEnum.START;
                 }
                 status = _status;
                 lastQoSTestStatus = status;
@@ -591,7 +643,7 @@ public class MainFragmentController implements ServiceConnection, UIUpdateInterf
                 status = _status;
             }
 
-//            Log.d(" DEBUG TEST", String.format("status: %s", status == null ? "null" : status.toString()));
+//            Timber.d(" DEBUG TEST", String.format("status: %s", status == null ? "null" : status.toString()));
 
             switch (status) {
                 case START:
@@ -611,7 +663,9 @@ public class MainFragmentController implements ServiceConnection, UIUpdateInterf
 
             switch (status) {
                 case START:
-                    progressSegments = Math.round(PROGRESS_SEGMENTS_QOS * progress / testTestService.getQoSTestSize());
+                    if (testTestService != null) {
+                        progressSegments = Math.round(PROGRESS_SEGMENTS_QOS * progress / testTestService.getQoSTestSize());
+                    }
                     break;
 
                 case QOS_RUNNING:
@@ -620,11 +674,14 @@ public class MainFragmentController implements ServiceConnection, UIUpdateInterf
 
                 case QOS_FINISHED:
                 case NDT_RUNNING:
+//                    running = true;
                     progressSegments = PROGRESS_SEGMENTS_QOS - 1;
                     break;
 
                 case STOP:
+//                    if (running == true) {
                     progressSegments = PROGRESS_SEGMENTS_QOS;
+//                    }
                     break;
 
                 case ERROR:
@@ -639,8 +696,7 @@ public class MainFragmentController implements ServiceConnection, UIUpdateInterf
 
             mainFragmentInterface.changeScreenState(MainScreenState.QOS_TESTING, "QOS update UI", false);
 
-
-            Log.e("PROGRESS SEGMENT 2", progressSegments + "");
+            Timber.e("PROGRESS SEGMENT 2 %s status: %s", progressSegments, status);
             final double totalProgressValue = (PROGRESS_SEGMENTS_PROGRESS_RING + progressSegments) / (double) PROGRESS_SEGMENTS_TOTAL;
             mainFragmentInterface.setTestTextProgress(PERCENT_FORMAT.format(totalProgressValue));
             mainFragmentInterface.setQosTestProgress((int) (progressSegments), true);
@@ -671,65 +727,72 @@ public class MainFragmentController implements ServiceConnection, UIUpdateInterf
             return;
         }
 
-
+        Context context1 = getContext();
         if (mainFragmentInterface != null) {
             MainActivity activity = mainFragmentInterface.getMainActivity();
-            activity.setHistoryDirty(true);
-            activity.checkSettings(true, null);
+            if ((activity != null) && (context1 != null)) {
+                ConfigHelper.setHistoryIsDirty(activity, true);
+                activity.checkSettings(true, null);
 
-            if (activity == null) {
-                return;
-            }
+                if (testShowQoSErrorToast) {
+                    final Toast toast = Toast.makeText(activity, mainFragmentInterface.getTestErrorQosStringId(), Toast.LENGTH_LONG);
+                    toast.show();
+                }
 
-            if (testShowQoSErrorToast) {
-                final Toast toast = Toast.makeText(activity, R.string.test_toast_error_text_qos, Toast.LENGTH_LONG);
-                toast.show();
-            }
+                this.dismissDialogs();
 
-            this.dismissDialogs();
+                String testUuid = TestConfig.getCurrentlyPerformingTestUUID();
+                if (testUuid != null) {
+                    mainFragmentInterface.setTestUUID(testUuid);
+                }
+                if (testUuid == null) {
+                    this.showErrorDialog(mainFragmentInterface.getTestErrorStringId(), mainFragmentInterface.getTestErrorTitleId());
+                    context1.stopService(new Intent(context1, TestService.class));
+                    return;
+                }
 
-            String testUuid = testTestService == null ? null : testTestService.getTestUuid();
-            mainFragmentInterface.setTestUUID(testUuid);
-            if (testUuid == null) {
-                this.showErrorDialog(R.string.test_dialog_error_text);
-                getContext().stopService(new Intent(getContext(), TestService.class));
-                return;
-            }
-
-            // when user stop test by dialog then result should not be shown
-            if (!isTestStoppedByUser) {
-                if (mainFragmentInterface != null) {
-                    if (qosMode) {
-                        mainFragmentInterface.changeScreenState(MainScreenState.QOS_TEST_RESULT, "ShowResult - testStoppedByUser", true);
-                        testTestService.stopTest();
-                        getContext().stopService(new Intent(getContext(), TestService.class));
-                    } else {
-                        mainFragmentInterface.changeScreenState(MainScreenState.TEST_RESULT, "ShowResult - testStoppedByUser", true);
-                        testTestService.stopTest();
-                        getContext().stopService(new Intent(getContext(), TestService.class));
+                // when user stop test by dialog then result should not be shown
+                if (!isTestStoppedByUser) {
+                    if (mainFragmentInterface != null) {
+                        if (qosMode) {
+//                            if (context1 != null) {
+//                                TestConfig.setShouldShowResults(context1.getApplicationContext(), true);
+//                            }
+                            mainFragmentInterface.changeScreenState(MainScreenState.QOS_TEST_RESULT, "ShowResult - testStoppedByUser 1", true);
+                            testTestService.stopTest();
+                            context1.stopService(new Intent(context1, TestService.class));
+                        } else {
+//                            if (context1 != null) {
+//                                TestConfig.setShouldShowResults(context1.getApplicationContext(), true);
+//                            }
+                            mainFragmentInterface.changeScreenState(MainScreenState.TEST_RESULT, "ShowResult - testStoppedByUser 2", true);
+                            testTestService.stopTest();
+                            context1.stopService(new Intent(context1, TestService.class));
+                        }
                     }
+                    if (testTestService != null) {
+                        testTestService.stopTest();
+                        final Intent service = new Intent(TestService.ACTION_ABORT_TEST, null, context1, TestService.class);
+                            context1.startService(service);
+                        testTestService = null;
+                    }
+                } else {
+                    isTestStoppedByUser = false;
+                    context1.stopService(new Intent(context1, TestService.class));
                 }
-                if (testTestService != null) {
-                    testTestService.stopTest();
-                    final Intent service = new Intent(TestService.ACTION_ABORT_TEST, null, getContext(), TestService.class);
-                    getContext().startService(service);
-                    testTestService = null;
-                }
-            } else {
-                isTestStoppedByUser = false;
-                getContext().stopService(new Intent(getContext(), TestService.class));
             }
         } else {
             testTestService.stopTest();
-            getContext().stopService(new Intent(getContext(), TestService.class));
+            Context context = context1;
+            if (context != null) {
+                context.stopService(new Intent(context, TestService.class));
+            }
         }
-
     }
 
-    public synchronized void setTestResultQoSDetails(QoSServerResultCollection qosResults) {
+    private synchronized void setTestResultQoSDetails(QoSServerResultCollection qosResults) {
 
-        Log.e("QOS_RESULTS", qosResults + "");
-
+        Timber.e("QOS_RESULTS %s", qosResults);
         int testCounter = 0;
         int failedTestsCounter = 0;
         int percentage = 0;
@@ -739,13 +802,10 @@ public class MainFragmentController implements ServiceConnection, UIUpdateInterf
             failedTestsCounter = qoSStatistics.getFailedTestsCounter();
             percentage = qoSStatistics.getPercentageForTests();
         }
-
         mainFragmentInterface.showQosResults(testCounter, failedTestsCounter, percentage);
-
-
     }
 
-    public Double getRelativeSignal() {
+    private Double getRelativeSignal() {
         Double relativeSignal = null;
         NetworkUtil.MinMax<Integer> signalBounds = NetworkUtil.getSignalStrengthBounds(signalType);
         if (!(signalBounds.min == Integer.MIN_VALUE || signalBounds.max == Integer.MAX_VALUE)) {
@@ -761,17 +821,17 @@ public class MainFragmentController implements ServiceConnection, UIUpdateInterf
         signalType = testTestService.getSignalType();
 
         if (signal == null || signal == 0) {
-            signalType = SINGAL_TYPE_NO_SIGNAL;
+            signalType = SIGNAL_TYPE_NO_SIGNAL;
         }
 
         boolean signalTypeChanged = false;
 
-        if (signalType != SINGAL_TYPE_NO_SIGNAL) {
+        if (signalType != SIGNAL_TYPE_NO_SIGNAL) {
             lastSignal = signal;
             signalTypeChanged = testLastSignalType != signalType;
             testLastSignalType = signalType;
         }
-        if (signalType == SINGAL_TYPE_NO_SIGNAL && testLastSignalType != SINGAL_TYPE_NO_SIGNAL) {
+        if (signalType == SIGNAL_TYPE_NO_SIGNAL && testLastSignalType != SIGNAL_TYPE_NO_SIGNAL) {
             // keep old signal if we had one before
             signal = lastSignal;
         }
@@ -780,6 +840,9 @@ public class MainFragmentController implements ServiceConnection, UIUpdateInterf
         NetworkUtil.MinMax<Integer> signalBounds = NetworkUtil.getSignalStrengthBounds(signalType);
 
         if (signalTypeChanged) {
+            if (graphHandler != null) {
+                graphHandler.signalTypeChanged(relativeSignal, signalBounds);
+            }
         }
 
         mainFragmentInterface.setSignalValue(signal);
@@ -797,53 +860,61 @@ public class MainFragmentController implements ServiceConnection, UIUpdateInterf
 
     @Override
     public boolean isTestVisible() {
-        if (mainFragmentInterface != null) {
-            return mainFragmentInterface.isTestVisible();
-        } else {
-            return false;
-        }
+        return mainFragmentInterface != null && mainFragmentInterface.isTestVisible();
     }
 
 
-
-    public void initializeTesting() {
+    void initializeTesting(GraphHandler graphHandler) {
         qosMode = false;
         testError = false;
         stopLoop = false;
-        testHandler = new Handler();
+        if (testHandler == null) {
+            testHandler = new Handler();
+        }
         testLastShownWaitTime = -1;
         lastProgressSegments = -1;
         isTestStoppedByUser = false;
         bindTestingService();
-        if (!ConfigHelper.isQosEnabled(getContext())) {
-            PROGRESS_SEGMENTS_TOTAL = PROGRESS_SEGMENTS_PROGRESS_RING;
-        } else {
-            PROGRESS_SEGMENTS_TOTAL = PROGRESS_SEGMENTS_PROGRESS_RING + PROGRESS_SEGMENTS_QOS;
-        }
+        Context context = getContext();
+        if (context != null) {
+            if (!ConfigHelper.isQosEnabled(context)) {
+                PROGRESS_SEGMENTS_TOTAL = PROGRESS_SEGMENTS_PROGRESS_RING;
+            } else {
+                PROGRESS_SEGMENTS_TOTAL = PROGRESS_SEGMENTS_PROGRESS_RING + PROGRESS_SEGMENTS_QOS;
+            }
+            this.graphHandler = graphHandler;
+            if (graphHandler != null) {
+                this.graphHandler.initializeGraphs(context);
+            }
 
-        testUpdateCounter = 0;
-        testSpeedTestStatViewController = new SpeedTestStatViewController(mainFragmentInterface.getMainActivity());
+            testUpdateCounter = 0;
+            Timber.d("TUUI: STS set");
+            testSpeedTestStatViewController = new SpeedTestStatViewController(mainFragmentInterface.getMainActivity());
 
 
-        final String progressTitle = mainFragmentInterface.getContext().getString(R.string.test_progress_title);
-        final String progressText = mainFragmentInterface.getContext().getString(R.string.test_progress_text);
+            final String progressTitle = mainFragmentInterface.getContext().getString(mainFragmentInterface.getProgressTitleId());
+            final String progressText = mainFragmentInterface.getContext().getString(mainFragmentInterface.getProgressTextId());
 
-        if (testProgressDialog == null) {
-            testProgressDialog = ProgressDialog.show(mainFragmentInterface.getMainActivity(), progressTitle, progressText, true, false);
-            testProgressDialog.setOnKeyListener(backKeyListener);
+            if (testProgressDialog == null) {
+                testProgressDialog = ProgressDialog.show(context, progressTitle, progressText, true, false);
+                testProgressDialog.setOnKeyListener(backKeyListener);
+            }
         }
 
     }
 
-    public ChangeableSpeedTestStatus getSpeedTestStatus() {
+    private ChangeableSpeedTestStatus getSpeedTestStatus() {
         return testSpeedTestStatViewController;
     }
 
-    public void onDestroy() {
+    void onDestroy() {
         dismissDialogs();
+        if (graphHandler != null) {
+            graphHandler.releaseGraphs();
+        }
     }
 
-    public void initializeQoSResults(String uid) {
+    void initializeQoSResults(String uid) {
         MainActivity mainActivity = mainFragmentInterface.getMainActivity();
         if (mainActivity != null) {
             CheckTestResultDetailTask testResultDetailTask = new CheckTestResultDetailTask(mainActivity, ResultDetailType.QUALITY_OF_SERVICE_TEST);
@@ -861,5 +932,9 @@ public class MainFragmentController implements ServiceConnection, UIUpdateInterf
 
             testResultDetailTask.execute(uid);
         }
+    }
+
+    public void setInformationCollector(InformationCollector informationCollector) {
+        this.informationCollector = informationCollector;
     }
 }

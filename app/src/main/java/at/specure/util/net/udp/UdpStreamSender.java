@@ -15,9 +15,7 @@
  *******************************************************************************/
 package at.specure.util.net.udp;
 
-import android.util.Log;
-
-import com.crashlytics.android.Crashlytics;
+import com.google.firebase.crashlytics.FirebaseCrashlytics;
 
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
@@ -82,7 +80,7 @@ public class UdpStreamSender implements StreamSender<DatagramSocket> {
             if (Thread.interrupted()) {
                 isRunning.set(false);
                 try {
-                    Crashlytics.logException(new Exception("UdpStreamSender - interrupted"));
+                    FirebaseCrashlytics.getInstance().recordException(new Exception("UdpStreamSender - interrupted"));
                 } catch (Exception e1) {
                     //do nothing
                 }
@@ -92,7 +90,7 @@ public class UdpStreamSender implements StreamSender<DatagramSocket> {
             if (stopTimeMs > 0 && stopTimeMs < System.currentTimeMillis()) {
                 isRunning.set(false);
                 try {
-                    Crashlytics.logException(new Exception("UdpStreamSender - timeout"));
+                    FirebaseCrashlytics.getInstance().recordException(new Exception("UdpStreamSender - timeout"));
                 } catch (Exception e1) {
                     //do nothing
                 }
@@ -139,7 +137,7 @@ public class UdpStreamSender implements StreamSender<DatagramSocket> {
                             callback.onReceive(dp);
                         }
                     } catch (SocketTimeoutException e) {
-                        Crashlytics.log(1, "UdpStreamSender", "socketTimeoutException");
+                        FirebaseCrashlytics.getInstance().recordException(e);
                         e.printStackTrace();
                     }
                 }

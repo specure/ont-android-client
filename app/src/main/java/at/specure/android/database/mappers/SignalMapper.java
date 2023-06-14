@@ -19,8 +19,8 @@ package at.specure.android.database.mappers;
 import java.util.ArrayList;
 import java.util.List;
 
-import at.specure.android.database.obj.TSignal;
 import at.specure.android.api.jsons.Signal;
+import at.specure.android.database.obj.TSignal;
 
 /**
  * Created by michal.cadrik on 8/17/2017.

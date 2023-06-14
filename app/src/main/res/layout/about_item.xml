@@ -18,7 +18,8 @@
  <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
      android:layout_width="match_parent"
      android:layout_height="wrap_content"
-     android:orientation="vertical">
+     android:orientation="vertical"
+     style="@style/listViewAboutItem">
 
      <TextView android:id="@+id/title"
          style="@style/textMediumLight"
@@ -26,10 +27,12 @@
          android:layout_height="wrap_content"/>
 
      <TextView android:id="@+id/text1"
+         style="@style/textSmallLight"
          android:layout_width="match_parent"
          android:layout_height="wrap_content"/>
      
      <TextView android:id="@+id/text2"
+         style="@style/textSmallLight"
          android:layout_width="match_parent"
          android:layout_height="wrap_content"/>
  </LinearLayout>

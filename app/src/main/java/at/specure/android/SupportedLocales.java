@@ -6,7 +6,6 @@ public enum SupportedLocales {
 
     DEFAULT(0, null, null, null, R.string.system_pref_lang, 0);
 
-
     public String languageCode;
     public String countryCode;
     public String script;

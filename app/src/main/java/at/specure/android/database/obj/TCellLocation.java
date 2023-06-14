@@ -25,9 +25,9 @@ import android.net.Uri;
 import java.util.ArrayList;
 import java.util.List;
 
+import at.specure.android.api.jsons.CellLocation;
 import at.specure.android.database.Contract;
 import at.specure.android.database.DatabaseHelper;
-import at.specure.android.util.InformationCollector;
 
 /**
  * Created by michal.cadrik on 8/10/2017.
@@ -68,12 +68,12 @@ public class TCellLocation {
         this.timeAge = timeAge;
     }
 
-    public static List<TCellLocation> convertToTs(List<InformationCollector.CellLocationItem> cellLocations, int type) {
+    public static List<TCellLocation> convertToTs(List<CellLocation> cellLocations, int type) {
         ArrayList<TCellLocation> result = new ArrayList<>();
         if ((cellLocations != null) && (!cellLocations.isEmpty())) {
-            for (InformationCollector.CellLocationItem cellLocation : cellLocations) {
-                TCellLocation tCellLocation = new TCellLocation((long) cellLocation.scramblingCode, (long) cellLocation.areaCode,
-                        (long) cellLocation.locationId, type, cellLocation.tstamp, cellLocation.tstampNano);
+            for (CellLocation cellLocation : cellLocations) {
+                TCellLocation tCellLocation = new TCellLocation((long) cellLocation.getPrimaryScramblingCode(), (long) cellLocation.getAreaCode(),
+                        (long) cellLocation.getLocationId(), type, cellLocation.getTime(), cellLocation.getTimeNs());
                 result.add(tCellLocation);
             }
         }

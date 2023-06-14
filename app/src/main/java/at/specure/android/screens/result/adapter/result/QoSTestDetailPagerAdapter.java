@@ -16,16 +16,16 @@
  ******************************************************************************/
 package at.specure.android.screens.result.adapter.result;
 
-import java.util.List;
-
 import android.content.Context;
+import androidx.annotation.NonNull;
 import android.view.View;
 import android.view.ViewGroup;
 
-import androidx.viewpager.widget.PagerAdapter;
+import java.util.List;
 
+import androidx.viewpager.widget.PagerAdapter;
 import at.specure.android.screens.main.MainActivity;
-import at.specure.android.screens.result.QoSTestDetailView;
+import at.specure.android.screens.result.views.QoSTestDetailView;
 import at.specure.client.v2.task.result.QoSServerResult;
 import at.specure.client.v2.task.result.QoSServerResultDesc;
 
@@ -36,7 +36,7 @@ public class QoSTestDetailPagerAdapter extends PagerAdapter {
     private final List<QoSServerResultDesc> descList;
         
 	public QoSTestDetailPagerAdapter(final MainActivity _activity,
-			final List<QoSServerResult> resultList, final List<QoSServerResultDesc> descList) {
+                                     final List<QoSServerResult> resultList, final List<QoSServerResultDesc> descList) {
 		
 		super();
 		
@@ -50,19 +50,20 @@ public class QoSTestDetailPagerAdapter extends PagerAdapter {
 		return "#" + (position + 1);
 	}
 
+	@NonNull
 	@Override
-	public Object instantiateItem(ViewGroup container, int position) {
-        final Context context = container.getContext();
-        View view = null;
-        //view = new QoSCategoryView(context, activity, results.getTestDescMap().get(key), resultMap.get(key), descMap.get(key));
-        view = new QoSTestDetailView(context, activity, resultList.get(position), descList);
-        container.addView(view);
-        return view;
+	public Object instantiateItem(@NonNull ViewGroup container, int position) {
+		final Context context = container.getContext();
+		View view = null;
+		//view = new QoSCategoryView(context, activity, results.getTestDescMap().get(key), resultMap.get(key), descMap.get(key));
+		view = new QoSTestDetailView(context, activity, resultList.get(position), descList);
+		container.addView(view);
+		return view;
 	}
 	
 	@Override
-	public int getItemPosition(Object object) {
-	    return PagerAdapter.POSITION_NONE;
+	public int getItemPosition(@NonNull Object object) {
+		return PagerAdapter.POSITION_NONE;
 	}
 	
 	@Override
@@ -77,13 +78,13 @@ public class QoSTestDetailPagerAdapter extends PagerAdapter {
     }
 
 	@Override
-	public boolean isViewFromObject(View view, Object object) {
-        return view == object;
+	public boolean isViewFromObject(@NonNull View view, @NonNull Object object) {
+		return view == object;
 	}
 
 	@Override
-	public void destroyItem(ViewGroup container, int position, Object object) {
-        final View view = (View) object;
-        container.removeView(view);
+	public void destroyItem(@NonNull ViewGroup container, int position, @NonNull Object object) {
+		final View view = (View) object;
+		container.removeView(view);
 	}	
 }

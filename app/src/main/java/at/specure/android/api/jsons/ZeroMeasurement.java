@@ -190,6 +190,7 @@ public class ZeroMeasurement {
         this.cellLocations = new CellLocationMapper().map(zeroMeasurement.getCellLocations(null));
         this.signals = new SignalMapper().map(zeroMeasurement.getSignals(null));
 
+        this.timezone = zeroMeasurement.timezone;
     }
 
     public Long getInternalId() {

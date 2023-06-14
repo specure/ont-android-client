@@ -425,6 +425,10 @@
     <string name="map_filter_technology_title">Technology</string>
     <string name="loop_notification_text_2">Touch to stop Loop mode, test is running %d</string>
     <string name="confirm">Confirm</string>
-    <string name="secret">0</string>
+
+    <string name="test_started">Test started</string>
+    <string name="loop_test_started">Loop test started</string>
+    <string name="permission_explanation_read_phone">We need this permission in order to detect cellular information correctly</string>
+    <string name="background_location_permission_explanation">We need to access location on the background to be able show your measurement on the map when you left app during the measurement.</string>
 
 </resources>

@@ -16,6 +16,7 @@
  ******************************************************************************/
 package at.specure.android.api.calls;
 
+import android.content.Context;
 import android.os.AsyncTask;
 
 import com.google.gson.JsonArray;
@@ -33,13 +34,12 @@ import java.util.Enumeration;
 
 import at.specure.android.api.ControlServerConnection;
 import at.specure.android.configs.ConfigHelper;
-import at.specure.android.screens.main.MainActivity;
 import at.specure.android.screens.result.adapter.result.OnCompleteListener;
 import at.specure.android.util.net.NetworkInfoCollector;
 import timber.log.Timber;
 
 public class CheckIpTask extends AsyncTask<Void, Void, JsonArray> {
-    private final MainActivity activity;
+    private final Context context;
 
     private JsonArray newsList;
 
@@ -62,8 +62,8 @@ public class CheckIpTask extends AsyncTask<Void, Void, JsonArray> {
     private static final String DEBUG_TAG = "CheckIpTask";
 
 
-    public CheckIpTask(final MainActivity activity) {
-        this.activity = activity;
+    public CheckIpTask(final Context context) {
+        this.context = context;
 
     }
 
@@ -77,13 +77,13 @@ public class CheckIpTask extends AsyncTask<Void, Void, JsonArray> {
     @Override
     protected JsonArray doInBackground(final Void... params) {
         needsRetry = false;
-        serverConn = new ControlServerConnection(activity);
+        serverConn = new ControlServerConnection(context);
 
 
         try {
             Socket s = new Socket();
-            InetSocketAddress addr = new InetSocketAddress(ConfigHelper.getCachedControlServerNameIpv4(activity.getApplicationContext()),
-                    ConfigHelper.getControlServerPort(activity.getApplicationContext()));
+            InetSocketAddress addr = new InetSocketAddress(ConfigHelper.getCachedControlServerNameIpv4(context.getApplicationContext()),
+                    ConfigHelper.getControlServerPort(context.getApplicationContext()));
             s.connect(addr, 5000);
 
             privateIpv4 = s.getLocalAddress();
@@ -100,17 +100,17 @@ public class CheckIpTask extends AsyncTask<Void, Void, JsonArray> {
 
         try {
             Socket s = new Socket();
-            InetSocketAddress addr = new InetSocketAddress(ConfigHelper.getCachedControlServerNameIpv6(activity.getApplicationContext()),
-                    ConfigHelper.getControlServerPort(activity.getApplicationContext()));
+            InetSocketAddress addr = new InetSocketAddress(ConfigHelper.getCachedControlServerNameIpv6(context.getApplicationContext()),
+                    ConfigHelper.getControlServerPort(context.getApplicationContext()));
             s.connect(addr, 5000);
 
             privateIpv6 = s.getLocalAddress();
             s.close();
         } catch (SocketTimeoutException e) {
             e.printStackTrace();
-            needsRetry = ConfigHelper.isRetryRequiredOnIpv6SocketTimeout(activity);
+            needsRetry = ConfigHelper.isRetryRequiredOnIpv6SocketTimeout(context);
         } catch (java.net.UnknownHostException | java.net.NoRouteToHostException e) {
-            System.err.println("Unknown host error:" + ConfigHelper.getCachedControlServerNameIpv6(activity.getApplicationContext()));
+            System.err.println("Unknown host error:" + ConfigHelper.getCachedControlServerNameIpv6(context.getApplicationContext()));
         } catch (Exception e) {
             needsRetry = false;
             e.printStackTrace();
@@ -310,7 +310,7 @@ public class CheckIpTask extends AsyncTask<Void, Void, JsonArray> {
                 }
 
             } else {
-                ConfigHelper.setLastIp(activity.getApplicationContext(), null);
+                ConfigHelper.setLastIp(context.getApplicationContext(), null);
                 if (onCompleteListener != null) {
                     onCompleteListener.onComplete(OnCompleteListener.ERROR, null);
                 }

@@ -17,6 +17,9 @@ public class ZeroMeasurementsConfig {
         if (context != null) {
             SharedPreferences sharedPreferences = PreferenceConfig.getPreferenceSharedPreferences(context);
             threshold = sharedPreferences.getInt(THRESHOLD_KEY_2G, Integer.MIN_VALUE);
+            if (threshold == Integer.MIN_VALUE) {
+                threshold = context.getResources().getInteger(R.integer.zero_measurement_2g_threshold);
+            }
         }
         return threshold;
     }
@@ -26,6 +29,9 @@ public class ZeroMeasurementsConfig {
         if (context != null) {
             SharedPreferences sharedPreferences = PreferenceConfig.getPreferenceSharedPreferences(context);
             threshold = sharedPreferences.getInt(THRESHOLD_KEY_3G, Integer.MIN_VALUE);
+            if (threshold == Integer.MIN_VALUE) {
+                threshold = context.getResources().getInteger(R.integer.zero_measurement_3g_threshold);
+            }
         }
         return threshold;
     }
@@ -35,6 +41,9 @@ public class ZeroMeasurementsConfig {
         if (context != null) {
             SharedPreferences sharedPreferences = PreferenceConfig.getPreferenceSharedPreferences(context);
             threshold = sharedPreferences.getInt(THRESHOLD_KEY_4G, Integer.MIN_VALUE);
+            if (threshold == Integer.MIN_VALUE) {
+                threshold = context.getResources().getInteger(R.integer.zero_measurement_4g_threshold);
+            }
         }
         return threshold;
     }

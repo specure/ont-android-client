@@ -2,6 +2,7 @@ package at.specure.androidX.data.operators;
 
 import com.google.gson.annotations.SerializedName;
 
+import static at.specure.androidX.data.map_filter.data.MapFilterTypes.MAP_FILTER_TYPE_OPERATOR;
 
 public class MapFilterOperator {
 

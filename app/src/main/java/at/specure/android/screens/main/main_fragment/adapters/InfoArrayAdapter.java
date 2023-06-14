@@ -45,18 +45,13 @@ import at.specure.android.util.net.NetworkInfoCollector;
 
 public class InfoArrayAdapter extends ArrayAdapter<InfoOverlayEnum> {
 
-    private List<InfoOverlayEnum> infoList;
     private final Activity context;
     private final OverlayType overlayType;
-    private InfoCollector infoCollector;
     private final DecimalFormat percentFormat = new DecimalFormat("##0.0");
+    private List<InfoOverlayEnum> infoList;
+    private InfoCollector infoCollector;
     private Format speedFormat;
     private InterfaceTrafficGatherer interfaceTrafficGatherer;
-
-    class ViewHolder {
-        public TextView name;
-        public TextView value;
-    }
 
     public InfoArrayAdapter(@NonNull Activity context, OverlayType overlayType, InterfaceTrafficGatherer interfaceTrafficGatherer, InfoOverlayEnum... infoArray) {
         super(context, R.layout.test_result_detail_item);
@@ -106,7 +101,7 @@ public class InfoArrayAdapter extends ArrayAdapter<InfoOverlayEnum> {
 
     @NonNull
     @Override
-    public View getView(int position, View convertView, ViewGroup parent) {
+    public View getView(int position, View convertView, @NonNull ViewGroup parent) {
 
         View rowView = convertView;
         // reuse views
@@ -263,6 +258,11 @@ public class InfoArrayAdapter extends ArrayAdapter<InfoOverlayEnum> {
         }
         return rowView;
 
+    }
+
+    class ViewHolder {
+        public TextView name;
+        public TextView value;
     }
 }
 

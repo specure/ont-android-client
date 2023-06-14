@@ -18,6 +18,8 @@ package at.specure.android.screens.main.main_activity_interfaces;
 
 import com.google.android.gms.maps.model.LatLng;
 
+import at.specure.android.screens.map.MapProperties;
+
 public interface MapInterface {
 
     void showMap(String mapType, LatLng initialCenter, boolean clearFilter, boolean popBackStack);

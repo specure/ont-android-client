@@ -17,32 +17,26 @@
 package at.specure.android.screens.main.main_fragment.view_handlers;
 
 import android.content.Context;
-import android.view.MotionEvent;
+import android.os.Handler;
 import android.view.View;
 
-
 import com.specure.opennettest.R;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Set;
 
 import at.specure.android.util.ViewHelper;
 
-/**
- * Created by michal.cadrik on 10/12/2017.
- */
-
 public abstract class ViewsHandler {
 
-    View rootView;
     ArrayList<Integer> viewsToSetGone;
     ArrayList<Integer> viewsToSetVisible;
     ArrayList<Integer> viewsToSetInvisble;
     HashMap<Integer, View.OnClickListener> onClickListeners;
+    private View rootView;
 
 
-    public ViewsHandler(View rootView, HashMap<Integer, View.OnClickListener> onClickListeners) {
+    ViewsHandler(View rootView, HashMap<Integer, View.OnClickListener> onClickListeners) {
         this.rootView = rootView;
         this.viewsToSetVisible = new ArrayList<>();
         this.viewsToSetInvisble = new ArrayList<>();
@@ -52,15 +46,13 @@ public abstract class ViewsHandler {
         setOnClickListeners(rootView, onClickListeners);
     }
 
-    protected void setOnClickListeners(View rootView, HashMap<Integer, View.OnClickListener> onClickListeners) {
+    void setOnClickListeners(View rootView, HashMap<Integer, View.OnClickListener> onClickListeners) {
         if ((onClickListeners != null) && (rootView != null)) {
             Set<Integer> keys = onClickListeners.keySet();
-            if (keys != null) {
-                for (Integer key : keys) {
-                    View viewById = rootView.findViewById(key);
-                    if (viewById != null) {
-                        viewById.setOnClickListener(onClickListeners.get(key));
-                    }
+            for (Integer key : keys) {
+                View viewById = rootView.findViewById(key);
+                if (viewById != null) {
+                    viewById.setOnClickListener(onClickListeners.get(key));
                 }
             }
         }
@@ -68,7 +60,7 @@ public abstract class ViewsHandler {
 
     public abstract void initializeViews(View rootView, Context context);
 
-    protected void setViewVisibility() {
+    void setViewVisibility() {
         changeViewsVisibility(viewsToSetGone, View.GONE);
         changeViewsVisibility(viewsToSetInvisble, View.INVISIBLE);
         changeViewsVisibility(viewsToSetVisible, View.VISIBLE);
@@ -97,59 +89,35 @@ public abstract class ViewsHandler {
         }
     }
 
-    protected void enableClickingOnButtons(View rootView) {
-        View testServer = rootView.findViewById(R.id.main_fragment__test_server_container);
-        if (testServer != null) {
-            testServer.setOnTouchListener(new View.OnTouchListener() {
-                @Override
-                public boolean onTouch(View view, MotionEvent motionEvent) {
-                    return false;
+    void enableClickingOnButtons(final View rootView) {
+        Handler handler = new Handler();
+        handler.post(new Runnable() {
+            @Override
+            public void run() {
+                View right_bottom_default_container = rootView.findViewById(R.id.main_fragment__bottom_info_container);
+                if (right_bottom_default_container != null) {
+                    ViewHelper.setClickableView(right_bottom_default_container, true);
+                    ViewHelper.setFocusableView(right_bottom_default_container, true);
                 }
-            });
-        }
+            }
+        });
 
-        View testServerName = rootView.findViewById(R.id.main_fragment__test_server_name);
-        if (testServerName != null) {
-            testServerName.setOnTouchListener(new View.OnTouchListener() {
-                @Override
-                public boolean onTouch(View view, MotionEvent motionEvent) {
-                    return false;
-                }
-            });
-        }
 
-        View right_bottom_default_container = rootView.findViewById(R.id.main_fragment__bottom_info_container);
-        if (right_bottom_default_container != null) {
-            ViewHelper.setClickableView(right_bottom_default_container, true);
-            ViewHelper.setFocusableView(right_bottom_default_container, true);
-        }
     }
 
-    protected void disableClickingOnButtons(View rootView) {
-        View testServer = rootView.findViewById(R.id.main_fragment__test_server_container);
-        if (testServer != null) {
-            testServer.setOnTouchListener(new View.OnTouchListener() {
-                @Override
-                public boolean onTouch(View view, MotionEvent motionEvent) {
-                    return true;
+    void disableClickingOnButtons(final View rootView) {
+        Handler handler = new Handler();
+        handler.post(new Runnable() {
+            @Override
+            public void run() {
+                View right_bottom_default_container = rootView.findViewById(R.id.main_fragment__bottom_info_container);
+                if (right_bottom_default_container != null) {
+                    ViewHelper.setClickableView(right_bottom_default_container, false);
+                    ViewHelper.setFocusableView(right_bottom_default_container, false);
                 }
-            });
-        }
+            }
+        });
 
-        View testServerName = rootView.findViewById(R.id.main_fragment__test_server_name);
-        if (testServerName != null) {
-            testServerName.setOnTouchListener(new View.OnTouchListener() {
-                @Override
-                public boolean onTouch(View view, MotionEvent motionEvent) {
-                    return true;
-                }
-            });
-        }
 
-        View right_bottom_default_container = rootView.findViewById(R.id.main_fragment__bottom_info_container);
-        if (right_bottom_default_container != null) {
-            ViewHelper.setClickableView(right_bottom_default_container, false);
-            ViewHelper.setFocusableView(right_bottom_default_container, false);
-        }
     }
 }

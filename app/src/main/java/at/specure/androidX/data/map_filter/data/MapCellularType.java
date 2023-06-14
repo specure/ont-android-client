@@ -2,6 +2,8 @@ package at.specure.androidX.data.map_filter.data;
 
 import com.google.gson.annotations.SerializedName;
 
+import at.specure.androidX.data.map_filter.view_data.FilterItem;
+
 public class MapCellularType {
 
     @SerializedName("default")

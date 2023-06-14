@@ -21,7 +21,6 @@ import android.os.Handler;
 
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
-
 import at.specure.android.screens.main.InitialSetupInterface;
 import at.specure.android.screens.main.MainActivity;
 import timber.log.Timber;

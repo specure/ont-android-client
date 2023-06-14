@@ -20,9 +20,6 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 
-import androidx.annotation.NonNull;
-import androidx.preference.PreferenceManager;
-
 import com.specure.opennettest.R;
 
 import java.io.IOException;
@@ -38,6 +35,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import androidx.annotation.NonNull;
+import androidx.preference.PreferenceManager;
 import at.specure.android.screens.result.adapter.result.QoSCategoryPagerAdapter;
 import at.specure.client.v2.task.result.QoSTestResultEnum;
 
@@ -642,11 +641,16 @@ public final class ConfigHelper {
 
 
     private static boolean enabledZeroMeasurementsInPreferences(Context context) {
+        if (context != null) {
+            return getSharedPreferences(context).getBoolean("enabled_zero_measurements_in_preferences", context.getResources().getBoolean(R.bool.zero_measurements_detect_default));
+        }
         return false;
     }
 
     private static int detectZeroMeasurementManner(Context context) {
-
+        if (context != null) {
+            return context.getResources().getInteger(R.integer.zero_measurement_detection_manner);
+        }
         return ZERO_MEASUREMENT_DETECT_NEVER;
     }
 
@@ -674,18 +678,23 @@ public final class ConfigHelper {
     }
 
     public static boolean shouldBeAppReviewed(Context context) {
-
+        if (context != null) {
+            return context.getResources().getBoolean(R.bool.enabled_app_review);
+        }
         return false;
-
     }
 
     public static int measurementCountToDisplayReviewDialog(Context context) {
-
+        if (context != null) {
+            return context.getResources().getInteger(R.integer.review_number_tests);
+        }
         return 5;
     }
 
     public static int daysCountToDisplayReviewDialog(Context context) {
-
+        if (context != null) {
+            return context.getResources().getInteger(R.integer.review_number_days);
+        }
         return 5;
 
     }
@@ -694,7 +703,7 @@ public final class ConfigHelper {
         int apiVersion = 1;
         if (context != null) {
             try {
-                apiVersion = 1;
+                apiVersion = context.getResources().getInteger(R.integer.measurements_servers_api_version);
             } catch (Exception ignored) {
             }
         }
@@ -712,7 +721,9 @@ public final class ConfigHelper {
     }
 
     public static boolean shouldShowWebsite(Context context) {
-
+        if (context != null) {
+            return context.getResources().getBoolean(R.bool.open_website_info_screen);
+        }
         return false;
     }
 }

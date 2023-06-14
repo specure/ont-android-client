@@ -17,6 +17,7 @@
 package at.specure.android.api.calls;
 
 import android.os.AsyncTask;
+import android.util.Log;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;

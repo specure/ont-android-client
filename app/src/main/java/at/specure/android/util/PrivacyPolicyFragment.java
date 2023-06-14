@@ -30,6 +30,7 @@ import com.specure.opennettest.R;
 import androidx.fragment.app.FragmentActivity;
 import at.specure.android.base.BaseFragment;
 import at.specure.android.configs.ConfigHelper;
+import at.specure.android.configs.TermsAndConditionsConfig;
 import at.specure.android.constants.AppConstants;
 import at.specure.android.screens.main.MainActivity;
 
@@ -44,6 +45,7 @@ public class PrivacyPolicyFragment extends BaseFragment {
         webview = new WebView(activity);
         /* JavaScript must be enabled if you want it to work, obviously */
         webview.getSettings().setJavaScriptEnabled(true);
+        TermsAndConditionsConfig.showPP(webview, activity);
         webview.getSettings().setUserAgentString(AppConstants.getUserAgentString(getActivity()));
         webview.getSettings().setSupportZoom(true);
         webview.getSettings().setBuiltInZoomControls(true);

@@ -48,6 +48,7 @@ import at.specure.client.v2.task.result.QoSTestResultEnum;
 import at.specure.client.v2.task.service.TestProgressListener.TestProgressEvent;
 import at.specure.client.v2.task.service.TestSettings;
 import at.specure.client.v2.task.service.TrafficService;
+import timber.log.Timber;
 
 /**
  * 
@@ -186,6 +187,7 @@ public class QualityOfServiceTest implements Callable<QoSResultCollector> {
 				if (tasks != null) {
 					tasks.add(test);
 				}
+				Timber.e("QOS test server address: %s", test.getTestServerAddr());
 				
 				if (!controlConnectionMap.containsKey(test.getTestServerAddr())) {
 					TestParameter params = new TestParameter(test.getTestServerAddr(), test.getTestServerPort(),

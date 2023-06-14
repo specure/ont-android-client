@@ -29,8 +29,6 @@
         android:layout_gravity="top|center"
         android:adjustViewBounds="false"
         android:layout_margin="6dp"
-        android:paddingLeft="35dp"
-        android:paddingRight="35dp"
         android:contentDescription="@string/header_image_description"
         android:src="@drawable/app_logo_inv" />
 
@@ -38,13 +36,26 @@
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_marginTop="10dp"
-            android:layout_weight="3">
+            android:layout_weight="3"
+            android:background="@color/transparent" >
 
             <ListView
                 android:id="@+id/aboutList"
+                style="@style/listViewAbout"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_margin="0dp" />
         </LinearLayout>
+
+        <!--
+        <ImageView
+            android:id="@+id/historyImageReflection1"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_alignTop="@+id/aboutList"
+            android:contentDescription=""
+            android:src="@drawable/result_box_reflection_large" >
+        </ImageView>
+        -->
 
 </LinearLayout>

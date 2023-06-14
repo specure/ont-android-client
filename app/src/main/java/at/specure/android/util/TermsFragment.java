@@ -16,7 +16,6 @@
 package at.specure.android.util;
 
 import android.annotation.SuppressLint;
-
 import android.app.Activity;
 import android.os.Bundle;
 import androidx.annotation.NonNull;
@@ -31,7 +30,9 @@ import com.specure.opennettest.R;
 import androidx.fragment.app.FragmentActivity;
 import at.specure.android.base.BaseFragment;
 import at.specure.android.configs.ConfigHelper;
+import at.specure.android.configs.TermsAndConditionsConfig;
 import at.specure.android.constants.AppConstants;
+import at.specure.android.screens.main.MainActivity;
 
 public class TermsFragment extends BaseFragment {
 
@@ -44,6 +45,7 @@ public class TermsFragment extends BaseFragment {
         webview = new WebView(activity);
         /* JavaScript must be enabled if you want it to work, obviously */
         webview.getSettings().setJavaScriptEnabled(true);
+        TermsAndConditionsConfig.showTaC(webview, activity);
         webview.getSettings().setUserAgentString(AppConstants.getUserAgentString(getActivity()));
         webview.getSettings().setSupportZoom(true);
         webview.getSettings().setBuiltInZoomControls(true);
@@ -55,6 +57,7 @@ public class TermsFragment extends BaseFragment {
         super.onResume();
         final FragmentActivity activity = getActivity();
         if (activity != null) {
+            ((MainActivity) activity).updateTitle(setActionBarTitle());
             webview.setWebViewClient(new WebViewClient() {
                 @Override
                 public void onReceivedError(final WebView view, final int errorCode, final String description,

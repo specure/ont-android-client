@@ -4,7 +4,6 @@ import android.content.Context;
 import android.os.Bundle;
 
 import androidx.appcompat.app.AppCompatActivity;
-
 import at.specure.android.base.ContextWrapper;
 import at.specure.android.configs.LocaleConfig;
 

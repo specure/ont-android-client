@@ -21,6 +21,10 @@ import androidx.annotation.NonNull;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import at.specure.android.api.jsons.ZeroMeasurement;
 import at.specure.android.api.jsons.ZeroMeasurementPost;
 
 /**
@@ -33,7 +37,17 @@ public class ZeroMeasurementsPostRq {
     private ZeroMeasurementPost requestObject;
 
     public ZeroMeasurementsPostRq(@NonNull ZeroMeasurementPost requestObject) {
+        List<ZeroMeasurement> zeroMeasurements = requestObject.getZeroMeasurements();
+        //modification because user can run app which could not be registered on server and detect zero measurements
+        ArrayList<ZeroMeasurement> zeroMeasurementsWithUUID = new ArrayList<>();
+        for (ZeroMeasurement zeroM : zeroMeasurements) {
+            if ((zeroM.getClientUuid() != null) && (!zeroM.getClientUuid().isEmpty())) {
+                zeroMeasurementsWithUUID.add(zeroM);
+            }
+        }
+        requestObject.setZeroMeasurements(zeroMeasurementsWithUUID);
         this.requestObject = requestObject;
+
     }
 
     public JsonObject createRequest() {

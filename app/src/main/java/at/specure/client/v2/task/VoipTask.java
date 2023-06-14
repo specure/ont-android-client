@@ -16,7 +16,7 @@
  ******************************************************************************/
 package at.specure.client.v2.task;
 
-import com.crashlytics.android.Crashlytics;
+import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.google.gson.JsonElement;
 
 import java.io.DataOutputStream;
@@ -44,7 +44,6 @@ import at.specure.util.net.rtp.RtpUtil;
 import at.specure.util.net.rtp.RtpUtil.RtpControlData;
 import at.specure.util.net.rtp.RtpUtil.RtpQoSResult;
 import at.specure.util.net.udp.StreamSender.UdpStreamCallback;
-import me.eugeniomarletti.kotlin.metadata.shadow.serialization.deserialization.FlexibleTypeDeserializer;
 import timber.log.Timber;
 
 /**
@@ -275,7 +274,7 @@ public class VoipTask extends AbstractQoSTask {
                                 if (!ignoreErrors) {
                                     result.getResultMap().put(RESULT_STATUS, "TIMEOUT");
                                     e.printStackTrace();
-                                    Crashlytics.logException(new Exception("VoipTask - Interrupted - timeout"));
+                                    FirebaseCrashlytics.getInstance().recordException(new Exception("VoipTask - Interrupted - timeout"));
                                 }
 
                             } catch (TimeoutException e) {
@@ -283,7 +282,7 @@ public class VoipTask extends AbstractQoSTask {
                                     result.getResultMap().put(RESULT_STATUS, "TIMEOUT");
                                     e.printStackTrace();
                                     try {
-                                        Crashlytics.logException(new Exception("VoipTask - timeout"));
+                                        FirebaseCrashlytics.getInstance().recordException(new Exception("VoipTask - timeout"));
                                     } catch (Exception e1) {
                                         //do nothing
                                     }
@@ -293,7 +292,7 @@ public class VoipTask extends AbstractQoSTask {
                                     result.getResultMap().put(RESULT_STATUS, "ERROR");
                                     e.printStackTrace();
                                     try {
-                                        Crashlytics.logException(new Exception("VoipTask - error"));
+                                        FirebaseCrashlytics.getInstance().recordException(new Exception("VoipTask - error"));
                                     } catch (Exception e1) {
                                         //do nothing
                                     }

@@ -47,11 +47,22 @@ public class MapConfig {
 
 
     public static int getMapType(Context context) {
-        return MAP_TYPE_MAPBOX;
+        if (context != null) {
+            int integer = context.getResources().getInteger(R.integer.maps_provider);
+            if (integer == 0) {
+                return getUserChosenMap(context);
+            }
+            return integer;
+        }
+        return MAP_TYPE_GOOGLE;
     }
 
     private static int getUserChosenMap(Context context) {
-        return MAP_TYPE_MAPBOX;
+        int anInt = getSharedPreferences(context).getInt(USER_CHOSEN_MAP, context.getResources().getInteger(R.integer.default_maps_provider_if_user_choose));
+        if (anInt == 0) {
+            return context.getResources().getInteger(R.integer.default_maps_provider_if_user_choose);
+        }
+        return anInt;
     }
 
     public static void saveUserChosenMap(int mapType, Context context) {
@@ -62,11 +73,14 @@ public class MapConfig {
 
 
     public static int getInitialPointWhenGPSOff(Context context) {
-        return 0;
+        return context.getResources().getInteger(R.integer.initial_point_not_enabled_gps);
     }
 
     public static boolean pointsOverlayEnabled(Context context) {
-        return false;
+        return context.getResources().getBoolean(R.bool.points_overlay_enabled);
     }
 
+    public static boolean sendCountryInMapMarkerRequest(Context context) {
+        return context.getResources().getBoolean(R.bool.send_country_in_map_marker);
+    }
 }

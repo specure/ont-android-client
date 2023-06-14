@@ -16,6 +16,7 @@
 package at.specure.android.test;
 
 import android.app.Activity;
+import androidx.annotation.NonNull;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -23,8 +24,6 @@ import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
-
-import androidx.annotation.NonNull;
 
 import com.specure.opennettest.R;
 
@@ -155,6 +154,7 @@ public class SpeedTestStatViewController implements ChangeableSpeedTestStatus {
         INIT(0, R.string.test_bottom_test_status_init, true, true, R.drawable.traffic_lights_green, 16, new DecimalFormat("@@@@ ms"), 1000000.0, TestStatus.INIT),
         PACKET_LOSS_DOWN(2, R.string.test_bottom_test_status_packet_loss_out, false, true, Integer.MIN_VALUE, 0, new DecimalFormat("0.0 %"), 100.0, TestStatus.PACKET_LOSS_AND_JITTER),
         PACKET_LOSS_UP(2, R.string.test_bottom_test_status_packet_loss_in, false, true, Integer.MIN_VALUE, 0, new DecimalFormat("0.0 %"), 100.0, TestStatus.PACKET_LOSS_AND_JITTER),
+        PACKET_LOSS(2, R.string.history_packet_loss, false, true, Integer.MIN_VALUE, 0, new DecimalFormat("0.0 %"), 100.0, TestStatus.PACKET_LOSS_AND_JITTER),
         JITTER(1, R.string.test_bottom_test_status_jitter, false, true, Integer.MIN_VALUE, 0, new DecimalFormat("@@@ ms"), 1000000.0, TestStatus.PACKET_LOSS_AND_JITTER),
         PING(3, R.string.test_bottom_test_status_ping, true, true, Integer.MIN_VALUE, 17, new DecimalFormat("@@ ms"), 1000000.0, TestStatus.PING),
         DOWNLOAD(4, R.string.test_bottom_test_status_down, false, true, Integer.MIN_VALUE, 55, new DecimalFormat("@@@ Mbps"), 1000000.0, TestStatus.DOWN),
@@ -163,6 +163,7 @@ public class SpeedTestStatViewController implements ChangeableSpeedTestStatus {
         SPEEDTEST_END(7, R.string.test_bottom_test_status_end, TestStatus.SPEEDTEST_END),
         QOS_TEST_RUNNING(8, R.string.result_page_title_qos, TestStatus.QOS_TEST_RUNNING),
         QOS_END(9, R.string.result_page_title_qos, TestStatus.QOS_END),
+        QOS(9, R.string.result_page_title_qos, false, false, Integer.MIN_VALUE, 100, new DecimalFormat(""), 1,  TestStatus.QOS_END),
         END(10, R.string.test_bottom_test_status_end, TestStatus.END),
         ERROR(11, R.string.test_bottom_test_status_error, TestStatus.ERROR),
         ABORTED(12, R.string.test_bottom_test_status_aborted, TestStatus.ABORTED);
@@ -212,6 +213,16 @@ public class SpeedTestStatViewController implements ChangeableSpeedTestStatus {
             this.showInInfoStat = showInInfoStat;
         }
 
+
+        public String getUnits() {
+            String format = format(10L);
+            String[] s = format.split(" ");
+            if (s.length > 1) {
+                return s[1];
+            } else {
+                return "";
+            }
+        }
 
         private int getListPosition() {
             return listPosition;

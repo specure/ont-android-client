@@ -24,7 +24,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import at.specure.android.configs.BadgesConfig;
 import at.specure.android.configs.FeatureConfig;
+import at.specure.android.configs.SurveyConfig;
 
 public class MainMenuUtil {
 
@@ -38,11 +40,20 @@ public class MainMenuUtil {
         Collections.addAll(menuList, res.getStringArray(R.array.navigation_main_titles));
         if (!FeatureConfig.showStatisticInMainMenu(context)) {
             if ((!FeatureConfig.USE_OPENDATA) || (FeatureConfig.SHOW_ONLY_BASIC_MENU)) {
-                menuList.remove(MENU_STATISTICS_INDEX);
+                menuList.remove(context.getResources().getString(R.string.menu_button_statistics));
             }
-            menuList.remove(2);
-            menuList.remove(1);
         }
+//        if (Build.MANUFACTURER.contentEquals("Amazon")) {
+//            if ("lo" == "lo") {
+//            menuList.remove(context.getResources().getString(R.string.page_title_map));
+//        }
+        if (BadgesConfig.isBadgesFeatureEnabled(context)) {
+            menuList.add(context.getResources().getString(R.string.title_badges));
+        }
+        if (SurveyConfig.isSurveyEnabledInApp(context) && SurveyConfig.isSurveyActive(context)) {
+            menuList.add(context.getResources().getString(R.string.menu_button_survey));
+        }
+
         return menuList;
     }
 
@@ -59,6 +70,10 @@ public class MainMenuUtil {
                     R.drawable.ic_action_about,
                     R.drawable.ic_action_settings};
             Collections.addAll(menuIds, ids);
+//            if (Build.MANUFACTURER.contentEquals("Amazon")) {
+//            if ("lo" == "lo") {
+//                menuIds.remove((Integer) R.drawable.ic_action_map);
+//            }
         } else {
             ids = new Integer[]{
                     R.drawable.ic_action_home,
@@ -70,12 +85,20 @@ public class MainMenuUtil {
                     R.drawable.ic_action_settings,
                     R.drawable.ic_action_about};
             Collections.addAll(menuIds, ids);
+//            if (Build.MANUFACTURER.contentEquals("Amazon")) {
+//            if ("lo" == "lo") {
+//                menuIds.remove((Integer) R.drawable.ic_action_map);
+//            }
         }
         if ((!FeatureConfig.USE_OPENDATA) || (!FeatureConfig.showStatisticInMainMenu(context))){
-            menuIds.remove(MENU_STATISTICS_INDEX);
+            menuIds.remove((Object) R.drawable.ic_action_stat);
         }
-        menuIds.remove(2);
-        menuIds.remove(1);
+        if (BadgesConfig.isBadgesFeatureEnabled(context)) {
+            menuIds.add(R.drawable.ic_action_cup);
+        }
+        if (SurveyConfig.isSurveyEnabledInApp(context) && SurveyConfig.isSurveyActive(context)) {
+            menuIds.add(R.drawable.ic_action_survey);
+        }
         return menuIds;
     }
 
@@ -90,16 +113,26 @@ public class MainMenuUtil {
                 R.id.action_stats,
                 R.id.action_help,
                 R.id.action_info,
-                R.id.action_settings,
-                R.id.action_netstat,
-                R.id.action_log};
+                R.id.action_settings};
+//                R.id.action_netstat,
+//                R.id.action_log};
 
         Collections.addAll(menuIds, ids);
+
+
         if (((!FeatureConfig.USE_OPENDATA) || (!FeatureConfig.showStatisticInMainMenu(context))) || ((FeatureConfig.SHOW_ONLY_BASIC_MENU) && (!FeatureConfig.showStatisticInMainMenu(context)))) {
-            menuIds.remove(MENU_STATISTICS_INDEX);
+            menuIds.remove((Integer) R.id.action_stats);
         }
-        menuIds.remove(2);
-        menuIds.remove(1);
+
+//        if (Build.MANUFACTURER.contentEquals("Amazon")) {
+//            menuIds.remove((Integer) R.id.action_map);
+//        }
+        if (BadgesConfig.isBadgesFeatureEnabled(context)) {
+            menuIds.add(R.id.action_badges);
+        }
+        if (SurveyConfig.isSurveyEnabledInApp(context) && SurveyConfig.isSurveyActive(context)) {
+            menuIds.add(R.id.action_survey);
+        }
         return menuIds;
     }
 }

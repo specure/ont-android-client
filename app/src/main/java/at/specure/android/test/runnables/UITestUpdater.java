@@ -18,9 +18,9 @@ package at.specure.android.test.runnables;
 
 import android.os.Handler;
 
+import at.specure.android.configs.ConfigHelper;
 import at.specure.android.test.TestService;
 import at.specure.android.test.UIUpdateInterface;
-import at.specure.android.configs.ConfigHelper;
 
 /**
  * Created by michal.cadrik on 5/18/2017.

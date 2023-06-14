@@ -11,7 +11,7 @@ public class PreferenceConfig {
 
     public static SharedPreferences getPreferenceSharedPreferences(Context context) {
         SharedPreferences preferences = context.getSharedPreferences(
-                "shared",
+                PreferenceFragment.SETTINGS_SHARED_PREFERENCES_FILE_NAME,
                 Context.MODE_PRIVATE);
         return preferences;
     }

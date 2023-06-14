@@ -14,10 +14,20 @@ public class StartConfig {
 
     public static boolean shouldDisplayStartTutorial(Context context) {
         boolean should = false;
+        if (context != null) {
+            if (context.getResources().getBoolean(R.bool.show_tutorial_on_startup)) {
+                SharedPreferences sharedPreferences = ConfigHelper.getSharedPreferences(context);
+                boolean alreadyDisplayed = sharedPreferences.getBoolean(TUTORIAL_DISPLAYED, false);
+                should = !alreadyDisplayed;
+            }
+        }
         return should;
     }
 
     public static int getTutorialType(Context context) {
+        if (context != null) {
+            return context.getResources().getInteger(R.integer.show_tutorial_on_startup_type);
+        }
         return 0;
     }
 

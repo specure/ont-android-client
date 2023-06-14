@@ -37,6 +37,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import at.specure.android.util.net.NetworkUtil.MinMax;
+import at.specure.android.views.ResultGraphView;
 import timber.log.Timber;
 
 /**
@@ -52,7 +53,7 @@ public class CustomizableGraphView extends View implements GraphView {
     public final static int LABELLIST_VERTICAL_MIN = 3;
     public final static int LABELLIST_VERTICAL_MAX = 4;
     private static String DEFAULT_H_LABEL_COLOR = "#C8ffffff";
-    private static String DEFAULT_V_LABEL_COLOR = "#C8ffffff";
+    private static String DEFAULT_V_LABEL_COLOR = ResultGraphView.VERTICAL_INFO_COLOR;
     final int relW = 593;
     final int relH = 237;
     private boolean recycled;

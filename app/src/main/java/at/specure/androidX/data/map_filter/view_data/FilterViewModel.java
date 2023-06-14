@@ -2,11 +2,11 @@ package at.specure.androidX.data.map_filter.view_data;
 
 import android.app.Application;
 
+import java.util.List;
+
 import androidx.annotation.NonNull;
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
-
-import java.util.List;
 
 public class FilterViewModel extends AndroidViewModel {
 

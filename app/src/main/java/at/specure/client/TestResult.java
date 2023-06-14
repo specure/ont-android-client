@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import at.specure.android.api.jsons.VoipTestResult;
+import at.specure.androidX.data.test.testResultRequest.Ping;
 
 public abstract class TestResult
 {
@@ -29,6 +30,7 @@ public abstract class TestResult
     public VoipTestResult voipTestResult;
     public int port_remote;
     public int num_threads;
+    public int num_threads_ul;
     public String encryption = "NONE";
 
     public long ping_shortest;

@@ -1,13 +1,13 @@
 /*******************************************************************************
  * Copyright 2014-2017 Specure GmbH
  * Copyright 2013-2015 alladin-IT GmbH
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *   http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -18,9 +18,9 @@ package at.specure.client;
 
 public class TestParameter
 {
-    
+
     // immutable! (accessed by multiple threads!)
-    
+
     private final String host;
     private final int port;
     private final boolean encryption;
@@ -30,7 +30,23 @@ public class TestParameter
     private final int numThreads;
     private final int numPings;
     private final long startTime;
-    
+
+
+    /**
+     * Used to override thread number from settings screen
+     * @param threadsNumber
+     */
+    public TestParameter(int threadsNumber) {
+        this.numThreads = threadsNumber;
+        this.host = null;
+        this.port = -1;
+        this.encryption = false;
+        this.token = null;
+        this.duration = -1;
+        this.numPings = -1;
+        this.startTime = -1;
+    }
+
     public TestParameter(final String host, final int port, final boolean encryption, final String token,
                          final int duration, final int numThreads, final int numPings, final long startTime)
     {
@@ -44,7 +60,7 @@ public class TestParameter
         this.numPings = numPings;
         this.startTime = startTime;
     }
-    
+
     public TestParameter(final String host, final int port, final boolean encryption,
                          final int duration, final int numThreads, final int numPings)
     {
@@ -58,27 +74,27 @@ public class TestParameter
         this.token = null;
         this.startTime = 0;
     }
-    
+
     public String getHost()
     {
         return host;
     }
-    
+
     public int getPort()
     {
         return port;
     }
-    
+
     public boolean isEncryption()
     {
         return encryption;
     }
-    
+
     public String getToken()
     {
         return token;
     }
-    
+
     public String getUUID()
     {
         if (token == null)
@@ -88,27 +104,27 @@ public class TestParameter
             return null;
         return parts[0];
     }
-    
+
     public int getDuration()
     {
         return duration;
     }
-    
+
     public int getPretestDuration()
     {
         return pretestDuration;
     }
-    
+
     public int getNumThreads()
     {
         return numThreads;
     }
-    
+
     public int getNumPings()
     {
         return numPings;
     }
-    
+
     public long getStartTime()
     {
         return startTime;

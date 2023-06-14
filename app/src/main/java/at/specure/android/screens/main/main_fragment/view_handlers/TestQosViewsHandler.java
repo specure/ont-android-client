@@ -20,9 +20,7 @@ import android.content.Context;
 import android.view.View;
 import android.widget.TextView;
 
-
 import com.specure.opennettest.R;
-
 import java.util.HashMap;
 
 /**
@@ -41,6 +39,8 @@ public class TestQosViewsHandler extends ViewsHandler {
         this.viewsToSetGone.add(R.id.test_view_qos_results_container);
         this.viewsToSetGone.add(R.id.main_fragment__top_info_container);
         this.viewsToSetGone.add(R.id.main__bottom_info_default_text);
+        this.viewsToSetGone.add(R.id.test_graph);
+        this.viewsToSetGone.add(R.id.graph_container);
         this.viewsToSetGone.add(R.id.start_button_container);
         this.viewsToSetGone.add(R.id.title_page_map_button);
         this.viewsToSetGone.add(R.id.test_view_info_container);
@@ -50,12 +50,13 @@ public class TestQosViewsHandler extends ViewsHandler {
         this.viewsToSetVisible.add(R.id.main_fragment__top_info_container_measurement);
         this.viewsToSetVisible.add(R.id.test_view_qos_container);
         this.viewsToSetVisible.add(R.id.test_view_group_count_container);
+        this.viewsToSetVisible.add(R.id.measurement_graphs_container);
     }
 
     @Override
     public void initializeViews(View rootView, Context context) {
         super.setViewVisibility();
-        if (rootView != null) {
+        if ((rootView != null) && (context != null)) {
             disableClickingOnButtons(rootView);
 
             TextView lowerGaugeText = rootView.findViewById(R.id.text_view_lower_test);

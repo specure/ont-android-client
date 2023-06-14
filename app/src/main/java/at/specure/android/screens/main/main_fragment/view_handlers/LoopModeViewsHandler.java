@@ -17,13 +17,15 @@
 package at.specure.android.screens.main.main_fragment.view_handlers;
 
 import android.content.Context;
+import androidx.core.content.ContextCompat;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.specure.opennettest.R;
-
 import java.util.HashMap;
+
+import at.specure.android.views.CustomGauge;
 
 import static at.specure.android.screens.main.main_fragment.MainMenuFragment.PROGRESS_SEGMENTS_PROGRESS_RING;
 import static at.specure.android.screens.main.main_fragment.MainMenuFragment.PROGRESS_SEGMENTS_QOS;
@@ -42,8 +44,9 @@ public class LoopModeViewsHandler extends ViewsHandler {
         this.viewsToSetGone.add(R.id.show_detailed_result_button);
         this.viewsToSetGone.add(R.id.test_view_qos_results_container);
         this.viewsToSetGone.add(R.id.main_fragment__top_info_container_measurement);
-        this.viewsToSetGone.add(R.id.main__bottom_info_default_text);
         this.viewsToSetGone.add(R.id.test_view_qos_container);
+        this.viewsToSetGone.add(R.id.graph_container);
+        this.viewsToSetGone.add(R.id.test_graph);
         this.viewsToSetGone.add(R.id.title_page_map_button);
         this.viewsToSetGone.add(R.id.text_view_upper_test);
 
@@ -52,12 +55,14 @@ public class LoopModeViewsHandler extends ViewsHandler {
         this.viewsToSetVisible.add(R.id.start_button_container);
         this.viewsToSetVisible.add(R.id.text_view_lower_test);
 
+        this.viewsToSetInvisble.add(R.id.measurement_graphs_container);
+        this.viewsToSetInvisble.add(R.id.main__bottom_info_default_text);
     }
 
     @Override
     public void initializeViews(View rootView, Context context) {
         super.setViewVisibility();
-        if (rootView != null) {
+        if ((rootView != null) && (context != null)) {
             disableClickingOnButtons(rootView);
 
             TextView startButtonText = rootView.findViewById(R.id.start_button_text);
@@ -68,6 +73,26 @@ public class LoopModeViewsHandler extends ViewsHandler {
 
             ImageView startButton = rootView.findViewById(R.id.title_page_start_button);
             setOnClickListener(startButton);
+
+            CustomGauge gaugeUpper = rootView.findViewById(R.id.gauge_upper);
+            if (gaugeUpper != null) {
+                gaugeUpper.setmStrokeInnerColor(ContextCompat.getColor(context, R.color.gauge_inner_ring_dark));
+                gaugeUpper.setGaugeStrings(0);
+                gaugeUpper.setDividerSize(0);
+                gaugeUpper.invalidate();
+                gaugeUpper.setValue(PROGRESS_SEGMENTS_PROGRESS_RING);
+            }
+
+            CustomGauge gaugeLower = rootView.findViewById(R.id.gauge_lower);
+            if (gaugeLower != null) {
+                gaugeLower.setmStrokeInnerColor(ContextCompat.getColor(context, R.color.gauge_basic));
+                gaugeLower.setValue(PROGRESS_SEGMENTS_QOS);
+                gaugeLower.setShowScale(false);
+                gaugeLower.setShowArrow(false);
+                gaugeLower.invalidate();
+            }
+
+
         }
     }
 }

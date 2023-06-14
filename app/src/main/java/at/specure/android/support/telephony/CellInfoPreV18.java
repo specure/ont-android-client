@@ -16,6 +16,7 @@
 package at.specure.android.support.telephony;
 
 import android.telephony.gsm.GsmCellLocation;
+import android.util.Log;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;

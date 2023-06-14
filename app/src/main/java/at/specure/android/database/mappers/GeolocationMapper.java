@@ -19,8 +19,8 @@ package at.specure.android.database.mappers;
 import java.util.ArrayList;
 import java.util.List;
 
-import at.specure.android.database.obj.TLocation;
 import at.specure.android.api.jsons.Location;
+import at.specure.android.database.obj.TLocation;
 
 /**
  * Created by michal.cadrik on 8/17/2017.

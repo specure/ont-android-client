@@ -22,16 +22,17 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.net.Uri;
+import android.util.Log;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.TimeZone;
 
 import at.specure.android.database.Contract;
 import at.specure.android.database.DatabaseHelper;
 import at.specure.android.database.enums.CellLocationType;
 import at.specure.android.database.enums.LocationType;
 import at.specure.android.database.enums.SignalType;
+import timber.log.Timber;
 
 /**
  * Created by michal.cadrik on 8/10/2017.
@@ -63,17 +64,14 @@ public class TZeroMeasurement {
     public String telephonyPhoneType;
     public String telephonyDataState;
     public String telephonyNetworkSimCountry;
+    public String timezone;
     private List<TCellLocation> cellLocations;
     private List<TLocation> geoLocations;
     private List<TSignal> signals;
     public Integer state;
 
 
-    public TZeroMeasurement(Long id, String clientUuid, String clientName, String clientVersion, String clientLanguage, Long time, String uuid, String platform, String product, String apiLevel,
-                            String telephonyNetworkOperator, String clientSoftwareVersion, String telephonyNetworkIsRoaming, String osVersion,
-                            String telephonyNetworkCountry, String networkType, String telephonyNetworkOperatorName, String telephonyNetworkSimOperatorName,
-                            String model, String telephonyNetworkSimOperator, String device, String telephonyPhoneType, String telephonyDataState, String telephonyNetworkSimCountry,
-                            List<TCellLocation> cellLocations, List<TLocation> geoLocations, List<TSignal> signals, Integer state) {
+    public TZeroMeasurement(Long id, String clientUuid, String clientName, String clientVersion, String clientLanguage, Long time, String uuid, String platform, String product, String apiLevel, String telephonyNetworkOperator, String clientSoftwareVersion, String telephonyNetworkIsRoaming, String osVersion, String telephonyNetworkCountry, String networkType, String telephonyNetworkOperatorName, String telephonyNetworkSimOperatorName, String model, String telephonyNetworkSimOperator, String device, String telephonyPhoneType, String telephonyDataState, String telephonyNetworkSimCountry, String timezone, List<TCellLocation> cellLocations, List<TLocation> geoLocations, List<TSignal> signals, Integer state) {
         this.id = id;
         this.clientUuid = clientUuid;
         this.clientName = clientName;
@@ -98,6 +96,7 @@ public class TZeroMeasurement {
         this.telephonyPhoneType = telephonyPhoneType;
         this.telephonyDataState = telephonyDataState;
         this.telephonyNetworkSimCountry = telephonyNetworkSimCountry;
+        this.timezone = timezone;
         this.cellLocations = cellLocations;
         this.geoLocations = geoLocations;
         this.signals = signals;
@@ -116,7 +115,7 @@ public class TZeroMeasurement {
         time = DatabaseHelper.getLongCursor(cursor, Contract.ZeroMeasurementsColumns.TIME);
         uuid = DatabaseHelper.getStringCursor(cursor, Contract.ZeroMeasurementsColumns.UUID);
         platform = DatabaseHelper.getStringCursor(cursor, Contract.ZeroMeasurementsColumns.PLATFORM);
-        product = DatabaseHelper.getStringCursor(cursor, Contract.ZeroMeasurementsColumns.TIME);
+        product = DatabaseHelper.getStringCursor(cursor, Contract.ZeroMeasurementsColumns.PRODUCT);
         apiLevel = DatabaseHelper.getStringCursor(cursor, Contract.ZeroMeasurementsColumns.API_LEVEL);
         telephonyNetworkOperator = DatabaseHelper.getStringCursor(cursor, Contract.ZeroMeasurementsColumns.TEL_NET_OPERATOR);
         clientSoftwareVersion = DatabaseHelper.getStringCursor(cursor, Contract.ZeroMeasurementsColumns.CLIENT_SOFT_VERSION);
@@ -133,6 +132,7 @@ public class TZeroMeasurement {
         telephonyDataState = DatabaseHelper.getStringCursor(cursor, Contract.ZeroMeasurementsColumns.TEL_DATA_STATE);
         telephonyNetworkSimCountry = DatabaseHelper.getStringCursor(cursor, Contract.ZeroMeasurementsColumns.TEL_NET_SIM_COUNTRY);
         state = DatabaseHelper.getIntCursor(cursor, Contract.ZeroMeasurementsColumns.STATE);
+        timezone = DatabaseHelper.getStringCursor(cursor, Contract.ZeroMeasurementsColumns.TIMEZONE);
     }
 
     //TODO: Dorob vyberanie z databazy ak nie su nacitane - lazy loading
@@ -246,10 +246,11 @@ public class TZeroMeasurement {
         cv.put(Contract.ZeroMeasurementsColumns.TEL_DATA_STATE, this.telephonyDataState);
         cv.put(Contract.ZeroMeasurementsColumns.TEL_NET_SIM_COUNTRY, this.telephonyNetworkSimCountry);
         cv.put(Contract.ZeroMeasurementsColumns.STATE, this.state);
+        cv.put(Contract.ZeroMeasurementsColumns.TIMEZONE, this.timezone);
 
         Uri insert = contentResolver.insert(Contract.ZeroMeasurements.CONTENT_URI, cv);
         Long newId = ContentUris.parseId(insert);
-
+        Timber.e("Zero measurement saved with id: %s", newId);
         List<TCellLocation> cellLocations = getCellLocations(context);
         for (TCellLocation cellLocation : cellLocations) {
             cellLocation.refId = newId;

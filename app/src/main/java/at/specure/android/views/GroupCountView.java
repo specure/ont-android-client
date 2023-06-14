@@ -270,6 +270,9 @@ public class GroupCountView extends LinearLayout implements TestProgressListener
 						image.setImageResource(R.drawable.traffic_lights_green);
 						image.setVisibility(View.VISIBLE);
 						progressBar.setVisibility(View.GONE);
+						final Animation animationHideSlideUp = AnimationUtils.loadAnimation(getContext(), R.anim.hide_fade_out);
+						animationHideSlideUp.setAnimationListener(new AnimationHideSlideUp(view));
+						view.setAnimation(animationHideSlideUp);
 					}
 				}
 			}

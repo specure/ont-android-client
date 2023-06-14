@@ -1,8 +1,13 @@
 package at.specure.androidX.data.map_filter.data;
 
+import android.content.Context;
+
 import com.google.gson.annotations.SerializedName;
+import com.specure.opennettest.R;
 
 import java.util.List;
+
+import at.specure.androidX.data.map_filter.view_data.FilterItem;
 
 public class MapType {
 

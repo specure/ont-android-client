@@ -1,7 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
 
-    package="com.specure.opennettest">
+    package="com.specure.opennettest"
+    android:installLocation="auto">
     <!-- Normal permissions -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
@@ -47,6 +48,10 @@
         android:usesCleartextTraffic="false"
         tools:replace="android:supportsRtl">
 
+        <uses-library
+            android:name="org.apache.http.legacy"
+            android:required="false" />
+
         <activity
             android:name="at.specure.android.screens.main.MainActivity"
             android:configChanges="orientation|screenSize|keyboardHidden"
@@ -77,38 +82,108 @@
         <!-- </intent-filter> -->
     </activity>
 
-    <activity
-        android:name="at.specure.android.screens.preferences.PreferenceActivity"
-        android:enabled="true"
-        android:label="@string/preferences"
-        android:theme="@style/AppTheme" />
-    <activity
-        android:name="at.specure.android.screens.terms.TermsActivity"
-        android:enabled="true"
-        android:label="@string/terms"
-        android:theme="@style/AppTheme" />
+        <activity
+            android:name="at.specure.android.screens.preferences.PreferenceActivity"
+            android:enabled="true"
+            android:label="@string/preferences"
+            android:theme="@style/AppTheme" />
+        <activity
+            android:name="at.specure.android.screens.tutorial.advanced.TutorialAdvancedActivity"
+            android:configChanges="keyboardHidden|screenSize"
+            android:screenOrientation="portrait"
+            android:theme="@style/AppTheme" />
+        <activity
+            android:name="at.specure.android.screens.tutorial.basic.TutorialBasicActivity"
+            android:configChanges="keyboardHidden|screenSize"
+            android:screenOrientation="portrait"
+            android:theme="@style/AppTheme" />
+        <activity
+            android:name="at.specure.android.screens.terms.terms_check.TermsActivity"
+            android:enabled="true"
+            android:label="@string/terms"
+            android:theme="@style/AppTheme" />
 
-    <service
-        android:name="at.specure.android.test.TestService"
-        android:enabled="true"
-        android:exported="false" />
+        <service
+            android:name="at.specure.android.test.TestService"
+            android:enabled="true"
+            android:exported="false" />
 
-    <meta-data
-        android:name="com.google.android.gms.version"
-        android:value="@integer/google_play_services_version" />
+        <meta-data
+            android:name="com.google.android.maps.v2.API_KEY"
+            android:value="@string/google_maps_api_key" />
+        <meta-data
+            android:name="com.google.android.gms.version"
+            android:value="@integer/google_play_services_version" />
+        <meta-data
+            android:name="com.facebook.sdk.ApplicationId"
+            android:value="@string/facebook_app_id" /> <!-- to disable crashing telemetry service for mapbox -->
+        <meta-data
+            android:name="com.mapbox.EnableEvents"
+            android:value="false" />
 
-    <provider
-        android:name="at.specure.android.database.DatabaseProvider"
-        android:authorities="${databaseAuthority}"
-        android:exported="false" />
+        <provider
+            android:name="at.specure.android.database.DatabaseProvider"
+            android:authorities="${applicationId}"
+            android:exported="false" />
+        <provider
+            android:name="at.specure.android.screens.preferences.logging.LogFileProvider"
+            android:authorities="${applicationId}.logprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/provider_paths" />
+        </provider>
 
-    <activity
-        android:name="at.specure.android.screens.licenses.LicensesActivity"
-        android:label="@string/title_activity_licenses"
-        android:theme="@style/AppTheme" />
-    <meta-data
-        android:name="io.fabric.ApiKey"
-        android:value="c1380e42064ffd98ba82f66c3d39168491de1b07" />
+        <activity
+            android:name="at.specure.android.screens.licenses.LicensesActivity"
+            android:label="@string/title_activity_licenses"
+            android:theme="@style/AppTheme" />
+
+        <activity
+            android:name="at.specure.android.screens.preferences.logging.LoggingActivity"
+            android:label="@string/title_activity_logging"
+            android:parentActivityName="at.specure.android.screens.preferences.PreferenceActivity">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="at.specure.android.screens.preferences.PreferenceActivity" />
+        </activity>
+        <activity
+            android:name="at.specure.android.screens.badges.newbadges.BadgeListActivity"
+            android:label="@string/title_badges"
+            android:parentActivityName="at.specure.android.screens.main.MainActivity"
+            android:theme="@style/AppTheme">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="at.specure.android.screens.main.MainActivity" />
+        </activity>
+        <activity
+            android:name="at.specure.android.screens.badges.newbadges.BadgeDetailActivity"
+            android:label="@string/title_badge_detail"
+            android:parentActivityName="at.specure.android.screens.badges.newbadges.BadgeListActivity"
+            android:theme="@style/AppTheme">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="at.specure.android.screens.badges.newbadges.BadgeListActivity" />
+        </activity>
+        <activity
+            android:name="at.specure.android.screens.map.map_filter_x.FilterListActivity"
+            android:label="@string/title_filter_list"
+            android:parentActivityName="at.specure.android.screens.main.MainActivity"
+            android:theme="@style/AppTheme">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="at.specure.android.screens.main.MainActivity" />
+        </activity>
+        <activity
+            android:name="at.specure.android.screens.map.map_filter_x.FilterDetailActivity"
+            android:label="@string/title_filter_detail"
+            android:parentActivityName="at.specure.android.screens.map.map_filter_x.FilterListActivity"
+            android:theme="@style/AppTheme">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="at.specure.android.screens.map.map_filter_x.FilterListActivity" />
+        </activity>
 </application>
 
     </manifest>

@@ -51,5 +51,24 @@
           android:icon="@drawable/ic_action_logo"
           android:title="@string/menu_button_netstat"
 		app:showAsAction="ifRoom" />
-							
+
+
+	<item
+		android:id="@+id/action_menu_my_position"
+		android:icon="@drawable/my_position"
+		android:title="@string/map_my_position"
+		app:showAsAction="always" />
+
+	<item
+		android:id="@+id/action_menu_map_filter"
+		android:icon="@drawable/filter"
+		android:title="@string/map_filter"
+		app:showAsAction="always" />
+
+	<item
+		android:id="@+id/action_menu_map_settings"
+		android:icon="@drawable/settings"
+		android:title="@string/map_settings"
+		app:showAsAction="always" />
+
 </menu>

@@ -19,6 +19,7 @@ import android.telephony.TelephonyManager;
 
 import java.util.List;
 
+import at.specure.android.api.jsons.TestResultDetails.CellInfoGet;
 import at.specure.android.configs.PermissionHandler;
 import at.specure.android.util.InformationCollector;
 import at.specure.util.BandCalculationUtil;
@@ -258,7 +259,7 @@ public class ConnectionX {
         return null;
     }
 
-    public InformationCollector.CellInfoItem getARFCNCellInfo() {
+    public CellInfoGet getARFCNCellInfo() {
         List<CellInfo> cellInfo = getCellInfo();
         try {
             if ((cellInfo != null) && (!cellInfo.isEmpty())) {
@@ -274,11 +275,11 @@ public class ConnectionX {
 
                             if ((arfcnType != null) && (arfcnValue != null) && !arfcnValue.isEmpty()) {
                                 if (arfcnType.toLowerCase().contains("uarfcn")) {
-                                    return new InformationCollector.CellInfoItem(System.currentTimeMillis(), "UARFCN", Integer.parseInt(arfcnValue));
+                                    return new CellInfoGet(System.currentTimeMillis(), "UARFCN", Integer.parseInt(arfcnValue));
                                 } else if (arfcnType.toLowerCase().contains("earfcn")) {
-                                    return new InformationCollector.CellInfoItem(System.currentTimeMillis(), "EARFCN", Integer.parseInt(arfcnValue));
+                                    return new CellInfoGet(System.currentTimeMillis(), "EARFCN", Integer.parseInt(arfcnValue));
                                 } else if (arfcnType.toLowerCase().contains("arfcn")) {
-                                    return new InformationCollector.CellInfoItem(System.currentTimeMillis(), "ARFCN", Integer.parseInt(arfcnValue));
+                                    return new CellInfoGet(System.currentTimeMillis(), "ARFCN", Integer.parseInt(arfcnValue));
                                 }
                             }
 

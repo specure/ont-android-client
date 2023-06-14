@@ -18,6 +18,7 @@ package at.specure.android.util;
 
 public class NotificationIDs
 {
-    public static int TEST_RUNNING = 1;
-    public static int LOOP_ACTIVE = 2;
+//    public static int TEST_RUNNING = 1;
+//    public static int LOOP_ACTIVE = 2;
+    public static int SERVICE_ACTIVE = 3;
 }

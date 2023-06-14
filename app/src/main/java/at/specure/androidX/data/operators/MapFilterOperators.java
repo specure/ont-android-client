@@ -7,12 +7,15 @@ import com.specure.opennettest.R;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Filter;
 
 import at.specure.android.api.jsons.FilterGroup;
 import at.specure.android.api.jsons.FilterOperator;
 import at.specure.androidX.data.map_filter.data.MapFilterTypes;
 import at.specure.androidX.data.map_filter.view_data.FilterItem;
 import at.specure.androidX.data.map_filter.view_data.FilterItemGroup;
+
+import static at.specure.androidX.data.DataUtil.parseNullValue;
 
 public class MapFilterOperators {
 

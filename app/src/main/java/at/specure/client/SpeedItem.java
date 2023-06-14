@@ -21,32 +21,22 @@ import com.google.gson.JsonParseException;
 
 public class SpeedItem
 {
-    public final boolean upload;
+    public final String direction;
     public final int thread;
     public final long time;
     public final long bytes;
     
     public SpeedItem(final boolean upload, final int thread, final long time, final long bytes)
     {
-        this.upload = upload;
+        this.direction = upload ? "upload" : "download";
         this.thread = thread;
         this.time = time;
         this.bytes = bytes;
     }
 
-    public JsonObject toJson() throws JsonParseException
-    {
-        final JsonObject result = new JsonObject();
-        result.addProperty("direction", upload ? "upload" : "download");
-        result.addProperty("thread", thread);
-        result.addProperty("time", time);
-        result.addProperty("bytes", bytes);
-        return result;
-    }
-
 	@Override
 	public String toString() {
-		return "SpeedItem [upload=" + upload + ", thread=" + thread + ", time="
+		return "SpeedItem [direction=" + direction + ", thread=" + thread + ", time="
 				+ time + ", bytes=" + bytes + "]";
 	}
 }

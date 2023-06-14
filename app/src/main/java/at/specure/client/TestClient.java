@@ -55,7 +55,10 @@ import at.specure.android.configs.LoopModeConfig;
 import at.specure.android.impl.TracerouteAndroidImpl;
 import at.specure.android.impl.TrafficServiceImpl;
 import at.specure.android.screens.test_results.VoipTestResultHandler;
+import at.specure.android.test.SpeedTestStatViewController;
 import at.specure.android.util.InformationCollector;
+import at.specure.androidX.data.test.TestResultView;
+import at.specure.androidX.data.test.testResultRequest.TestResultRequest;
 import at.specure.client.RMBTTest.CurrentSpeed;
 import at.specure.client.helper.Config;
 import at.specure.client.helper.ControlServerConnection;
@@ -83,6 +86,8 @@ public class TestClient {
     private final TestParameter params;
 
     private final long durationInitNano = 2500000000L; // TODO
+    private final List<TestResultView> testResultViews;
+    long jitterDuration = 10000000000L;
     private final long durationUpNano;
     private final long durationDownNano;
 
@@ -97,6 +102,7 @@ public class TestClient {
 
     /* ping status */
     private final AtomicLong pingTsStart = new AtomicLong(-1);
+    private final AtomicLong jitterStartTime = new AtomicLong(-1);
     private final AtomicInteger pingNumDome = new AtomicInteger(-1);
     private final AtomicLong pingTsLastPing = new AtomicLong(-1);
 
@@ -126,8 +132,8 @@ public class TestClient {
     private final AtomicBoolean aborted = new AtomicBoolean();
 
     private String errorMsg = "";
-    
-    
+
+
     /*------------------------------------
         V2 tests
     --------------------------------------*/
@@ -163,9 +169,8 @@ public class TestClient {
     public static TestClient getInstance(final String host, final String pathPrefix, final int port, int measurementServerId,
                                          final boolean encryption, final ArrayList<String> geoInfo, final String uuid, final String clientType,
                                          final String clientName, final String clientVersion, final TestParameter overrideParams,
-                                         final JsonObject additionalValues, File cacheDir, Context context) {
+                                         final JsonObject additionalValues, File cacheDir, Context context, List<TestResultView> testResultViews) {
         final ControlServerConnection controlConnection = new ControlServerConnection();
-
 
         final String error = controlConnection.requestNewTestConnection(host, pathPrefix, port, measurementServerId, encryption, geoInfo,
                 uuid, clientType, clientName, clientVersion, additionalValues, LocaleConfig.getLocaleForServerRequest(context));
@@ -186,14 +191,15 @@ public class TestClient {
 
         final TestParameter params = controlConnection.getTestParameter(overrideParams);
 
-        return new TestClient(params, controlConnection, cacheDir, context);
+        return new TestClient(params, controlConnection, cacheDir, context, testResultViews);
     }
 
-    private TestClient(final TestParameter params, final ControlServerConnection controlConnection, File cacheDir, Context context) {
+    private TestClient(final TestParameter params, final ControlServerConnection controlConnection, File cacheDir, Context context, List<TestResultView> testResultViews) {
         this.params = params;
         this.controlConnection = controlConnection;
         this.cacheDir = cacheDir;
         this.context = context;
+        this.testResultViews = testResultViews;
 
         params.check();
 
@@ -390,7 +396,7 @@ public class TestClient {
      * @return
      * @throws InterruptedException
      */
-    public TestResult runTest() throws InterruptedException {
+    public TotalTestResult runTest() throws InterruptedException {
         System.out.println("starting test...");
 
         // https://copperegg.zendesk.com/hc/en-us/articles/214633883-What-do-TX-and-RX-refer-to-in-the-Network-Charts-
@@ -499,6 +505,7 @@ public class TestClient {
 
                         result.totalDownBytes += testResult.totalDownBytes;
                         result.totalUpBytes += testResult.totalUpBytes;
+                        result.client_version = testResult.client_version;
 
                         // aggregate speedItems
                         result.speedItems.addAll(testResult.speedItems);
@@ -524,11 +531,17 @@ public class TestClient {
                 result.encryption = results[0].get().encryption;
 
                 result.num_threads = realNumThreads;
+                result.num_threads_ul = realNumThreads;
 
                 result.ping_shortest = shortestPing;
 
+                testResultViews.add(new TestResultView(SpeedTestStatViewController.InfoStat.PING, Integer.MAX_VALUE, result.ping_shortest, false));
+
                 result.speed_download = result.getDownloadSpeedBitPerSec() / 1e3;
                 result.speed_upload = result.getUploadSpeedBitPerSec() / 1e3;
+
+                testResultViews.add(new TestResultView(SpeedTestStatViewController.InfoStat.DOWNLOAD, Integer.MAX_VALUE, result.speed_download, false));
+                testResultViews.add(new TestResultView(SpeedTestStatViewController.InfoStat.UPLOAD, Integer.MAX_VALUE, result.speed_upload, false));
 
                 log("");
                 log(String.format(Locale.US, "Total Down: %.0f kBit/s", result.getDownloadSpeedBitPerSec() / 1e3));
@@ -616,6 +629,7 @@ public class TestClient {
                     if ((meanJitterIn != null) && (meanJitterOut != null)) {
                         Long meanJitter = (meanJitterIn + meanJitterOut) / 2;
                         result.jitterMedian = meanJitter;
+                        testResultViews.add(new TestResultView(SpeedTestStatViewController.InfoStat.JITTER, Integer.MAX_VALUE, result.jitterMedian, false));
                         this.jitter.set(meanJitter);
                     }
 
@@ -631,6 +645,9 @@ public class TestClient {
 
                     result.packetLossPercentDown = packetLossDown;
                     result.packetLossPercentUp = packetLossUp;
+
+                    testResultViews.add(new TestResultView(SpeedTestStatViewController.InfoStat.PACKET_LOSS, Integer.MAX_VALUE, (result.packetLossPercentDown + result.packetLossPercentUp)/2d, false));
+
 
                     this.packetLossDown.set(packetLossDown);
                     this.packetLossUp.set(packetLossUp);
@@ -766,7 +783,7 @@ public class TestClient {
         final float speedAvg = maxDiffTime == 0f ? 0f : (float) sumDiffTrans / (float) maxDiffTime * 1e9f * 8.0f;
         //final float speedAvg = (float)totalResult.speed_download * 1e3f;
 
-//        System.out.println("calculate: bytes=" + totalResult.bytes_download + " speed=" + (totalResult.speed_download * 1e3) 
+//        System.out.println("calculate: bytes=" + totalResult.bytes_download + " speed=" + (totalResult.speed_download * 1e3)
 //        		+ " nsec=" + totalResult.nsec_download + ", simple: diff=" + sumDiffTrans + " avg=" + speedAvg);
 
         return speedAvg;
@@ -777,7 +794,14 @@ public class TestClient {
             iResult = new IntermediateResult();
         iResult.status = testStatus.get();
         iResult.remainingWait = 0;
+
         final long diffTime = System.nanoTime() - statusChangeTime.get();
+        float phasemaxPercentInit = 0.1f;
+        float phasemaxPercentPing = 0.1f;
+        float phasemaxPercentPacketLoss = 0.1f;
+        float phasemaxPercentDown = 0.35f;
+        float phasemaxPercentUp = 0.35f;
+
         switch (iResult.status) {
             case WAIT:
                 iResult.progress = 0;
@@ -785,29 +809,29 @@ public class TestClient {
                 break;
 
             case INIT:
-                iResult.progress = (float) diffTime / durationInitNano;
+                iResult.progress = ((float) diffTime / durationInitNano) * phasemaxPercentInit;
                 break;
 
             case PING:
-                iResult.progress = getPingProgress();
+                iResult.progress = phasemaxPercentInit + getPingProgress() * phasemaxPercentPing ;
                 break;
 
             case PACKET_LOSS_AND_JITTER:
                 //TODO: solve how to update progress
-//                iResult.progress
+                iResult.progress = phasemaxPercentInit + phasemaxPercentPing + getJitterProgress() * phasemaxPercentPacketLoss;
                 break;
 
             case DOWN:
-                iResult.progress = (float) diffTime / durationDownNano;
+                iResult.progress = phasemaxPercentInit + phasemaxPercentPing + phasemaxPercentPacketLoss + ((float) diffTime / durationDownNano) * phasemaxPercentDown;
                 downBitPerSec.set(Math.round(getAvgSpeed()));
                 break;
 
             case INIT_UP:
-                iResult.progress = 0;
+                iResult.progress = phasemaxPercentInit + phasemaxPercentPing + phasemaxPercentPacketLoss + phasemaxPercentDown;
                 break;
 
             case UP:
-                iResult.progress = (float) diffTime / durationUpNano;
+                iResult.progress =  phasemaxPercentInit + phasemaxPercentPing + phasemaxPercentPacketLoss + phasemaxPercentDown + ((float) diffTime / durationUpNano) * phasemaxPercentUp;
                 upBitPerSec.set(Math.round(getAvgSpeed()));
                 break;
 
@@ -839,6 +863,18 @@ public class TestClient {
         return iResult;
     }
 
+    public float getJitterProgress() {
+        if (jitter.get() != -1) {
+            return 1;
+        } else {
+            long currentTime = System.nanoTime();
+            long jitterStartTimeLong = jitterStartTime.get();
+            float l = currentTime - jitterStartTimeLong;
+            Log.e("PROGRESS SEGMENTS:", "start:   " + jitterStartTimeLong + "              now:   " + currentTime + "            diff:   " + l + "   " + (float)(l/jitterDuration));
+            return l/jitterDuration;
+        }
+    }
+
     public TestStatus getStatus() {
         return testStatus.get();
     }
@@ -856,13 +892,19 @@ public class TestClient {
             resetSpeed();
         }
 
-//        /**
-//         * JITTER PACKET LOSS
-//         */
-//        if (status == TestStatus.PACKET_LOSS_AND_JITTER) {
-//            Timber.e("JITTER", "START");
-//            performVoipTest();
-//        }
+        if (status == TestStatus.INIT) {
+            jitterStartTime.set(-1);
+        }
+
+
+        /**
+         * JITTER PACKET LOSS
+         */
+        if (status == TestStatus.PACKET_LOSS_AND_JITTER) {
+            if (jitterStartTime.get() == -1) {
+                jitterStartTime.set(System.nanoTime());
+            }
+        }
     }
 
     public void startTrafficService(final int threadId, final TestStatus status) {
@@ -887,9 +929,11 @@ public class TestClient {
         return errorMsg;
     }
 
-    public void sendResult(final JsonObject additionalValues) {
+
+
+    public void sendResult(TestResultRequest result) {
         if (controlConnection != null) {
-            final String errorMsg = controlConnection.sendTestResult(result, additionalValues, LoopModeConfig.getCurrentLoopId(context), LocaleConfig.getLocaleForServerRequest(context));
+            final String errorMsg = controlConnection.sendTestResult(result);
             if (errorMsg != null) {
                 setErrorStatus();
                 log("Error sending Result...");

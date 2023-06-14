@@ -26,6 +26,8 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.Locale;
 import java.util.Scanner;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.net.ssl.SSLSession;
 import javax.net.ssl.SSLSocket;
@@ -34,6 +36,8 @@ import at.specure.client.helper.Config;
 
 public abstract class AbstractRMBTTest {
     protected static final String EXPECT_GREETING = Config.RMBT_VERSION_STRING;
+    protected static final String EXPECT_GREETING_EXP = Config.RMBT_CLIENT_NAME;
+    protected static final Pattern RMBT_SERVER_PATTERN = Pattern.compile(Config.RMBT_VERSION_EXPRESSION);
 	
     protected final TestClient client;
     protected final TestParameter params;
@@ -122,7 +126,7 @@ public abstract class AbstractRMBTTest {
         String line = reader.readLine();
         if (!line.equals(protocolVersion))
         {
-            log(String.format(Locale.US, "thread %d: got '%s' expected '%s'", threadId, line, EXPECT_GREETING));
+            log(String.format(Locale.US, "thread %d: got '%s' expected '%s'", threadId, line, protocolVersion));
             return null;
         }
         

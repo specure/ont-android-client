@@ -16,10 +16,11 @@
 
 package at.specure.android.screens.main.main_fragment.runnables;
 
+import android.content.Context;
 import android.location.Location;
 import android.os.Handler;
-import android.util.Log;
 
+import at.specure.android.configs.LoopModeConfig;
 import at.specure.android.impl.CpuStatAndroidImpl;
 import at.specure.android.impl.MemInfoAndroidImpl;
 import at.specure.android.screens.main.InfoCollector;
@@ -27,10 +28,11 @@ import at.specure.android.util.Helperfunctions;
 import at.specure.android.util.InformationCollector;
 import at.specure.android.util.location.GeoLocationX;
 import at.specure.android.util.net.NetworkFamilyEnum;
-import at.specure.android.configs.LoopModeConfig;
 import at.specure.android.util.net.RealTimeInformation;
+import at.specure.android.util.network.network.NRConnectionState;
 import at.specure.util.tools.CpuStat;
 import at.specure.util.tools.MemInfo;
+import timber.log.Timber;
 
 import static at.specure.android.screens.main.main_fragment.MainMenuFragment.INFORMATION_COLLECTOR_TIME;
 
@@ -54,18 +56,18 @@ public class MainInfoRunnable implements Runnable {
         this.infoHandler = infoHandler;
         this.infoCollector = InfoCollector.getInstance();
         this.infoHandler.post(this);
-        Log.e("MIR", this + "  " + "CONSTRUCT");
+        Timber.e( "CONSTRUCT");
     }
 
     public void setStop() {
-        Log.e("MIR", this + "  " + "STOP SET");
+        Timber.e( "STOP SET");
         stop = true;
     }
 
     @Override
     public void run() {
         int curSignal = Integer.MIN_VALUE;
-        Log.e("MIR", this + "  " + "NEW RUN");
+        Timber.e( "NEW RUN");
         if (informationCollector != null) {
             if (cpuStat != null) {
                 Float cpuUsagePercentage = cpuStat.getCPUUsagePercentage();
@@ -84,17 +86,26 @@ public class MainInfoRunnable implements Runnable {
                 }
             }
 
-            Location loc = GeoLocationX.getInstance(informationCollector.getContext()).getLastKnownLocation(informationCollector.getContext(), null);
-            infoCollector.setLocation(loc);
+            Context context = informationCollector.getContext();
 
-            int loopModeMaxTests = LoopModeConfig.getLoopModeMaxTests(informationCollector.getContext());
-            int currentTestNumber = LoopModeConfig.getCurrentTestNumber(informationCollector.getContext());
+            if (context != null) {
+                Location loc = GeoLocationX.getInstance(context).getLastKnownLocation(context, null);
+                infoCollector.setLocation(loc);
 
-            infoCollector.setLoopModeMaxTests(loopModeMaxTests);
-            infoCollector.setLoopModeCurrentTest(currentTestNumber);
+                int loopModeMaxTests = LoopModeConfig.getLoopModeMaxTests(context);
+                int currentTestNumber = LoopModeConfig.getCurrentTestNumber(context);
+                long remainingTimeToNextLoopTest = LoopModeConfig.getRemainingTimeToNextLoopTest(context);
 
+                if (remainingTimeToNextLoopTest < 0) {
+                    remainingTimeToNextLoopTest = 0;
+                }
 
+                infoCollector.setLoopModeMaxTests(loopModeMaxTests);
+                infoCollector.setLoopModeCurrentTest(currentTestNumber);
+                infoCollector.setLoopModeRemainingTimeToNextTest(remainingTimeToNextLoopTest);
+            }
             int lastNetworkType = informationCollector.getNetwork();
+            NRConnectionState lastNRConnectionState = informationCollector.getLastNRConnectionState();
             String lastNetworkTypeString = Helperfunctions.getNetworkTypeName(lastNetworkType);
             //System.out.println("lastNetworkType: " + lastNetworkType + ", lastNetworkTypeString: " + lastNetworkTypeString);
             infoCollector.setNetworkTypeString(lastNetworkTypeString);
@@ -106,7 +117,7 @@ public class MainInfoRunnable implements Runnable {
                     if (signal != null && signal > Integer.MIN_VALUE) {
                         curSignal = signal;
 
-                        if (signalType != InformationCollector.SINGAL_TYPE_WLAN) {
+                        if (signalType != InformationCollector.SIGNAL_TYPE_WLAN) {
                             String cellId = RealTimeInformation.getCellId(informationCollector.getContext());
                             if ((cellId == null) || (cellId.isEmpty())) {
                                 cellId = "-";
@@ -118,7 +129,7 @@ public class MainInfoRunnable implements Runnable {
                         infoCollector.setSignalType(signalType);
                         infoCollector.setSignal(curSignal);
 
-                        if (signalType == InformationCollector.SINGAL_TYPE_RSRP) {
+                        if (signalType == InformationCollector.SIGNAL_TYPE_RSRP) {
                             Integer signalRsrq = informationCollector.getSignalRsrq();
                             if (signalRsrq != null) {
                                 infoCollector.setSignalRsrq(signalRsrq);
@@ -140,7 +151,7 @@ public class MainInfoRunnable implements Runnable {
                 infoCollector.setNetworkName("UNKNOWN");
             }
 
-            NetworkFamilyEnum networkFamily = NetworkFamilyEnum.getFamilyByNetworkId(lastNetworkTypeString);
+            NetworkFamilyEnum networkFamily = NetworkFamilyEnum.getFamilyByNetworkId(lastNetworkTypeString, lastNRConnectionState);
             infoCollector.setNetworkFamily(networkFamily.getNetworkFamily());
             if (NetworkFamilyEnum.UNKNOWN.equals(networkFamily)) {
                 infoCollector.setNetworkTypeString(lastNetworkTypeString);
@@ -172,10 +183,11 @@ public class MainInfoRunnable implements Runnable {
         }
 
         if (!stop && informationCollector != null) {
-            informationCollector.reInit();
+            Timber.d("SIGNAL CHANGED MIR 180 reinit CLEARED!");
+//            informationCollector.reInit();
             infoHandler.postDelayed(this, INFORMATION_COLLECTOR_TIME);
         } else {
-            Log.e("MIR", this + "  " + "STOPPED");
+            Timber.e("STOPPED");
         }
 
     }
@@ -185,7 +197,7 @@ public class MainInfoRunnable implements Runnable {
             infoHandler.removeCallbacks(this);
             this.setStop();
             this.stop = false;
-            Log.e("MIR", this + "  " + "SET RUN");
+            Timber.e("SET RUN");
             infoHandler.postDelayed(this, INFORMATION_COLLECTOR_TIME);
         }
     }

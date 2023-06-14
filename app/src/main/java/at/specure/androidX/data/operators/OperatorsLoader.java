@@ -1,14 +1,11 @@
 package at.specure.androidX.data.operators;
 
 import android.content.Context;
-
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.loader.content.AsyncTaskLoader;
-
-import com.google.gson.Gson;
-import com.google.gson.JsonObject;
-
 import at.specure.android.api.ControlServerConnection;
 import at.specure.android.screens.main.MainActivity;
 import timber.log.Timber;

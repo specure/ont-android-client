@@ -13,6 +13,8 @@ import androidx.core.app.ActivityCompat;
 
 import com.specure.opennettest.R;
 
+import at.specure.android.util.connectivity.RequestReadPhoneStatePermissionInterface;
+import at.specure.android.util.location.RequestBackgroundLocationPermissionInterface;
 import at.specure.android.util.location.RequestGPSPermissionInterface;
 
 /**
@@ -58,6 +60,46 @@ public class PermissionHandler {
                         }
                     }).
                     setMessage(R.string.permission_explanation_location).
+                    setCancelable(false).
+                    create();
+
+            alert.show();
+        }
+    }
+
+    public static void showBackgroundLocationExplanationDialog(final Activity activity, final int requestCodeBackground, final RequestBackgroundLocationPermissionInterface requestBackgroundLocationPermission) {
+        if (activity != null) {
+            AlertDialog alert = new AlertDialog.Builder(activity).
+                    setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                        @SuppressLint("NewApi")
+                        public void onClick(DialogInterface dialog, int which) {
+                            if (((Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) && !activity.isDestroyed()) && !activity.isFinishing()) {
+                                if (requestBackgroundLocationPermission != null)
+                                    requestBackgroundLocationPermission.requestPermission(requestCodeBackground);
+                            }
+                        }
+                    }).
+                    setMessage(R.string.background_location_permission_explanation).
+                    setCancelable(false).
+                    create();
+
+            alert.show();
+        }
+    }
+
+    public static void showReadPhoneStateExplanationDialog(final Activity activity, final int requestCodePhone, final RequestReadPhoneStatePermissionInterface requestReadPhoneStatePermission) {
+        if (activity != null) {
+            AlertDialog alert = new AlertDialog.Builder(activity).
+                    setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                        @SuppressLint("NewApi")
+                        public void onClick(DialogInterface dialog, int which) {
+                            if (((Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) && !activity.isDestroyed()) && !activity.isFinishing()) {
+                                if (requestReadPhoneStatePermission != null)
+                                    requestReadPhoneStatePermission.requestPermission(requestCodePhone);
+                            }
+                        }
+                    }).
+                    setMessage(R.string.permission_explanation_read_phone).
                     setCancelable(false).
                     create();
 

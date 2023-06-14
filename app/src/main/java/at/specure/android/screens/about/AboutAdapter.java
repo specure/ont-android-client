@@ -16,11 +16,11 @@
  ******************************************************************************/
 package at.specure.android.screens.about;
 
-import java.util.List;
-import java.util.Map;
-
 import android.content.Context;
 import android.widget.SimpleAdapter;
+
+import java.util.List;
+import java.util.Map;
 
 /**
  * 

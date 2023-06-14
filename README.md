@@ -4,7 +4,7 @@ This project contains the source code of the following Android apps:
 * EKIP NetTest, https://play.google.com/store/apps/details?id=com.specure.rmbt.ekip
 * Nettfart Mobile, https://play.google.com/store/apps/details?id=no.nkom.nettfart.beta
 * Open Nettest, https://play.google.com/store/apps/details?id=com.specure.nettest
-* Ratel NetTest, https://play.google.com/store/apps/details?id=com.specure.rmbt.ratel
+* Ratel NetTest, https://play.google.com/store/apps/detail-s?id=com.specure.rmbt.ratel
 * RU Mobiltest, https://play.google.com/store/apps/details?id=com.specure.nettest.ru
 
 ##   Project MoQoS
@@ -24,3 +24,21 @@ The project MoQoS was co-financed by the Connecting Europe Facility of the Europ
 
 ## Licence
 The source code published here is licensed under the [Apache 2.0 licence.](LICENSE.txt)
+
+## BUILD
+Last tested Android studio version: Android Studio Bumblebee 2021.1.1
+
+1. replace variables or add valid value of your own if you will use it:
+- `YOUR_GOOGLE_MAPS_API_KEY` - in app google_maps.xml for the google maps usage
+- `YOUR_MAPBOX_API_KEY` - in app build.gradle for the mapbox maps usage
+- `facebook_app_id` - in facebook.xml for the facebook api usage
+
+2. replace names and urls in strings_local.xml
+
+3. replace google-services-example.json by your own google-services.json in the same directory (so there will be only your own google-services.json)
+
+4. replace pp.html and tc.html according your legal conditions
+
+5. configure feature set in `defaults.xml`
+
+6. CaptivePortal.kt - set WALLED_GARDEN_URL = "YOUR_CAPTIVE_PORTAL_URL" to your captive portal check URL

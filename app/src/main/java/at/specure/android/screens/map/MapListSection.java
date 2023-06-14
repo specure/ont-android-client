@@ -21,7 +21,9 @@ import com.google.gson.annotations.SerializedName;
 import java.io.Serializable;
 import java.util.List;
 
-import static at.specure.android.screens.map.MapFilterTypes.MAP_FILTER_TYPE_UNKNOWN;
+import at.specure.androidX.data.map_filter.data.MapFilterTypes;
+
+import static at.specure.androidX.data.map_filter.data.MapFilterTypes.MAP_FILTER_TYPE_UNKNOWN;
 
 /**
  * @author bp

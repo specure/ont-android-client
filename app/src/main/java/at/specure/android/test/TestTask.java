@@ -22,11 +22,12 @@ import android.os.Handler;
 import android.telephony.TelephonyManager;
 
 import com.google.gson.Gson;
-import com.google.gson.JsonObject;
-import com.specure.opennettest.R;
+import com.google.gson.JsonElement;
+import com.specure.opennettest.BuildConfig;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -38,6 +39,8 @@ import at.specure.android.configs.Config;
 import at.specure.android.configs.ConfigHelper;
 import at.specure.android.configs.LocaleConfig;
 import at.specure.android.configs.LoopModeConfig;
+import at.specure.android.configs.TestConfig;
+import at.specure.android.configs.ThreadsConfig;
 import at.specure.android.impl.CpuStatAndroidImpl;
 import at.specure.android.impl.MemInfoAndroidImpl;
 import at.specure.android.impl.TracerouteAndroidImpl;
@@ -46,10 +49,13 @@ import at.specure.android.impl.WebsiteTestServiceImpl;
 import at.specure.android.util.InformationCollector;
 import at.specure.android.util.location.GeoLocationX;
 import at.specure.android.util.net.ZeroMeasurementDetector;
+import at.specure.androidX.data.test.TestResultView;
+import at.specure.androidX.data.test.testResultRequest.TestResultRequest;
 import at.specure.client.QualityOfServiceTest;
 import at.specure.client.QualityOfServiceTest.Counter;
 import at.specure.client.TestClient;
-import at.specure.client.TestResult;
+import at.specure.client.TestParameter;
+import at.specure.client.TotalTestResult;
 import at.specure.client.helper.ControlServerConnection;
 import at.specure.client.helper.IntermediateResult;
 import at.specure.client.helper.NdtStatus;
@@ -102,21 +108,29 @@ public class TestTask {
 
     private EndTaskListener endTaskListener;
     private boolean isZeroMeasurement;
+    private List<TestResultView> testResultViews;
+    private TestResultFetcher resultFetcher;
 
     interface EndTaskListener {
         public void taskEnded();
     }
 
-    public TestTask(final Context ctx) {
+    public TestTask(final Context ctx, TestResultFetcher resultViewsFetcher) {
         this.context = ctx;
         this.isLoopMeasurement = false;
         this.isFirstLoopMeasurement = false;
+        this.testResultViews = new ArrayList<>();
+        this.resultFetcher = resultViewsFetcher;
+        cancelled.set(false);
     }
 
-    public TestTask(final Context ctx, boolean isLoopMeasurement, boolean isFirstLoopMeasurement) {
+    public TestTask(final Context ctx, boolean isLoopMeasurement, boolean isFirstLoopMeasurement, TestResultFetcher resultViewsFetcher) {
         this.context = ctx;
         this.isLoopMeasurement = isLoopMeasurement;
         this.isFirstLoopMeasurement = isFirstLoopMeasurement;
+        this.testResultViews = new ArrayList<>();
+        this.resultFetcher = resultViewsFetcher;
+        cancelled.set(false);
     }
 
     public void execute(final Handler _handler) {
@@ -211,7 +225,7 @@ public class TestTask {
             isZeroMeasurement = false;
             boolean error = false;
             connectionError.set(false);
-            TestResult result = null;
+            TotalTestResult result = null;
             QoSResultCollector qosResult = null;
             QoSResultCollector voipResult = null;
             GeoLocationX geoInstance = GeoLocationX.getInstance(context);
@@ -228,7 +242,7 @@ public class TestTask {
             }
 
             try {
-                final String uuid = fullInfo.getUUID();
+                final String uuid = ConfigHelper.getUUID(context);
 
                 final String controlServer = ConfigHelper.getControlServerName(context);
                 final int controlPort = ConfigHelper.getControlServerPort(context);
@@ -239,9 +253,14 @@ public class TestTask {
                 final ArrayList<String> geoInfo = GeoLocationX.getInstance(context).getCurLocationForTest();
 
 
+                int threadNumber = ThreadsConfig.getThreadNumber(context);
+
+                TestParameter testParameter = new TestParameter(threadNumber);
+
+
                 client = TestClient.getInstance(controlServer, null, controlPort, ConfigHelper.getSelectedMeasurementServerId(context), controlSSL, geoInfo, uuid,
                         Config.RMBT_CLIENT_TYPE, Config.RMBT_CLIENT_NAME,
-                        fullInfo.getInfo("CLIENT_SOFTWARE_VERSION"), null, fullInfo.getInitialInfo(), cacheDir, context);
+                        BuildConfig.VERSION_NAME,  testParameter, fullInfo.getInitialInfo(), cacheDir, context, testResultViews);
 
                 if (!isLoopMeasurement) {
                     LoopModeConfig.resetCurrentLoopId(context);
@@ -255,9 +274,11 @@ public class TestTask {
                 if (client != null) {
                     /*
                      * Example on how to implement the information collector tool:
-                	 *
-                	 * 
-					*/
+                     *
+                     *
+                     */
+
+                    TestConfig.setCurrentlyPerformingTestUUID(client.getTestUuid());
 
                     final InformationCollectorTool infoTool = new InformationCollectorTool(TimeUnit.NANOSECONDS, TimeUnit.NANOSECONDS.convert(120, TimeUnit.SECONDS));
                     infoTool.addCollector(new CpuStatCollector(new CpuStatAndroidImpl(), TimeUnit.NANOSECONDS.convert(1, TimeUnit.SECONDS)));
@@ -296,27 +317,41 @@ public class TestTask {
                         final InformationCollectorTool infoCollectorTool = client.getInformationCollectorTool();
 
                         Gson gson = new Gson();
-                        if (result != null && !fullInfo.getIllegalNetworkTypeChangeDetcted()) {
-                            final JsonObject infoObject = fullInfo.getResultValues(controlConnection.getStartTimeNs());
+                        if (result != null && !fullInfo.getIllegalNetworkTypeChangeDetected()) {
+                            JsonElement extendedStatsJsonElement = gson.toJsonTree(infoCollectorTool.getJsonObject(true, client.getControlConnection().getStartTimeNs()));
+
+
+
+                            if (resultFetcher != null) {
+                                resultFetcher.sendTestResults(testResultViews);
+                            }
+
+                            TestResultRequest testResultRequest = new TestResultRequest(context, ControlServerConnection.getTestToken(), result, controlConnection.getStartTimeNs(), fullInfo.getInfo(""), fullInfo.getNetwork(), fullInfo.getCellLocations(),  fullInfo.getSignals(), fullInfo.getGeoLocations(), fullInfo.getResultCellInfos(), fullInfo.getResultNRConnectionState(), extendedStatsJsonElement);
+
+//                            final JsonObject infoObject = fullInfo.getResultValues(controlConnection.getStartTimeNs());
                             if (infoCollectorTool != null) {
                                 infoCollectorTool.stop();
-                                infoObject.add("extended_test_stat", gson.toJsonTree(infoCollectorTool.getJsonObject(true, client.getControlConnection().getStartTimeNs())));
                             }
 
-                            boolean dataFuzzing = context.getResources().getBoolean(R.bool.test_use_personal_data_fuzzing);
-                            if (dataFuzzing) {
-                                infoObject.add("publish_public_data", gson.toJsonTree(ConfigHelper.isInformationCommissioner(context)));
-                            }
+
+//TODO: make checking network from start and end here in information collector
 
                             // checking bad network switch at the end of the test
-                            if (fullInfo.getIllegalNetworkTypeChangeDetcted()) {
+                            if (fullInfo.getIllegalNetworkTypeChangeDetected()) {
                                 error = true;
                                 connectionError.set(true);
                                 client.setStatus(TestStatus.ERROR);
                                 throw new Exception("Illegal network switch detected");
 
                             } else {
-                                client.sendResult(infoObject);
+                                client.sendResult(testResultRequest);
+                                if (client.getStatus() == TestStatus.ERROR) {
+                                    error = true;
+                                } else {
+                                    if (!ConfigHelper.isQosEnabled(context)) {
+                                        TestConfig.setShouldShowResults(true);
+                                    }
+                                }
                             }
 
                         } else {
@@ -326,6 +361,10 @@ public class TestTask {
                         e.printStackTrace();
                     } finally {
                         client.shutdown();
+//                        setPreviousTestStatus();
+//                        if (client.getStatus() == TestStatus.ERROR) {
+//                            throw new Exception("Error sending results");
+//                        }
                     }
                 } else {
                     System.err.println(client.getErrorMsg());
@@ -368,7 +407,29 @@ public class TestTask {
                         if (!cancelled.get()) {
                             if (qosResult != null && !qosTest.getStatus().equals(QoSTestEnum.ERROR)) {
                                 client.sendQoSResult(qosResult);
+                                TestConfig.setShouldShowResults(true);
                             }
+                        }
+//                        List<QoSTestResult> results = qosResult.getResults();
+//                        int success = 0;
+//                        if (results != null)
+//                        for (QoSTestResult qoSTestResult : results) {
+//                            HashMap<String, Object> resultMap = qoSTestResult.getResultMap();
+//                            if (resultMap != null) {
+//                                Set<String> strings = resultMap.keySet();
+//                                if (strings != null) {
+//                                    for (String string : strings) {
+//                                        Object o = resultMap.get(string);
+//
+//                                    }
+//                                }
+//                            }
+//                        }
+
+
+                        testResultViews.add(new TestResultView(SpeedTestStatViewController.InfoStat.QOS, getQoSTestSize(), getQoSTestProgress(), false));
+                        if (resultFetcher != null) {
+                            resultFetcher.sendTestResults(testResultViews);
                         }
 
                     } catch (Exception e) {
@@ -558,7 +619,7 @@ public class TestTask {
         if (fullInfo != null)
             return fullInfo.getSignalType();
         else
-            return InformationCollector.SINGAL_TYPE_NO_SIGNAL;
+            return InformationCollector.SIGNAL_TYPE_NO_SIGNAL;
     }
 
     public IntermediateResult getIntermediateResult(final IntermediateResult result) {
@@ -609,7 +670,7 @@ public class TestTask {
     public int getNetworkType() {
         if (fullInfo != null) {
             final int networkType = fullInfo.getNetwork();
-            if (fullInfo.getIllegalNetworkTypeChangeDetcted()) {
+            if (fullInfo.getIllegalNetworkTypeChangeDetected()) {
                 Timber.e( "illegal network change detected; cancelling test");
                 cancel();
             }

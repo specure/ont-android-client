@@ -18,6 +18,7 @@ package at.specure.android.screens.main;
 
 import android.app.Activity;
 import android.content.Context;
+import android.graphics.Color;
 import androidx.annotation.IdRes;
 import androidx.annotation.LayoutRes;
 import androidx.annotation.NonNull;
@@ -33,6 +34,7 @@ import com.specure.opennettest.R;
 import java.util.List;
 
 import at.specure.android.api.jsons.MeasurementServer;
+import at.specure.android.configs.ConfigHelper;
 
 /**
  * Created by michal.cadrik on 7/31/2017.
@@ -57,14 +59,14 @@ public class MeasurementServersAdapter extends ArrayAdapter<MeasurementServer> {
         TextView text;
         if (convertView != null) {
             view = convertView;
-            text = (TextView) convertView.findViewById(R.id.text);
+            text = convertView.findViewById(R.id.text);
 
         } else {
             LayoutInflater layoutInflater = activity.getLayoutInflater();
             view = layoutInflater.inflate(resource, null);
-            text = (TextView) view.findViewById(R.id.text);
+            text = view.findViewById(R.id.text);
         }
-        text.setText(this.getItem(position).getName());
+        text.setText(this.getItem(position).getDisplayName(false));
         return view;
     }
 
@@ -73,8 +75,13 @@ public class MeasurementServersAdapter extends ArrayAdapter<MeasurementServer> {
         View view = super.getView(position, convertView, parent);
         LayoutInflater inflater = activity.getLayoutInflater();
         View row = inflater.inflate(R.layout.test_server_dropdown_item, parent, false);
-        TextView text = (TextView) row.findViewById(R.id.text);
-        text.setText(this.getItem(position).getName());
+        TextView text = row.findViewById(R.id.text);
+        text.setText(this.getItem(position).getDisplayName(true));
+        if (this.getItem(position).getId() == ConfigHelper.getSelectedMeasurementServerId(activity)) {
+            row.setBackgroundColor(Color.LTGRAY);
+        } else {
+            row.setBackgroundColor(Color.WHITE);
+        }
         return row;
     }
 

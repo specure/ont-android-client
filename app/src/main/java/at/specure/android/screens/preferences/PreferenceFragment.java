@@ -40,9 +40,10 @@ import androidx.preference.PreferenceManager;
 import at.specure.android.configs.ConfigHelper;
 import at.specure.android.configs.LocaleConfig;
 import at.specure.android.configs.PreferenceConfig;
+import at.specure.android.screens.preferences.logging.LoggingActivity;
 import at.specure.android.screens.preferences.preferences.ExtendedDialogPreferenceCompat;
-import at.specure.android.screens.terms.CheckFragment;
-import at.specure.android.screens.terms.TermsActivity;
+import at.specure.android.screens.terms.CheckType;
+import at.specure.android.screens.terms.terms_check.TermsActivity;
 import at.specure.android.util.location.GeoLocationX;
 import timber.log.Timber;
 
@@ -126,7 +127,7 @@ public class PreferenceFragment extends PreferenceFragmentCompat {
                         if (cbp.isChecked()) {
                             cbp.setChecked(false);
                             final Intent intent = new Intent(PreferenceFragment.this.getActivity(), TermsActivity.class);
-                            intent.putExtra(TermsActivity.EXTRA_KEY_CHECK_TYPE, CheckFragment.CheckType.NDT.name());
+                            intent.putExtra(TermsActivity.EXTRA_KEY_CHECK_TYPE, CheckType.NDT.name());
                             getActivity().startActivityForResult(intent, REQUEST_NDT_CHECK);
                         }
                     }
@@ -150,6 +151,27 @@ public class PreferenceFragment extends PreferenceFragmentCompat {
             });
         }
 
+        boolean loggingEnabled = PreferenceConfig.isLoggingEnabled(getContext());
+        final PreferenceCategory cat = (PreferenceCategory) findPreference("preference_category_test");
+        final Preference loggingPref = findPreference("logging_pref");
+        Context context = getContext();
+        if ((loggingEnabled) && (context != null)) {
+            if (loggingPref != null) {
+
+                loggingPref.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
+                    @Override
+                    public boolean onPreferenceClick(Preference preference) {
+                        final Intent intent = new Intent(PreferenceFragment.this.getActivity(), LoggingActivity.class);
+                        getActivity().startActivity(intent);
+                        return true;
+                    }
+                });
+            }
+        } else {
+            if (loggingPref != null) {
+                cat.removePreference(loggingPref);
+            }
+        }
 
 
         final Preference icPref = findPreference("information_commissioner");
@@ -164,7 +186,7 @@ public class PreferenceFragment extends PreferenceFragmentCompat {
                             if (cbp.isChecked()) {
                                 cbp.setChecked(false);
                                 final Intent intent = new Intent(PreferenceFragment.this.getActivity(), TermsActivity.class);
-                                intent.putExtra(TermsActivity.EXTRA_KEY_CHECK_TYPE, CheckFragment.CheckType.INFORMATION_COMMISSIONER.name());
+                                intent.putExtra(TermsActivity.EXTRA_KEY_CHECK_TYPE, CheckType.INFORMATION_COMMISSIONER.name());
                                 getActivity().startActivityForResult(intent, REQUEST_IC_CHECK);
                             }
                         }

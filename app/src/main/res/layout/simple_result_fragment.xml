@@ -1,0 +1,172 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="at.specure.android.screens.result.fragments.SimpleResultFragment">
+
+    <Button
+        android:id="@+id/button_results"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_margin="4dp"
+        android:textColor="@color/colorAccent"
+        android:background="@drawable/rounded_button_bckg_inv"
+        android:text="@string/result_page_title_test" />
+
+    <ScrollView
+        android:id="@+id/scroll"
+        android:layout_above="@+id/button_results"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+
+        <LinearLayout
+            android:id="@+id/simple_result_fragment__main_container"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <include
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:layout_margin="4dp"
+                    android:id="@+id/result_download_square"
+                    layout="@layout/sample_result_square" />
+
+                <include
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:layout_margin="4dp"
+                    android:id="@+id/result_upload_square"
+                    layout="@layout/sample_result_square" />
+
+                <!--<at.specure.android.views.SquareLayout-->
+                <!--android:id="@+id/result_upload_container"-->
+                <!--android:layout_width="wrap_content"-->
+                <!--android:layout_height="wrap_content"-->
+                <!--android:layout_margin="4dp"-->
+                <!--android:layout_weight="1"-->
+                <!--android:background="@color/colorAccent">-->
+
+                <!--<LinearLayout-->
+                <!--android:layout_width="wrap_content"-->
+                <!--android:layout_height="wrap_content"-->
+                <!--android:layout_gravity="center"-->
+                <!--android:orientation="vertical">-->
+
+                <!--<TextView-->
+                <!--android:id="@+id/result_upload_title"-->
+                <!--android:layout_width="wrap_content"-->
+                <!--android:layout_height="wrap_content"-->
+                <!--android:layout_gravity="center_horizontal"-->
+                <!--android:text="@string/test_ping" />-->
+
+                <!--<TextView-->
+                <!--android:id="@+id/result_upload_value"-->
+                <!--android:layout_width="wrap_content"-->
+                <!--android:layout_height="wrap_content"-->
+                <!--android:layout_gravity="center_horizontal"-->
+                <!--android:text="@string/test_ping" />-->
+
+                <!--<TextView-->
+                <!--android:id="@+id/result_upload_units"-->
+                <!--android:layout_width="wrap_content"-->
+                <!--android:layout_height="wrap_content"-->
+                <!--android:layout_gravity="center_horizontal"-->
+                <!--android:text="@string/test_mbps" />-->
+                <!--</LinearLayout>-->
+
+                <!--</at.specure.android.views.SquareLayout>-->
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <include
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:layout_margin="4dp"
+                    android:id="@+id/result_ping_square"
+                    layout="@layout/sample_result_square" />
+
+                <include
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:layout_margin="4dp"
+                    android:id="@+id/result_qos_square"
+                    layout="@layout/sample_result_square" />
+
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <include
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:layout_margin="4dp"
+                    android:id="@+id/result_jitter_square"
+                    layout="@layout/sample_result_square" />
+
+                <include
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:layout_margin="4dp"
+                    android:id="@+id/result_packet_loss_square"
+                    layout="@layout/sample_result_square" />
+
+
+            </LinearLayout>
+
+
+            <LinearLayout
+                android:id="@+id/measurement_graphs_container"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:paddingBottom="10dp"
+                android:paddingRight="4dp"
+                android:visibility="gone">
+
+                <include
+                    android:id="@+id/test_progress__download_graph"
+                    layout="@layout/test_progress_results_graph"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1" />
+
+                <androidx.legacy.widget.Space
+                    android:layout_width="8dp"
+                    android:layout_height="wrap_content" />
+
+                <include
+                    android:id="@+id/test_progress__upload_graph"
+                    layout="@layout/test_progress_results_graph"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1" />
+
+            </LinearLayout>
+        </LinearLayout>
+
+    </ScrollView>
+</RelativeLayout>

@@ -21,9 +21,8 @@ import android.annotation.TargetApi;
 import android.content.Context;
 import android.os.Build;
 import android.provider.Settings;
-import android.telephony.TelephonyManager;
-
 import androidx.annotation.NonNull;
+import android.telephony.TelephonyManager;
 
 /**
  * Created by michal.cadrik on 8/23/2017.

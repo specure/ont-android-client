@@ -1,0 +1,204 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  Copyright 2014-2017 Specure GmbH
+  Copyright 2013-2014 alladin-IT GmbH
+  
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+  
+    http://www.apache.org/licenses/LICENSE-2.0
+  
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/gauges_container"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:layout_centerHorizontal="true"
+    android:layout_gravity="center_horizontal"
+    android:orientation="horizontal">
+
+    <LinearLayout
+        android:id="@+id/main_fragment__lower_ring_container"
+        android:layout_marginTop="120dp"
+        android:layout_width="200dp"
+        android:layout_height="wrap_content"
+        android:background="@android:color/transparent"
+        android:orientation="vertical">
+
+        <FrameLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentStart="true"
+            android:layout_marginRight="-50dp"
+            android:layout_marginTop="0dp"
+            android:gravity="center_horizontal"
+            android:orientation="vertical">
+
+            <at.specure.android.views.CustomGauge
+                android:id="@+id/gauge_lower_test"
+                android:layout_width="220dp"
+                android:layout_height="220dp"
+                android:layout_below="@+id/button"
+                android:layout_centerHorizontal="true"
+                android:layout_centerVertical="true"
+                android:paddingBottom="10dp"
+                android:paddingLeft="10dp"
+                android:paddingRight="10dp"
+                android:paddingTop="10dp"
+                android:rotation="180"
+                app:gaugeColors="@array/colors_of_bottom_curve"
+                app:gaugeDividerColor="@android:color/white"
+                app:gaugeDividerDrawFirst="false"
+                app:gaugeDividerDrawLast="false"
+                app:gaugeDividerPositionHidden="@array/hidden_for_upper_curve"
+                app:gaugeDividerSize="0"
+                app:gaugeDividerStep="7"
+                app:gaugeEndValue="143"
+                app:gaugePointEndColor="#011c3e"
+                app:gaugePointStartColor="#fdd043"
+                app:gaugeStartAngle="210"
+                app:gaugeStartValue="0"
+                app:gaugeStringsSize="10sp"
+                app:gaugeStrokeCap="BUTT"
+                app:gaugeStrokeCentralColor="@color/gauge_central_ring"
+                app:gaugeStrokeCentralWidth="10dp"
+                app:gaugeStrokeInnerColor="@color/gauge_inner_ring_dark"
+                app:gaugeStrokeInnerWidth="10dp"
+                app:gaugeStrokeOuterColor="@color/gauge_inner_ring"
+                app:gaugeStrokeOuterWidth="10dp"
+                app:gaugeSweepAngle="270"
+
+                app:gaugeShowScale="true"
+                app:gaugeScaleCount="44"
+                app:gaugeScaleSize="1px"
+                app:gaugeScaleWidth="3dp"
+                app:gaugeScaleColor="@color/gauge_scale"
+                 />
+            <!--<at.specure.ont.Ring-->
+            <!--android:layout_width="220dp"-->
+            <!--android:layout_height="220dp"-->
+            <!--android:rotation="180" />-->
+
+            <!--<ImageView-->
+                <!--android:id="@+id/title_page_map_button"-->
+                <!--android:layout_width="140dp"-->
+                <!--android:layout_height="140dp"-->
+                <!--android:layout_gravity="center"-->
+                <!--android:scaleType="centerCrop"-->
+                <!--android:src="@drawable/map_button" />-->
+
+            <TextView
+                android:id="@+id/text_view_lower_test"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:gravity="center"
+                android:textColor="@color/app_main_button_text_color"
+                android:textSize="25sp"
+                android:textStyle="bold" />
+
+
+        </FrameLayout>
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingLeft="130dp">
+
+        <FrameLayout
+            android:id="@+id/main_fragment__upper_ring_container"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:layout_alignParentRight="true"
+            android:gravity="center_horizontal"
+            android:orientation="vertical">
+
+            <!--<at.specure.ont.Ring-->
+            <!--android:layout_width="220dp"-->
+            <!--android:layout_height="220dp" />-->
+
+            <at.specure.android.views.CustomGauge
+                android:id="@+id/gauge_upper_test"
+                android:layout_width="220dp"
+                android:layout_height="220dp"
+                android:layout_below="@+id/button"
+                android:layout_centerHorizontal="true"
+                android:layout_centerVertical="true"
+                android:paddingBottom="10dp"
+                android:paddingLeft="10dp"
+                android:paddingRight="10dp"
+                android:paddingTop="10dp"
+                app:gaugeDividerColor="@android:color/white"
+                app:gaugeDividerDrawFirst="false"
+                app:gaugeDividerDrawLast="false"
+                app:gaugeDividerPositionHidden="@array/hidden_for_upper_curve"
+                app:gaugeDividerSize="1"
+                app:gaugeDividerStep="7"
+                app:gaugeEndValue="143"
+                app:gaugePointEndColor="@color/gauge_basic"
+                app:gaugePointStartColor="@color/gauge_basic"
+                app:gaugeScaleColor="@color/gauge_scale"
+                app:gaugeScaleCount="44"
+                app:gaugeScaleSize="1px"
+                app:gaugeScaleWidth="3dp"
+                app:gaugeShowScale="false"
+                app:gaugeStartAngle="210"
+                app:gaugeStartValue="0"
+                app:gaugeStringsSize="10sp"
+                app:gaugeStrokeCap="BUTT"
+                app:gaugeStrokeCentralColor="@color/gauge_central_ring"
+                app:gaugeStrokeCentralWidth="10dp"
+                app:gaugeStrokeInnerColor="@color/gauge_inner_ring_dark"
+                app:gaugeStrokeInnerWidth="10dp"
+                app:gaugeStrokeOuterColor="@color/gauge_inner_ring"
+                app:gaugeStrokeOuterWidth="10dp"
+                app:gaugeSweepAngle="270"
+
+                app:gaugeStrings="@array/strings_for_upper_curve"
+                app:gaugeStringsShifts="@array/strings_shifts_for_upper_curve"
+
+
+                />
+
+            <!--<ImageView-->
+                <!--android:id="@+id/title_page_start_button"-->
+                <!--android:layout_width="140dp"-->
+                <!--android:layout_height="140dp"-->
+                <!--android:layout_gravity="center"-->
+                <!--android:scaleType="centerInside"-->
+                <!--android:src="@drawable/start_test_button_bckg" />-->
+
+            <TextView
+                android:id="@+id/text_view_upper_test"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:gravity="center"
+                android:text="@string/menu_button_start"
+                android:textColor="@color/app_main_button_text_color"
+                android:textSize="30sp"
+                android:textStyle="bold" />
+
+            <!--<ImageView-->
+            <!--android:layout_width="80dp"-->
+            <!--android:layout_height="80dp"-->
+            <!--android:layout_gravity="center"-->
+            <!--android:src="@drawable/app_logo_text" />-->
+
+        </FrameLayout>
+    </LinearLayout>
+
+
+</RelativeLayout>

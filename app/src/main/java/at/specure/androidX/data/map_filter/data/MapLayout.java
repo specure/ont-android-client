@@ -6,6 +6,8 @@ import android.os.Parcelable;
 
 import com.google.gson.annotations.SerializedName;
 
+import java.util.HashMap;
+
 public class MapLayout implements Parcelable {
 
     public static final String MAP_FILTER_LAYOUT_ACCESS_TOKEN = "MAP_FILTER_LAYOUT_ACCESS_TOKEN";

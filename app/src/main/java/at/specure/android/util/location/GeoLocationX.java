@@ -10,12 +10,10 @@ import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Looper;
 import android.provider.Settings;
-
-import androidx.annotation.NonNull;
-import androidx.appcompat.app.AlertDialog;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
@@ -24,26 +22,22 @@ import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
-import com.google.gson.Gson;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
 import com.specure.opennettest.R;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Iterator;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.core.app.ActivityCompat;
 import at.specure.android.api.calls.GetGeolocationTask;
-import at.specure.android.api.jsons.GeoLocationItem;
 import at.specure.android.configs.PermissionHandler;
 import at.specure.android.util.EndStringTaskListener;
-import at.specure.android.util.InformationCollector;
 import timber.log.Timber;
 
 
@@ -593,7 +587,7 @@ public class GeoLocationX implements EndStringTaskListener {
         activity.startActivity(new Intent(action));
     }
 
-    private static void showDialogToOpenGPSSettings(final Activity activity, String dialogText) {
+    private static void showDialogToOpenGPSSettings(Activity activity, String dialogText) {
         final AlertDialog.Builder builder = new AlertDialog.Builder(activity);
 
         final String message = dialogText;
@@ -637,29 +631,16 @@ public class GeoLocationX implements EndStringTaskListener {
     }
 
 
-    public JsonArray getTestResultLocationsJson(long startTimestampNs) {
-        JsonArray itemList = null;
+    public ArrayList<at.specure.android.api.jsons.Location> getTestResultLocations() {
+        ArrayList<at.specure.android.api.jsons.Location> itemList = null;
         ConcurrentLinkedQueue<Location> savedlocations = getSavedlocations();
-        Gson gson = new Gson();
 
         if (savedlocations.size() > 0) {
-            itemList = new JsonArray();
+            itemList = new ArrayList<>();
 
             for (Location savedlocation : savedlocations) {
-                GeoLocationItem tmpItem = toGeoLocationItem(savedlocation);
-                final JsonObject jsonItem = new JsonObject();
-
-                jsonItem.add("tstamp", gson.toJsonTree(tmpItem.tstamp));
-                jsonItem.add("time_ns", gson.toJsonTree(tmpItem.tstampNano - startTimestampNs));
-                jsonItem.add("geo_lat", gson.toJsonTree(tmpItem.geo_lat));
-                jsonItem.add("geo_long", gson.toJsonTree(tmpItem.geo_long));
-                jsonItem.add("accuracy", gson.toJsonTree(tmpItem.accuracy));
-                jsonItem.add("altitude", gson.toJsonTree(tmpItem.altitude));
-                jsonItem.add("bearing", gson.toJsonTree(tmpItem.bearing));
-                jsonItem.add("speed", gson.toJsonTree(tmpItem.speed));
-                jsonItem.add("provider", gson.toJsonTree(tmpItem.provider));
-
-                itemList.add(jsonItem);
+                at.specure.android.api.jsons.Location tmpItem = toGeoLocationItem(savedlocation);
+                itemList.add(tmpItem);
             }
         }
         return itemList;
@@ -674,21 +655,28 @@ public class GeoLocationX implements EndStringTaskListener {
     public ArrayList<String> getCurLocationForTest() {
         Location bestLocation = getBestLocation(true);
         if (bestLocation != null) {
-            GeoLocationItem curLocation = toGeoLocationItem(bestLocation);
-            final ArrayList<String> geoInfo = new ArrayList<String>(Arrays.asList(String.valueOf(curLocation.tstamp),
-                    String.valueOf(curLocation.geo_lat), String.valueOf(curLocation.geo_long),
-                    String.valueOf(curLocation.accuracy), String.valueOf(curLocation.altitude),
-                    String.valueOf(curLocation.bearing), String.valueOf(curLocation.speed), curLocation.provider));
+            at.specure.android.api.jsons.Location curLocation = toGeoLocationItem(bestLocation);
+            final ArrayList<String> geoInfo = new ArrayList<String>(Arrays.asList(String.valueOf(curLocation.getTimestamp()),
+                    String.valueOf(curLocation.getLatitude()), String.valueOf(curLocation.getLongitude()),
+                    String.valueOf(curLocation.getAccuracy()), String.valueOf(curLocation.getAltitude()),
+                    String.valueOf(curLocation.getBearing()), String.valueOf(curLocation.getSpeed()), curLocation.getProvider()));
 
             return geoInfo;
         } else
             return null;
     }
 
-    public static GeoLocationItem toGeoLocationItem(Location curLocation) {
-        return new GeoLocationItem(curLocation.getTime(), curLocation.getLatitude(), curLocation
-                .getLongitude(), curLocation.getAccuracy(), curLocation.getAltitude(), curLocation.getBearing(),
-                curLocation.getSpeed(), curLocation.getProvider());
+    public static at.specure.android.api.jsons.Location toGeoLocationItem(Location curLocation) {
+        return new at.specure.android.api.jsons.Location(
+                curLocation.getTime(),
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1 ? curLocation.getElapsedRealtimeNanos() : null,
+                curLocation.getLatitude(),
+                curLocation.getLongitude(),
+                (double) curLocation.getAccuracy(),
+                curLocation.getAltitude(),
+                (double) curLocation.getBearing(),
+                (double) curLocation.getSpeed(),
+                curLocation.getProvider());
     }
 
     public void startRecordingPositions() {

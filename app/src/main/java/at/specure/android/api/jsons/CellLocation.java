@@ -19,6 +19,8 @@ package at.specure.android.api.jsons;
 import com.google.gson.annotations.SerializedName;
 
 import at.specure.android.database.obj.TCellLocation;
+import at.specure.android.support.telephony.CellInfoPreV18;
+import at.specure.android.support.telephony.CellInfoSupport;
 
 public final class CellLocation {
 
@@ -52,6 +54,22 @@ public final class CellLocation {
         this.locationId = location.locationId;
         this.areaCode = location.areaCode;
         this.primaryScramblingCode = location.primaryScramblingCode;
+    }
+
+    public CellLocation(CellInfoPreV18 cellInfoPreV18) {
+        this.time = System.currentTimeMillis(); //add for backward compatibility
+        this.timeNs = System.nanoTime(); //this is - test start time when it is sent to server
+        this.locationId = (long) cellInfoPreV18.getCellId();
+        this.areaCode = (long) cellInfoPreV18.getAreaCode();
+        this.primaryScramblingCode = (long) cellInfoPreV18.getPrimaryScramblingCode();
+    }
+
+    public CellLocation(CellInfoSupport cellInfo) {
+        this.time = System.currentTimeMillis(); //add for backward compatibility
+        this.timeNs = System.nanoTime(); //this is - test start time when it is sent to server
+        this.locationId = (long) cellInfo.getCellId();
+        this.areaCode = (long) cellInfo.getAreaCode();
+        this.primaryScramblingCode = (long) cellInfo.getPrimaryScramblingCode();
     }
 
     public Long getTime() {

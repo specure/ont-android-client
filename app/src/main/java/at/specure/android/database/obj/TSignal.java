@@ -21,7 +21,9 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.net.Uri;
+import android.telephony.TelephonyManager;
 
+import at.specure.android.api.jsons.Signal;
 import at.specure.android.database.Contract;
 import at.specure.android.database.DatabaseHelper;
 import at.specure.android.util.InformationCollector;
@@ -79,43 +81,56 @@ public class TSignal {
     }
 
 
+    private boolean isNotNullOrUnknown(Integer value, int unknown) {
+        return (value != null) && (value != unknown);
+    }
 
-    public TSignal(InformationCollector.SignalItem lastSignalItem, int unknown, int type) {
+    private boolean isNotNullOrUnknown(Long value, int unknown) {
+        return (value != null) && (value != unknown);
+    }
 
-        if (lastSignalItem.gsmBitErrorRate != unknown) {
-            this.gsmBitErrorRate = lastSignalItem.gsmBitErrorRate;
+    public TSignal(Signal lastSignalItem, int unknown, int type) {
+
+        if (isNotNullOrUnknown(lastSignalItem.getGsmBitErrorRate(), unknown)) {
+            this.gsmBitErrorRate = lastSignalItem.getGsmBitErrorRate();
         }
 
-        if (lastSignalItem.lteCqi != unknown) {
-            this.lteCQI = lastSignalItem.lteCqi;
+
+        if (lastSignalItem.getNetworkTypeId() == TelephonyManager.NETWORK_TYPE_LTE
+                || lastSignalItem.getNetworkTypeId() == 19) { // this is for NETWORK_TYPE_LTE_CA
+
+            if (isNotNullOrUnknown(lastSignalItem.getLteRsrp(), unknown)) {
+                this.lteRSRP = lastSignalItem.getLteRsrp();
+            }
+
+            if (isNotNullOrUnknown(lastSignalItem.getLteRsrq(), unknown)) {
+                this.lteRSRQ = lastSignalItem.getLteRsrq();
+            }
+
+            if (isNotNullOrUnknown(lastSignalItem.getLteRssnr(),unknown)) {
+                this.lteRSSNR = lastSignalItem.getLteRssnr();
+            }
+
+            if (isNotNullOrUnknown(lastSignalItem.getLteCqi(), unknown)) {
+                this.lteCQI = lastSignalItem.getLteCqi();
+            }
         }
 
-        if (lastSignalItem.lteRsrp != unknown) {
-            this.lteRSRP = lastSignalItem.lteRsrp;
+
+        if (isNotNullOrUnknown(lastSignalItem.getSignalStrength(), unknown)) {
+            this.signalStrength = lastSignalItem.getSignalStrength();
         }
 
-        if (lastSignalItem.lteRsrq != unknown) {
-            this.lteRSRQ = lastSignalItem.lteRsrq;
+        if (isNotNullOrUnknown(lastSignalItem.getNetworkTypeId(), unknown)) {
+            this.networkTypeId = lastSignalItem.getNetworkTypeId();
         }
 
-        if (lastSignalItem.lteRssnr != unknown) {
-            this.lteRSSNR = lastSignalItem.lteRssnr;
+        if (isNotNullOrUnknown(lastSignalItem.getTime(), unknown)) {
+            this.time = lastSignalItem.getTime();
         }
 
-        if (lastSignalItem.signalStrength != unknown) {
-            this.signalStrength = lastSignalItem.signalStrength;
-        }
-
-        if (lastSignalItem.networkId != unknown) {
-            this.networkTypeId = lastSignalItem.networkId;
-        }
-
-        if (lastSignalItem.tstamp != unknown) {
-            this.time = lastSignalItem.tstamp;
-        }
-
-        if (lastSignalItem.tstampNano != unknown) {
-            this.timeAge = lastSignalItem.tstampNano;
+        if (isNotNullOrUnknown(lastSignalItem.getTimeNs(), unknown)) {
+            this.timeAge = lastSignalItem.getTimeNs();
         }
         this.type = type;
     }

@@ -108,10 +108,10 @@ public class TestResultDetails {
                             if (cellInfoGet != null) {
 
                                 bandNameValue = mergeStrings(bandNameValue, cellInfoGet.bandName, ", ", "-", isFirst);
-                                bandwidthValue = mergeStrings(bandwidthValue, cellInfoGet.bandwidth.toString(), ", ", "-", isFirst);
+                                bandwidthValue = mergeStrings(bandwidthValue, cellInfoGet.bandwidth.toString() + " MHz", ", ", "-", isFirst);
                                 bandValue = mergeStrings(bandValue, cellInfoGet.band.toString(), ", ", "-", isFirst);
-                                frequencyULValue = mergeStrings(frequencyULValue, cellInfoGet.frequencyUpload.toString(), ", ", "-", isFirst);
-                                frequencyDLValue = mergeStrings(frequencyDLValue, cellInfoGet.frequencyDownload.toString(), ", ", "-", isFirst);
+                                frequencyULValue = mergeStrings(frequencyULValue, cellInfoGet.frequencyUpload.toString() + " MHz", ", ", "-", isFirst);
+                                frequencyDLValue = mergeStrings(frequencyDLValue, cellInfoGet.frequencyDownload.toString() + " MHz", ", ", "-", isFirst);
                                 isFirst = false;
                             }
                         }

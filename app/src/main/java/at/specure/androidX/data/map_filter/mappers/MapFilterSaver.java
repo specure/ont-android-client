@@ -3,10 +3,9 @@ package at.specure.androidX.data.map_filter.mappers;
 import android.content.Context;
 import android.content.SharedPreferences;
 
-import androidx.annotation.NonNull;
-
 import java.util.List;
 
+import androidx.annotation.NonNull;
 import at.specure.android.configs.ConfigHelper;
 import at.specure.android.configs.PreferenceConfig;
 import at.specure.androidX.data.map_filter.data.MapFilterTypes;

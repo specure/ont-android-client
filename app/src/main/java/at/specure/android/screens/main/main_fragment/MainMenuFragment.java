@@ -19,8 +19,8 @@ package at.specure.android.screens.main.main_fragment;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
-import android.content.res.Resources;
 import android.graphics.PorterDuff;
 import android.graphics.drawable.Drawable;
 import android.location.Location;
@@ -28,8 +28,6 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.provider.Settings;
-import android.util.Log;
-import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
@@ -44,13 +42,18 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.widget.AppCompatSpinner;
 import androidx.cardview.widget.CardView;
 import androidx.core.app.NotificationManagerCompat;
-import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentActivity;
+import androidx.lifecycle.LiveData;
+import androidx.lifecycle.Observer;
+import androidx.lifecycle.ViewModelProviders;
 
-import com.crashlytics.android.Crashlytics;
+import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.specure.opennettest.R;
 
 import java.text.DecimalFormat;
@@ -60,13 +63,23 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import at.specure.android.api.calls.GetGeolocationTask;
+import at.specure.android.api.jsons.MeasurementServer;
+import at.specure.android.base.BaseFragment;
+import at.specure.android.configs.BadgesConfig;
+import at.specure.android.configs.ConfigHelper;
+import at.specure.android.configs.FeatureConfig;
+import at.specure.android.configs.LoopModeConfig;
+import at.specure.android.configs.TestConfig;
 import at.specure.android.impl.CpuStatAndroidImpl.CpuMemClassificationEnum;
 import at.specure.android.screens.main.InfoCollector;
+import at.specure.android.screens.main.LoopModeActivityCheckListener;
 import at.specure.android.screens.main.MainActivity;
 import at.specure.android.screens.main.MeasurementServersAdapter;
 import at.specure.android.screens.main.OnMeasurementServersLoaded;
 import at.specure.android.screens.main.main_fragment.adapters.InfoArrayAdapter;
 import at.specure.android.screens.main.main_fragment.enums.InfoOverlayEnum;
+import at.specure.android.screens.main.main_fragment.graphs_handlers.GraphHandler;
 import at.specure.android.screens.main.main_fragment.runnables.MainInfoRunnable;
 import at.specure.android.screens.main.main_fragment.view_handlers.DefaultViewsHandler;
 import at.specure.android.screens.main.main_fragment.view_handlers.LoopModeViewsHandler;
@@ -75,14 +88,15 @@ import at.specure.android.screens.main.main_fragment.view_handlers.TestQosViewsH
 import at.specure.android.screens.main.main_fragment.view_handlers.TestResultsViewsHandler;
 import at.specure.android.screens.main.main_fragment.view_handlers.TestViewsHandler;
 import at.specure.android.screens.main.main_fragment.view_handlers.ViewsHandler;
+import at.specure.android.test.SpeedTestStatViewController;
 import at.specure.android.test.TestService;
 import at.specure.android.test.views.graph.SmoothGraph;
-import at.specure.android.configs.ConfigHelper;
-import at.specure.android.util.EndStringTaskListener;
-import at.specure.android.api.calls.GetGeolocationTask;
+import at.specure.android.util.AppRater;
 import at.specure.android.util.Helperfunctions;
 import at.specure.android.util.InformationCollector;
+import at.specure.android.util.SemaphoreColorHelper;
 import at.specure.android.util.location.GeoLocationX;
+import at.specure.android.util.location.LocationChangeListener;
 import at.specure.android.util.net.InterfaceTrafficGatherer;
 import at.specure.android.util.net.InterfaceTrafficGatherer.TrafficClassificationEnum;
 import at.specure.android.util.net.NetworkInfoCollector;
@@ -91,57 +105,59 @@ import at.specure.android.util.net.NetworkInfoCollector.IpStatus;
 import at.specure.android.util.net.NetworkInfoCollector.OnNetworkInfoChangedListener;
 import at.specure.android.util.net.NetworkUtil;
 import at.specure.android.util.net.NetworkUtil.MinMax;
-import at.specure.android.views.GroupCountView;
-import at.specure.android.configs.FeatureConfig;
-import at.specure.android.configs.GPSConfig;
-import at.specure.android.configs.LoopModeConfig;
-import at.specure.android.util.SemaphoreColorHelper;
 import at.specure.android.util.net.RealTimeInformation;
 import at.specure.android.util.net.ZeroMeasurementDetector;
-import at.specure.android.api.jsons.MeasurementServer;
+import at.specure.android.views.CustomGauge;
+import at.specure.android.views.GroupCountView;
+import at.specure.androidX.data.badges.Badge;
+import at.specure.androidX.data.badges.BadgesViewModel;
+import at.specure.util.BandCalculationUtil;
+import timber.log.Timber;
 
 import static android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT;
 
-public class MainMenuFragment extends Fragment implements MainFragmentInterface {
-
-    private static final String DEBUG_TAG = "MainMenuFragment";
-    private static final String TAG = "RMBTTestFragment";
+public class MainMenuFragment extends BaseFragment implements MainFragmentInterface, GraphInterface, LocationChangeListener {
 
     public final static String BUNDLE_INFO_LAST_ANTENNA_IMAGE = "last_antenna_image";
-    private static final String BUNDLE_TEST_UUID = "BUNDLE_TEST_UUID";
-    public final static int BACKGROUND_TRAFFIC_MEASUREMENT_TIME = 1000;
+    public final static int BACKGROUND_TRAFFIC_MEASUREMENT_TIME = 10000;
     public final static int INFORMATION_COLLECTOR_TIME = 1000;
-    @SuppressWarnings("FieldCanBeLocal")
-    private final String OPTION_ON_CREATE_VIEW_CREATE_SPEED_GRAPH = "create_speed_graph";
-    @SuppressWarnings("FieldCanBeLocal")
-    private final String OPTION_ON_CREATE_VIEW_CREATE_SIGNAL_GRAPH = "create_signal_graph";
     public static final int PROGRESS_SEGMENTS_PROGRESS_RING = 143;
     public static final int PROGRESS_SEGMENTS_QOS = 143;
-    public static int PROGRESS_SEGMENTS_TOTAL = PROGRESS_SEGMENTS_PROGRESS_RING + PROGRESS_SEGMENTS_QOS;
-    private static final long GRAPH_MAX_NSECS = 12000000000L; //5sec for download 5 sec for upload and some reserve between the upload and download part (2s)
-
     public static final long NANO_MULTIPLIER = 1000000000;
     public static final long STARTING_PERCENTAGE = 40L * NANO_MULTIPLIER; // segments for init and ping together from SpeedTEstStatViewController
-    @SuppressWarnings("unused")
-    private static final long MEASUREMENT_PERCENTAGE = 66L * NANO_MULTIPLIER;
     @SuppressWarnings("PointlessArithmeticExpression")
     public static final long RIGHT_GRAPH_SHIFT = 0L * NANO_MULTIPLIER;
-    private static final int SLOW_UPDATE_COUNT = 20;
     public static final Format PERCENT_FORMAT = new DecimalFormat("00%");
-    private final DecimalFormat cpuPercentFormat = new DecimalFormat("##0.0");
     public static final long MAX_COUNTER_WITHOUT_RESULT = 100;
-
     /**
      * used for smoothing the speed graph: amount of data needed for smoothing function
      */
     public static final int SMOOTHING_DATA_AMOUNT = 5;
-
     /**
      * smoothing function used for speed graph.
      * BEWARE: different functions could require different data amounts
      */
     public static final SmoothGraph.SmoothingFunction SMOOTHING_FUNCTION = SmoothGraph.SmoothingFunction.CENTERED_MOVING_AVARAGE;
-
+    private static final String DEBUG_TAG = "MainMenuFragment";
+    private static final String TAG = "RMBTTestFragment";
+    private static final String BUNDLE_TEST_UUID = "BUNDLE_TEST_UUID";
+    private static final long GRAPH_MAX_NSECS = 12000000000L; //5sec for download 5 sec for upload and some reserve between the upload and download part (2s)
+    @SuppressWarnings("unused")
+    private static final long MEASUREMENT_PERCENTAGE = 66L * NANO_MULTIPLIER;
+    private static final int SLOW_UPDATE_COUNT = 20;
+    public static int PROGRESS_SEGMENTS_TOTAL = PROGRESS_SEGMENTS_PROGRESS_RING + PROGRESS_SEGMENTS_QOS;
+    @SuppressWarnings("FieldCanBeLocal")
+    private final String OPTION_ON_CREATE_VIEW_CREATE_SPEED_GRAPH = "create_speed_graph";
+    @SuppressWarnings("FieldCanBeLocal")
+    private final String OPTION_ON_CREATE_VIEW_CREATE_SIGNAL_GRAPH = "create_signal_graph";
+    private final DecimalFormat cpuPercentFormat = new DecimalFormat("##0.0");
+    private final OnClickListener openLocationSettingsOnClickListener = new OnClickListener() {
+        @Override
+        public void onClick(View view) {
+            showDialogToOpenGPSSettings(getString(R.string.open_gps_settings));
+        }
+    };
+    public Handler infoHandler = new Handler();
     private Object locationInfoObject;
     private TextView locationText;
     private boolean buttonsDisabled;
@@ -164,7 +180,6 @@ public class MainMenuFragment extends Fragment implements MainFragmentInterface 
     private View trafficButton;
     private View cpuMemStatsButton;
     private View startButton;
-
     private ImageView ipv4View;
     private ProgressBar ipv4ProgressView;
     private ImageView ipv6View;
@@ -176,17 +191,49 @@ public class MainMenuFragment extends Fragment implements MainFragmentInterface 
     private ImageView dlSpeedView1;
     private ImageView dlSpeedView2;
     private ImageView captivePortalWarning;
-    public Handler infoHandler = new Handler();
-
     private InfoCollector infoCollector = InfoCollector.getInstance();
     private InterfaceTrafficGatherer interfaceTrafficGatherer;
-
     private ListView infoOverlayList;
     private CardView infoOverlay;
+    Observer<List<Badge>> observer = new Observer<List<Badge>>() {
+        @Override
+        public void onChanged(@Nullable List<Badge> badges) {
+            if (badges != null) {
+                Timber.i("Observing badges change: %s", badges);
+            }
+        }
+    };
+
+    public Runnable interfaceTrafficRunnable = new Runnable() {
+
+        @Override
+        public void run() {
+            if (interfaceTrafficGatherer != null) {
+                interfaceTrafficGatherer.run();
+                final long rxRate = interfaceTrafficGatherer.getRxRate();
+                final long txRate = interfaceTrafficGatherer.getTxRate();
+                TrafficClassificationEnum rxTrafficClass = TrafficClassificationEnum.classify(rxRate);
+                TrafficClassificationEnum txTrafficClass = TrafficClassificationEnum.classify(txRate);
+
+                infoCollector.setUlTraffic(txTrafficClass);
+                infoCollector.setDlTraffic(rxTrafficClass);
+            }
+
+            if (infoOverlay != null && infoOverlay.getVisibility() == View.VISIBLE) {
+                BaseAdapter adapter = (BaseAdapter) infoOverlayList.getAdapter();
+                if (adapter != null) {
+                    adapter.notifyDataSetChanged();
+                }
+            }
+
+            infoHandler.postDelayed(interfaceTrafficRunnable, BACKGROUND_TRAFFIC_MEASUREMENT_TIME);
+        }
+    };
     private TextView infoOverlayTitle;
     private Map<OverlayType, InfoArrayAdapter> infoValueListAdapterMap = new HashMap<OverlayType, InfoArrayAdapter>();
-
     private MainScreenState screenState;
+    private CustomGauge testViewUpper;
+    private CustomGauge testViewLower;
     private TextView testTextViewLower;
     private TextView testTextViewUpper;
     private ViewGroup testQosProgressView;
@@ -221,27 +268,269 @@ public class MainMenuFragment extends Fragment implements MainFragmentInterface 
         public void onClick(View view) {
             final Intent stopIntent = new Intent(TestService.ACTION_STOP_LOOP, null, getContext(), TestService.class);
             getMainActivity().startService(stopIntent);
+            changeScreenState(MainScreenState.DEFAULT, "stop_loop", false);
         }
     };
+    private ArrayList<Float> downloadFifo = new ArrayList<>();
+    private ArrayList<Float> uploadFifo = new ArrayList<>();
+    private TestViewsHandler testViewsHandler;
+    private TestResultsViewsHandler testResultViewsHandler;
+    private TestQosResultsViewsHandler testQosResultsViewsHandler;
+    private LoopModeViewsHandler loopModeViewsHandler;
+    private TestQosViewsHandler testQosViewsHandler;
+    private View rootView;
+    private GraphHandler graphHandler;
+    private MainInfoRunnable infoRunnable;
+    private MainFragmentController mainFragmentController;
+    private View testServerIcon;
+    private View testServerNameTitle;
+    private View locationTitle;
+    private View increasedConsumptionText;
+    /**
+     *
+     */
+    private final OnClickListener detailShowOnClickListener = new OnClickListener() {
+        @Override
+        public void onClick(View v) {
+            if (hideConsumptionWarning()) return;
+            if (infoOverlay != null) {
+                switch (v.getId()) {
+                    case R.id.title_page_cpu_stats_button:
+                        infoOverlayTitle.setText(getResources().getText(OverlayType.CPU_MEM.getResourceId()));
+                        infoOverlayList.setAdapter(infoValueListAdapterMap.get(OverlayType.CPU_MEM));
+                        break;
+                    case R.id.title_page_ip_button:
+                        infoOverlayTitle.setText(getResources().getText(OverlayType.IP.getResourceId()));
+                        infoOverlayList.setAdapter(infoValueListAdapterMap.get(OverlayType.IP));
+                        break;
+                    case R.id.title_page_location_button:
+                    case R.id.main_fragment__location_title:
+                    case R.id.main_fragment__location_enabled_text:
+                    case R.id.location_image:
+                        if (locationInfoObject != null) {
+                            infoOverlayTitle.setText(getResources().getText(R.string.title_screen_info_overlay_location));
+                            infoOverlayList.setAdapter(infoValueListAdapterMap.get(OverlayType.LOCATION));
+                        } /*else {
+                            showDialogToOpenGPSSettings(getString(R.string.open_gps_settings));
+                            return;
+                        }*/
+                        break;
+                    case R.id.title_page_traffic_button:
+                    default:
+                        infoOverlayTitle.setText(getResources().getText(OverlayType.TRAFFIC.getResourceId()));
+                        infoOverlayList.setAdapter(infoValueListAdapterMap.get(OverlayType.TRAFFIC));
+                        break;
+                }
+                //System.out.println("SHOWING INFO OVERLAY");
+                if (ipButton != null) {
+                    ipButton.setOnClickListener(detailHideOnClickListener);
+                }
+                //antennaView.setOnClickListener(detailHideOnClickListener);
+                if (cpuMemStatsButton != null) {
+                    cpuMemStatsButton.setOnClickListener(detailHideOnClickListener);
+                }
 
+                trafficButton.setOnClickListener(detailHideOnClickListener);
+                locationButton.setOnClickListener(detailHideOnClickListener);
+                locationView.setOnClickListener(detailHideOnClickListener);
+                locationText.setOnClickListener(detailHideOnClickListener);
+                locationTitle.setOnClickListener(detailHideOnClickListener);
+                infoOverlay.setVisibility(View.VISIBLE);
+                infoOverlay.bringToFront();
+                infoOverlayList.invalidate();
+            }
+        }
+    };
+    private final OnClickListener detailHideOnClickListener = new OnClickListener() {
+        @Override
+        public void onClick(View v) {
+            if (infoOverlay != null) {
+                InfoArrayAdapter adapter = (InfoArrayAdapter) infoOverlayList.getAdapter();
+                if (adapter != null) {
+                    OverlayType overlayType = adapter.getOverlayType();
+                    if (overlayType != null) {
+                        if ((overlayType.getButtonId() == v.getId()) ||
+                                v.getId() == R.id.info_overlay) {
+                            hideOverlayAndReenableOnClickListeners();
+                        } else {
+                            if (((v.getId() == R.id.location_image)
+                                    || (v.getId() == R.id.main_fragment__location_enabled_text)
+                                    || (v.getId() == R.id.main_fragment__location_title)
+                                    || (v.getId() == R.id.title_page_location_button))
+                                    && ((overlayType.getButtonId() == R.id.location_image)
+                                    || (overlayType.getButtonId() == R.id.main_fragment__location_enabled_text)
+                                    || (overlayType.getButtonId() == R.id.main_fragment__location_title)
+                                    || (overlayType.getButtonId() == R.id.title_page_location_button)
+                            )) {
+                                hideOverlayAndReenableOnClickListeners();
+                            } else {
+                                detailShowOnClickListener.onClick(v);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    };
+    private boolean enableMeasurementServersClick;
+    private OnMeasurementServersLoaded onMeasurementServersLoaded = new OnMeasurementServersLoaded() {
+        @Override
+        public void onServersLoaded(List<MeasurementServer> servers) {
+            updateServerList(servers);
+        }
+    };
+    private OnNetworkInfoChangedListener onNetworkChangedListener = new OnNetworkInfoChangedListener() {
+
+        @Override
+        public void onChange(InfoFlagEnum infoFlag, final Object newValue) {
+
+            Context applicationContext = null;
+            try {
+                applicationContext = MainMenuFragment.this.context.getApplicationContext();
+            } catch (Exception e) {
+                FirebaseCrashlytics.getInstance().recordException(e);
+            }
+
+            if (applicationContext != null) {
+                Timber.e("INFO NETWORK %s \n %s \n %s", InfoCollector.getInstance().getNetworkTypeString(), NetworkInfoCollector.getInstance(applicationContext).hasConnectionFromAndroidApi(), NetworkInfoCollector.getInstance(applicationContext).getActiveNetworkInfo());
+                switch (infoFlag) {
+                    case NETWORK_CONNECTION_CHANGED:
+                        if ((Boolean) newValue) {
+                            if (startButton != null && startButtonText != null) {
+                                startButton.setAlpha(1f);
+                                startButton.setEnabled(true);
+                                startButtonText.setAlpha(1f);
+                            }
+                        }
+                        break;
+                    default:
+                        if (infoCollector != null) {
+                            if (infoFlag == InfoFlagEnum.PRIVATE_IPV4_CHANGED || infoFlag == InfoFlagEnum.PRIVATE_IPV6_CHANGED) {
+                                if (NetworkInfoCollector.getInstance(applicationContext).hasConnectionFromAndroidApi()) {
+                                    infoCollector.dispatchInfoChangedEvent(InfoCollector.InfoCollectorType.SIGNAL, 0, infoCollector.getSignal());
+                                    infoCollector.dispatchInfoChangedEvent(InfoCollector.InfoCollectorType.SIGNAL_RSRQ, 0, infoCollector.getSignalRsrq());
+                                } else {
+                                    infoCollector.setSignal(Integer.MIN_VALUE);
+                                    infoCollector.setSignalRsrq(null);
+                                }
+                            }
+                            new Handler().postDelayed(new Runnable() {
+                                @Override
+                                public void run() {
+                                    infoCollector.dispatchInfoChangedEvent(InfoCollector.InfoCollectorType.IPV4, infoCollector.getIpv4(), newValue);
+                                    infoCollector.dispatchInfoChangedEvent(InfoCollector.InfoCollectorType.IPV6, infoCollector.getIpv6(), newValue);
+                                }
+                            }, 300);
+
+                        }
+                }
+            }
+        }
+
+    };
     private OnClickListener startButtonOnClickListener = new OnClickListener() {
         public void onClick(View v) {
+            TestConfig.setShouldShowResults(false);
+            if (hideConsumptionWarning()) {
+                return;
+            }
+
             if (!NotificationManagerCompat.from(getActivity()).areNotificationsEnabled()) {
                 // toast is also blocked when there are blocked notifications
                 Toast toast = Toast.makeText(getActivity(), R.string.notifications_disabled, Toast.LENGTH_LONG);
-                Crashlytics.logException(new Exception("Notification disabled"));
                 toast.show();
             }
             boolean loopMode = LoopModeConfig.isLoopMode(getContext());
             if (loopMode) {
-                if (!GPSConfig.isEnabledGPS(getContext())) {
+                if (!GeoLocationX.getInstance(getMainActivity().getApplication()).isGeolocationEnabled(getContext())) {
                     showDialogToOpenGPSSettings(getString(R.string.loop_mode_open_gps_settings));
                 }
             }
 
             if (!buttonsDisabled) {
                 buttonsDisabled = true;
-                boolean isZeroMeasurement = ZeroMeasurementDetector.detectZeroMeasurement(getMainActivity(), context, informationCollector);
+                boolean isZeroMeasurement = false;
+                if (ConfigHelper.detectZeroMeasurementEnabled(context)) {
+
+                    //TODO: REMOVE
+                   /* TelephonyManager telephonyManager = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
+                    List<CellInfo> allCellInfo = null;
+                    boolean apiLevel17andBigger = Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1;
+
+                    boolean accessToLocationGranted = isCoarseLocationPermitted(context);
+
+                    if (apiLevel17andBigger && accessToLocationGranted) {
+                        //it is checked in static method
+                        if (telephonyManager != null) {
+                            allCellInfo = telephonyManager.getAllCellInfo();
+                        }
+                    }
+
+                    if (apiLevel17andBigger && accessToLocationGranted) {
+                        //it is checked in static method
+                        if (telephonyManager != null) {
+                            allCellInfo = telephonyManager.getAllCellInfo();
+                        }
+                    }
+                    boolean noConnection = false;
+                    Integer signal = informationCollector.getSignal();
+                    boolean isSignalRsrp = informationCollector.getSignalType() == InformationCollector.SINGAL_TYPE_RSRP;
+                    ConnectivityManager cm = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+                    NetworkInfo activeNetworkInfo = null;
+                    if (cm != null) {
+                        activeNetworkInfo = cm.getActiveNetworkInfo();
+                    }
+
+                    String info = "";
+                    if ((activeNetworkInfo == null)) {
+                            info = info + "\nactiveNetworkInfo is null";
+                        } else {
+                        info = info + "\nactiveNetworkInfo is: " + activeNetworkInfo;
+                        }
+                    if (allCellInfo != null) {
+                        info = info + "\nallCellInfo is: " + allCellInfo;
+                    } else {
+                        info = info + "\nallCellInfo is: null";
+                    }
+
+                    if (signal != null) {
+                        info = info + "\nsignal is: " + signal;
+                    } else {
+                        info = info + "\nsignal is: null";
+                    }
+
+                    if (activeNetworkInfo == null) {// && ((allCellInfo == null) || (allCellInfo.isEmpty())) && (apiLevel17andBigger)) {
+                        noConnection = true;
+                        info = info + "\nRESULT: true";
+                    } else {
+                        info = info + "\nRESULT: false";
+                    }
+
+//                    Toast.makeText(context, info, Toast.LENGTH_LONG).show();
+                    //
+*/
+                    if (context != null && ConfigHelper.detectZeroMeasurementEnabled(context)) {
+                        isZeroMeasurement = ZeroMeasurementDetector.detectZeroMeasurement(getMainActivity(), context, informationCollector);
+                    }
+                }
+
+
+                //this was problem while user wants to detect zero measurements so that is why it was moved here, removed because of ethernet
+//                if (!isNetworkLoaded()) {
+//                    buttonsDisabled = false;
+//                    return;
+//                }
+
+                //enable to start and run loop mode when there is no signal
+                if (isZeroMeasurement && LoopModeConfig.isLoopMode(getActivity())) {
+                    {
+                        MainScreenState mainScreenState = ((MainActivity) getActivity()).startTest(screenState);
+                        buttonsDisabled = mainScreenState != screenState;
+                        if (buttonsDisabled) {
+                            changeScreenState(mainScreenState, "StartButton - startTest", true);
+                        }
+                    }
+                }
 
                 if (!isZeroMeasurement) {
 
@@ -250,7 +539,9 @@ public class MainMenuFragment extends Fragment implements MainFragmentInterface 
                         AlertDialog alert = new AlertDialog.Builder(getActivity()).
                                 setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
                                     public void onClick(DialogInterface dialog, int which) {
-                                        ((MainActivity) getActivity()).startTest(true, screenState);
+                                        ((MainActivity) getActivity()).startTest(screenState);
+
+
                                     }
                                 }).
                                 setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
@@ -267,11 +558,12 @@ public class MainMenuFragment extends Fragment implements MainFragmentInterface 
                     } else {
                         MainActivity activity = (MainActivity) getActivity();
                         NetworkInfoCollector networkInfoCollector2 = activity.getNetworkInfoCollector();
-                        if ((networkInfoCollector2 != null) && (!networkInfoCollector2.hasConnectionFromAndroidApi())) {
-                            activity.showNoNetworkConnectionToast();
-                            buttonsDisabled = false;
-                        } else {
-                            MainScreenState mainScreenState = activity.startTest(true, screenState);
+//                        if ((networkInfoCollector2 != null) && (!networkInfoCollector2.hasConnectionFromAndroidApi())) {
+//                            activity.showNoNetworkConnectionToast();
+//                            buttonsDisabled = false;
+//                        } else
+                        {
+                            MainScreenState mainScreenState = activity.startTest(screenState);
                             buttonsDisabled = mainScreenState != screenState;
                             if (buttonsDisabled) {
                                 changeScreenState(mainScreenState, "StartButton - startTest", true);
@@ -287,41 +579,335 @@ public class MainMenuFragment extends Fragment implements MainFragmentInterface 
 
         }
     };
-    private TestViewsHandler testViewsHandler;
-    private TestResultsViewsHandler testResultViewsHandler;
-    private TestQosResultsViewsHandler testQosResultsViewsHandler;
-    private LoopModeViewsHandler loopModeViewsHandler;
-    private TestQosViewsHandler testQosViewsHandler;
     private OnClickListener showDetailedResultsOnClick = new OnClickListener() {
         @Override
         public void onClick(View view) {
-            getMainActivity().showResultsAfterTest(testUuid);
+            if (FeatureConfig.showLayoutTheme(getMainActivity()) == FeatureConfig.LAYOUT_SQUARE) {
+                getMainActivity().showResultsAfterTest(testUuid);
+            } else {
+                getMainActivity().showDetailedResultsAfterTest(testUuid);
+            }
+
         }
     };
-    private View rootView;
     private OnClickListener mapButtonOnClickListener = new OnClickListener() {
         public void onClick(View v) {
+            if (hideConsumptionWarning()) {
+                return;
+            }
             if (!buttonsDisabled) {
                 buttonsDisabled = true;
+//                startActivity(new Intent(getActivity(), FilterListActivity.class));
                 ((MainActivity) getActivity()).showMap(true);
             }
         }
     };
-    private MainInfoRunnable infoRunnable;
-    private MainFragmentController mainFragmentController;
-    private View testServerIcon;
-    private View testServerNameTitle;
-    private View locationTitle;
+    private final InfoCollector.OnInformationChangedListener onInfoChangedListener = new InfoCollector.OnInformationChangedListener() {
+        @Override
+        public void onInformationChanged(InfoCollector.InfoCollectorType type, Object oldValue, Object newValue) {
+            if (isAdded()) {
+                PorterDuff.Mode mode = PorterDuff.Mode.SRC_ATOP;
+                Drawable drawable = null;
+                NetworkInfoCollector netInfo;
+                switch (type) {
+                    case CPU:
+                        setViewText(infoCpuStat, cpuPercentFormat.format(newValue) + "%");
+                        Timber.e("cpuValue %s %%", cpuPercentFormat.format(newValue));
+                        setViewTextColorResource(infoCpuStat, CpuMemClassificationEnum.classify((Float) newValue).getResId());
+                        MainActivity mainActivity = getMainActivity();
+                        if ((mainActivity != null) && (screenState == MainScreenState.LOOP_MODE_ACTIVE)) {
 
+                            mainActivity.checkLoopModeRunning(new LoopModeActivityCheckListener() {
+                                @Override
+                                public void onLoopModeRunning(boolean isRunning) {
+                                    if (isRunning) {
+                                        changeScreenState(MainScreenState.LOOP_MODE_ACTIVE, "infoRunnable", false);
+                                    } else {
+                                        changeScreenState(MainScreenState.DEFAULT, "infoRunnable", false);
+                                    }
+                                }
+                            });
+                        }
+                        break;
+                    case MEMORY:
+                        setViewText(infoMemStat, cpuPercentFormat.format(newValue) + "%");
+                        //setViewTextColorResource(infoMemStat, CpuMemClassificationEnum.classify((Float) newValue).getTextResId());
+                        break;
+
+                    case LOCATION:
+                        try {
+                            if (newValue == null) {
+                                infoValueListAdapterMap.get(OverlayType.LOCATION).removeElement(InfoOverlayEnum.LOCATION_ACCURACY);
+                                infoValueListAdapterMap.get(OverlayType.LOCATION).removeElement(InfoOverlayEnum.LOCATION_AGE);
+                                infoValueListAdapterMap.get(OverlayType.LOCATION).removeElement(InfoOverlayEnum.LOCATION_SOURCE);
+                                infoValueListAdapterMap.get(OverlayType.LOCATION).removeElement(InfoOverlayEnum.LOCATION_ALTITUDE);
+                            } else {
+                                infoValueListAdapterMap.get(OverlayType.LOCATION).addElement(InfoOverlayEnum.LOCATION_ACCURACY);
+                                infoValueListAdapterMap.get(OverlayType.LOCATION).addElement(InfoOverlayEnum.LOCATION_AGE);
+                                infoValueListAdapterMap.get(OverlayType.LOCATION).addElement(InfoOverlayEnum.LOCATION_SOURCE);
+                                infoValueListAdapterMap.get(OverlayType.LOCATION).addElement(InfoOverlayEnum.LOCATION_ALTITUDE);
+
+                                at.specure.android.api.jsons.Location location = null;
+                                Location loc = (Location) newValue;
+                                if (loc != null) {
+                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
+                                        location = new at.specure.android.api.jsons.Location(loc.getTime(), loc.getElapsedRealtimeNanos(), loc.getLatitude(), loc.getLongitude(), (double) loc.getAccuracy(), loc.getAltitude(), (double) loc.getBearing(), (double) loc.getSpeed(), loc.getProvider());
+                                    } else {
+                                        location = new at.specure.android.api.jsons.Location(loc.getTime(), -1L, loc.getLatitude(), loc.getLongitude(), (double) loc.getAccuracy(), loc.getAltitude(), (double) loc.getBearing(), (double) loc.getSpeed(), loc.getProvider());
+
+                                    }
+                                }
+
+                                if (!LoopModeConfig.isCurrentlyPerformingLoopMode(getContext())) {
+                                    ((MainActivity) getActivity()).getMeasurementServers(onMeasurementServersLoaded, location, false);
+                                }
+                            }
+                        } catch (NullPointerException e) {
+                            //TODO: fix - do nothing if map is empty and you wanna remove something
+                        }
+                        break;
+                    case NETWORK_TYPE:
+                        if (antennaView != null) {
+                            //System.out.println("NETWORK_TYPE changed to: " + newValue);
+                            Integer signal = informationCollector.getSignal();
+                            refreshAntennaImage(signal != null ? signal : Integer.MIN_VALUE);
+                        }
+
+                        //no break; here!!
+                        //if the network type or the network family changes, the same label TextView is used
+                    case NETWORK_FAMILY:
+                        showNetworkNameAndType(InfoCollector.getInstance().getNetworkTypeString());
+
+                        break;
+                    case NETWORK_NAME:
+                        //reset all IPs on network change name:
+                        resetAllIPandGetNewOne();
+                        break;
+                    case SIGNAL_RSRQ:
+                        showSignal(infoCollector.getSignalType());
+                        break;
+                    case SIGNAL:
+
+                        if (antennaView != null && newValue != null) {
+                            antennaView.setVisibility(View.VISIBLE);
+                            refreshAntennaImage((Integer) newValue);
+                        }
+
+                        BandCalculationUtil.FrequencyInformation cellBandAndFrequency = RealTimeInformation.getCellBandAndFrequency(getMainActivity());
+                        if (cellBandAndFrequency != null) {
+                            Timber.e("FREQUENCY BAND %s", cellBandAndFrequency.getBand());
+                            Timber.e("FREQUENCY DL %s", cellBandAndFrequency.getFrequencyDL());
+                            Timber.e("FREQUENCY UL %s", cellBandAndFrequency.getFrequencyULfromDL());
+                        }
+
+
+                        showSignal(infoCollector.getSignalType());
+                        break;
+                    case IPV4:
+                    case IPV6:
+                        Timber.e("IP CHANGE onInformationChanged()");
+                        if (getActivity() != null) {
+                            netInfo = ((MainActivity) getActivity()).getNetworkInfoCollector();
+                            if (netInfo != null) {
+                                if (infoValueListAdapterMap.get(OverlayType.IP) != null) {
+
+
+                                    if (netInfo.getPublicIpv4() != null) {
+                                        netInfo.setCaptivePortalStatus(CaptivePortalStatusEnum.NOT_FOUND);
+                                        infoValueListAdapterMap.get(OverlayType.IP).addElement(InfoOverlayEnum.IPV4_PUB, 1);
+                                    } else {
+                                        if (infoValueListAdapterMap.get(OverlayType.IP) != null) {
+                                            infoValueListAdapterMap.get(OverlayType.IP).removeElement(InfoOverlayEnum.IPV4_PUB);
+                                        }
+                                    }
+
+                                    if (netInfo.getPublicIpv6() != null) {
+                                        netInfo.setCaptivePortalStatus(CaptivePortalStatusEnum.NOT_FOUND);
+                                        infoValueListAdapterMap.get(OverlayType.IP).addElement(InfoOverlayEnum.IPV6_PUB, 2);
+                                    } else {
+                                        if (infoValueListAdapterMap.get(OverlayType.IP) != null) {
+                                            infoValueListAdapterMap.get(OverlayType.IP).removeElement(InfoOverlayEnum.IPV6_PUB);
+                                        }
+                                    }
+                                }
+
+                                //Timber.d(DEDBUG_TAG, "IPv4: " + netInfo.getIpv4Status() + ", IPv6: " + netInfo.getIpv6Status());
+                                if (ipv4View != null && ipv6ProgressView != null) {
+                                    if (netInfo.getIpv4Status() == IpStatus.STATUS_NOT_AVAILABLE) {
+                                        ipv4ProgressView.setVisibility(View.VISIBLE);
+                                        ipv4View.setVisibility(View.GONE);
+                                    } else {
+                                        ipv4ProgressView.setVisibility(View.GONE);
+                                        ipv4View.setVisibility(View.VISIBLE);
+                                        ipv4View.setImageResource(netInfo.getIpv4Status().getResourceId());
+                                    }
+                                }
+                                if (ipv6View != null && ipv6ProgressView != null) {
+                                    if (netInfo.getIpv6Status() == IpStatus.STATUS_NOT_AVAILABLE) {
+                                        ipv6ProgressView.setVisibility(View.VISIBLE);
+                                        ipv6View.setVisibility(View.GONE);
+                                    } else {
+                                        ipv6ProgressView.setVisibility(View.GONE);
+                                        ipv6View.setVisibility(View.VISIBLE);
+                                        ipv6View.setImageResource(netInfo.getIpv6Status().getResourceId());
+                                    }
+                                }
+
+                                if (netInfo.getIpv4Status().equals(IpStatus.CONNECTED_NAT)
+                                        || netInfo.getIpv4Status().equals(IpStatus.CONNECTED_NO_NAT)
+                                        || netInfo.getIpv6Status().equals(IpStatus.CONNECTED_NAT)
+                                        || netInfo.getIpv6Status().equals(IpStatus.CONNECTED_NO_NAT)) {
+                                }
+                            }
+                        }
+                        break;
+                    case UL_TRAFFIC:
+                        if (ulSpeedView1 != null) {
+
+                            TrafficClassificationEnum trafficEnum = (TrafficClassificationEnum) newValue;
+                            switch (trafficEnum) {
+                                case NONE:
+                                case UNKNOWN:
+                                    ulSpeedView1.setImageResource(R.drawable.arrow_grey);
+                                    ulSpeedView2.setImageResource(R.drawable.arrow_grey);
+                                    break;
+                                case LOW:
+                                case MID:
+                                    drawable = getResources().getDrawable(R.drawable.arrow_green);
+                                    drawable.setColorFilter(getResources().getColor(R.color.titlepage_stats_foreground), mode);
+                                    ulSpeedView1.setImageDrawable(drawable);
+                                    ulSpeedView2.setImageResource(R.drawable.arrow_grey);
+                                    break;
+                                case HIGH:
+                                    drawable = getResources().getDrawable(R.drawable.arrow_green);
+                                    drawable.setColorFilter(getResources().getColor(R.color.titlepage_stats_foreground), mode);
+                                    ulSpeedView1.setImageDrawable(drawable);
+                                    ulSpeedView2.setImageDrawable(drawable);
+                                    break;
+                                default:
+                                    ulSpeedView1.setImageResource(R.drawable.arrow_grey);
+                                    ulSpeedView2.setImageResource(R.drawable.arrow_grey);
+                            }
+                        }
+                        break;
+                    case DL_TRAFFIC:
+                        if (dlSpeedView1 != null) {
+                            TrafficClassificationEnum trafficEnum = (TrafficClassificationEnum) newValue;
+                            switch (trafficEnum) {
+                                case NONE:
+                                case UNKNOWN:
+                                    dlSpeedView1.setImageResource(R.drawable.arrow_grey);
+                                    dlSpeedView2.setImageResource(R.drawable.arrow_grey);
+                                    break;
+                                case LOW:
+                                case MID:
+                                    drawable = getResources().getDrawable(R.drawable.arrow_green);
+                                    drawable.setColorFilter(getResources().getColor(R.color.titlepage_stats_foreground), mode);
+                                    dlSpeedView1.setImageDrawable(drawable);
+                                    dlSpeedView2.setImageResource(R.drawable.arrow_grey);
+                                    break;
+                                case HIGH:
+                                    drawable = getResources().getDrawable(R.drawable.arrow_green);
+                                    drawable.setColorFilter(getResources().getColor(R.color.titlepage_stats_foreground), mode);
+                                    dlSpeedView1.setImageDrawable(drawable);
+                                    dlSpeedView2.setImageDrawable(drawable);
+                                    break;
+                                default:
+                                    dlSpeedView1.setImageResource(R.drawable.arrow_grey);
+                                    dlSpeedView2.setImageResource(R.drawable.arrow_grey);
+                            }
+                        }
+                        break;
+                    case CAPTIVE_PORTAL_STATUS:
+
+                        setCaptivePortalStatus((Boolean) newValue);
+                        break;
+                    case CELL_ID:
+                        showCellId(InfoCollector.getInstance().getNetworkTypeString());
+                        break;
+                    case LOOP_MODE_FINISHED:
+                        if (screenState != MainScreenState.DEFAULT) {
+                            changeScreenState(MainScreenState.DEFAULT, "loop mode finished", true);
+                        }
+                        break;
+                    case LOOP_MODE:
+                        Timber.e("LOOP MODE onInformationChanged()");
+                        if (screenState == MainScreenState.LOOP_MODE_ACTIVE) {
+                            testTextViewLower.setVisibility(View.VISIBLE);
+                            Integer loopModeMax = InfoCollector.getInstance().getLoopModeMax();
+                            Integer loopModeCurrent = InfoCollector.getInstance().getLoopModeCurrent();
+                            if (loopModeMax == 0) {
+                                testTextViewLower.setText(loopModeCurrent + "");
+                            } else {
+                                testTextViewLower.setText(loopModeCurrent + "/" + loopModeMax);
+                                if (testViewLower != null) {
+                                    int i = loopModeCurrent * PROGRESS_SEGMENTS_QOS / loopModeMax;
+                                    testViewLower.setValue(i);
+                                }
+                            }
+
+
+                            if (testViewUpper != null) {
+                                Long loopModeRemainingTimeToNextTest = InfoCollector.getInstance().getLoopModeRemainingTimeToNextTest();
+                                if (loopModeRemainingTimeToNextTest == null) {
+                                    loopModeRemainingTimeToNextTest = 0L;
+                                }
+                                Integer remainingTime = (int) (loopModeRemainingTimeToNextTest / 1000);
+                                int loopModeMinDelay = LoopModeConfig.getLoopModeMinDelay(getContext());
+                                if (remainingTime != null) {
+                                    if (remainingTime < 0) {
+                                        remainingTime = loopModeMinDelay;
+                                    }
+
+                                    int i = loopModeMinDelay - remainingTime;
+                                    if (i < 0) {
+                                        i = 0;
+                                    }
+                                    if (loopModeMinDelay < 1) {
+                                        loopModeMinDelay = 1;
+                                    }
+                                    i = (PROGRESS_SEGMENTS_PROGRESS_RING * i) / loopModeMinDelay;
+                                    testViewUpper.setValue(i);
+                                    Timber.e("testViewUpper I: %s", i);
+                                } else {
+
+                                    testViewUpper.setValue(PROGRESS_SEGMENTS_PROGRESS_RING);
+                                    Timber.e("testViewUpper LoopMinDelay: %s", PROGRESS_SEGMENTS_PROGRESS_RING);
+                                }
+                                Timber.e("testViewUpper Value: %s     EndValue: %s", testViewUpper.getValue(), testViewUpper.getEndValue());
+                                testViewUpper.invalidate();
+                            }
+                        }
+                        break;
+                    default:
+                        break;
+                }
+            }
+        }
+    };
+    private BadgesViewModel badgesModel;
+    private LiveData<List<Badge>> data1;
+    private boolean forceUpdate = false;
+
+    private boolean isNetworkLoaded() {
+        if (antennaView != null) {
+            Object tag = antennaView.getTag();
+            if (tag == null) {
+                return false;
+            }
+        }
+        return !(((infoNetwork != null) && (infoNetwork.getText() != null) && (infoNetwork.getText().toString().isEmpty()))
+                || ((infoNetwork != null) && (infoNetwork.getText() == null)));
+    }
 
     @Override
     public void onCreate(final Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        Log.i(DEBUG_TAG, "onCreate");
+        Timber.i("onCreate");
         getActivity().setRequestedOrientation(SCREEN_ORIENTATION_PORTRAIT);
-        mainFragmentController = new MainFragmentController(this);
+        String waitText = getActivity().getResources().getString(R.string.test_progress_text_wait);
+        mainFragmentController = new MainFragmentController(this, this, waitText);
     }
-
 
     @Override
     public void onStop() {
@@ -329,33 +915,30 @@ public class MainMenuFragment extends Fragment implements MainFragmentInterface 
         mainFragmentController.unbindTestingService();
     }
 
-
     @Override
     public void onStart() {
         super.onStart();
 
-        if (screenState == MainScreenState.TESTING) {
+        if ((screenState != MainScreenState.LOOP_MODE_ACTIVE) && (screenState == MainScreenState.TESTING || screenState == MainScreenState.QOS_TESTING || screenState == MainScreenState.DEFAULT)) {
             mainFragmentController.bindTestingService();
         }
     }
 
-
     @Override
-    public View onCreateView(final LayoutInflater inflater, final ViewGroup container, final Bundle savedInstanceState) {
+    public View onCreateView(@NonNull final LayoutInflater inflater, final ViewGroup container, final Bundle savedInstanceState) {
         final View view = inflater.inflate(R.layout.main_fragment, container, false);
         return createView(view, inflater, savedInstanceState);
     }
-
 
     public MainActivity getMainActivity() {
         return (MainActivity) getActivity();
     }
 
-
     private View createView(View view, LayoutInflater inflater, Bundle savedInstanceState) {
 
         rootView = view;
         screenState = MainScreenState.DEFAULT;
+
         context = getActivity().getApplicationContext();
 
         startButton = view.findViewById(R.id.title_page_start_button);
@@ -385,6 +968,7 @@ public class MainMenuFragment extends Fragment implements MainFragmentInterface 
         cellIdContainer = view.findViewById(R.id.main_fragment__cell_id_container);
         infoOverlayTitle = view.findViewById(R.id.info_overlay_title);
         infoOverlay = view.findViewById(R.id.info_overlay);
+        captivePortalWarning = view.findViewById(R.id.captive_portal_image);
         antennaView = view.findViewById(R.id.antenne_image);
         ulSpeedView1 = view.findViewById(R.id.traffic_ul_1_image);
         ulSpeedView2 = view.findViewById(R.id.traffic_ul_2_image);
@@ -394,14 +978,25 @@ public class MainMenuFragment extends Fragment implements MainFragmentInterface 
         startButtonText = view.findViewById(R.id.start_button_text);
 
         {
+            increasedConsumptionText = rootView.findViewById(R.id.increased_consumption_button_text);
+
+            testViewUpper = view.findViewById(R.id.gauge_upper);
+            testViewLower = view.findViewById(R.id.gauge_lower);
             testTextViewLower = view.findViewById(R.id.text_view_lower_test);
             testTextViewUpper = view.findViewById(R.id.text_view_upper_test);
             testQosProgressView = view.findViewById(R.id.test_view_qos_container);
             testGroupCountContainerView = view.findViewById(R.id.test_view_group_count_container);
 
-            testDownloadGraphValue = view.findViewById(R.id.test_progress__small_graph_value_d);
+            testDownloadGraphContainer = view.findViewById(R.id.test_progress__download_graph);
+            testUploadGraphContainer = view.findViewById(R.id.test_progress__upload_graph);
 
-            testUploadGraphValue = view.findViewById(R.id.test_progress__small_graph_value_u);
+            testDownloadGraphTitle = testDownloadGraphContainer.findViewById(R.id.test_progress__small_graph_title);
+            testDownloadGraphUnits = testDownloadGraphContainer.findViewById(R.id.test_progress__small_graph_units);
+            testDownloadGraphValue = testDownloadGraphContainer.findViewById(R.id.test_progress__small_graph_value);
+
+            testUploadGraphTitle = testUploadGraphContainer.findViewById(R.id.test_progress__small_graph_title);
+            testUploadGraphUnits = testUploadGraphContainer.findViewById(R.id.test_progress__small_graph_units);
+            testUploadGraphValue = testUploadGraphContainer.findViewById(R.id.test_progress__small_graph_value);
 
             ViewGroup progressJitterGroup = view.findViewById(R.id.test_progress_jitter);
             ViewGroup progressSignalGroup = view.findViewById(R.id.test_progress_signal_strength);
@@ -440,29 +1035,53 @@ public class MainMenuFragment extends Fragment implements MainFragmentInterface 
             }
         }
 
-        if (savedInstanceState != null && savedInstanceState.containsKey(BUNDLE_TEST_UUID)) {
-            testUuid = savedInstanceState.getString(BUNDLE_TEST_UUID);
+        if (savedInstanceState != null) {
+            if (savedInstanceState.containsKey(BUNDLE_TEST_UUID)) {
+                testUuid = savedInstanceState.getString(BUNDLE_TEST_UUID);
+                if (testUuid != null) {
+                    Timber.d("Current test uuid: %s", testUuid);
+                }
+             }
         }
 
-        if (getMainActivity().isLoopModeRunning()) {
-            screenState = MainScreenState.LOOP_MODE_ACTIVE;
-            changeScreenState(screenState, "OnCreate", true);
-        } else {
-            changeScreenState(screenState, "OnCreate", true);
-        }
-
+        getMainActivity().checkLoopModeRunning(new LoopModeActivityCheckListener() {
+            @Override
+            public void onLoopModeRunning(boolean isRunning) {
+                if (isRunning) {
+                    screenState = MainScreenState.LOOP_MODE_ACTIVE;
+                    changeScreenState(screenState, "OnCreate", true);
+                } else {
+                    changeScreenState(screenState, "OnCreate", true);
+                }
+            }
+        });
         return view;
     }
 
+    @Override
+    public void onActivityCreated(Bundle savedInstanceState) {
+        super.onActivityCreated(savedInstanceState);
+        badgesModel = ViewModelProviders.of(this).get(BadgesViewModel.class);
+        data1 = badgesModel.getData();
+        data1.observe(this.getViewLifecycleOwner(), observer);
+    }
+
     public void changeScreenState(MainScreenState state, String placeFromCalled, Boolean forceUpdate) {
-        Log.e("State changing to:", state.toString() + " from: " + placeFromCalled);
+        Timber.e("State changing to: %s from: %s", state.toString(), placeFromCalled);
         if ((state == screenState) && (!forceUpdate)) {
             return;
         }
+        if (state == MainScreenState.TEST_RESULT || state == MainScreenState.QOS_TEST_RESULT) {
+            if (isAdded()) {
+                MainActivity activity = (MainActivity) getActivity();
+                AppRater.testPerformed(activity);
+            }
+        }
         screenState = state;
-        Resources res = getResources();
-        int value = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 100, res.getDisplayMetrics());
         hideOverlayAndReenableOnClickListeners();
+        enableMeasurementServersClick = ((screenState != MainScreenState.QOS_TESTING)
+                && (screenState != MainScreenState.LOOP_MODE_ACTIVE)
+                && (screenState != MainScreenState.TESTING));
         switch (screenState) {
             case DEFAULT:
                 HashMap<Integer, OnClickListener> defaultOnClickListeners = new HashMap<>();
@@ -483,7 +1102,8 @@ public class MainMenuFragment extends Fragment implements MainFragmentInterface 
                     interfaceTrafficGatherer = new InterfaceTrafficGatherer();
                 }
                 if (informationCollector == null) {
-                    informationCollector = new InformationCollector(getActivity(), false, false);
+                    informationCollector = InformationCollector.getInstance(getActivity(), true, true, false);
+                    mainFragmentController.setInformationCollector(informationCollector);
                 }
 
 //                stopScreenServices();
@@ -492,20 +1112,32 @@ public class MainMenuFragment extends Fragment implements MainFragmentInterface 
 
                 buttonsDisabled = false;
                 mainFragmentController.unbindTestingService();
-                showGeolocation();
-                getMeasurementServersInfo();
+//                getMeasurementServersInfo();
 
 //                infoCollector.dispatchInfoChangedEvent(InfoCollectorType.IPV4, infoCollector.getIpv4(), infoCollector.getIpv4());
 //                infoCollector.dispatchInfoChangedEvent(InfoCollectorType.IPV6, infoCollector.getIpv6(), infoCollector.getIpv6());
 //                refreshIpAddresses();
 //                resetAllIPandGetNewOne();
+                getMeasurementServersInfo();
                 break;
 
             case TESTING:
-                stopScreenServices();
+                if (downloadFifo != null) {
+                    downloadFifo.clear();
+                } else {
+                    downloadFifo = new ArrayList<>();
+                }
+                if (uploadFifo != null) {
+                    uploadFifo.clear();
+                } else {
+                    uploadFifo = new ArrayList<>();
+                }
+//                stopScreenServices();
 //                if (graphHandler == null) {
+                graphHandler = new GraphHandler(rootView, testDownloadGraphContainer, testUploadGraphContainer);
+                graphHandler.initializeGraphs(getContext());
 //                }
-                mainFragmentController.initializeTesting();
+                mainFragmentController.initializeTesting(graphHandler);
 
                 HashMap<Integer, OnClickListener> testOnClickListeners = new HashMap<>();
                 testViewsHandler = new TestViewsHandler(rootView, testOnClickListeners);
@@ -519,13 +1151,23 @@ public class MainMenuFragment extends Fragment implements MainFragmentInterface 
                 break;
 
             case TEST_RESULT:
+                if (context != null) {
+                    TestConfig.setShouldShowResults(false);
+                }
                 mainFragmentController.unbindTestingService();
                 HashMap<Integer, OnClickListener> testResultOnClickListeners = new HashMap<>();
                 testResultOnClickListeners.put(R.id.show_detailed_result_button, showDetailedResultsOnClick);
                 testResultViewsHandler = new TestResultsViewsHandler(rootView, testResultOnClickListeners);
                 testResultViewsHandler.initializeViews(rootView, getContext());
                 buttonsDisabled = false;
-                showGeolocation();
+                getMainActivity().showSurveyRequest();
+                boolean badgesFeatureEnabled = BadgesConfig.isBadgesFeatureEnabled(getMainActivity());
+                if (badgesFeatureEnabled) {
+                    if (BadgesConfig.checkForGettingBadge(getMainActivity(), data1.getValue())) {
+                        MainActivity mainActivity = getMainActivity();
+                        mainActivity.invalidateOptionsMenu();
+                    }
+                }
                 break;
 
             case QOS_TEST_RESULT:
@@ -536,10 +1178,19 @@ public class MainMenuFragment extends Fragment implements MainFragmentInterface 
                 testQosResultsViewsHandler.initializeViews(rootView, getContext());
                 mainFragmentController.initializeQoSResults(testUuid);
                 buttonsDisabled = false;
+                getMainActivity().showSurveyRequest();
+                badgesFeatureEnabled = BadgesConfig.isBadgesFeatureEnabled(getMainActivity());
+                if (badgesFeatureEnabled) {
+                    if (BadgesConfig.checkForGettingBadge(getMainActivity(), data1.getValue())) {
+                        MainActivity mainActivity = getMainActivity();
+                        mainActivity.invalidateOptionsMenu();
+                    }
+                }
                 break;
 
 
             case LOOP_MODE_ACTIVE:
+                Timber.e("LOOP_MODE ACTIVE");
                 HashMap<Integer, OnClickListener> loopModeOnClickListeners = new HashMap<>();
                 loopModeOnClickListeners.put(R.id.title_page_map_button, mapButtonOnClickListener);
                 loopModeOnClickListeners.put(R.id.title_page_start_button, startButtonLoopModeOnClickListener);
@@ -560,31 +1211,42 @@ public class MainMenuFragment extends Fragment implements MainFragmentInterface 
         }
     }
 
+    @Override
+    public MainScreenState getScreenState() {
+        return screenState;
+    }
+
     private void getMeasurementServersInfo() {
-        Location loc = GeoLocationX.getInstance(getMainActivity()).getLastKnownLocation(getMainActivity(), null);
-        at.specure.android.api.jsons.Location location = null;
-        if (loc != null) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
-                location = new at.specure.android.api.jsons.Location(loc.getTime(), loc.getElapsedRealtimeNanos(), loc.getLatitude(), loc.getLongitude(), (double) loc.getAccuracy(), loc.getAltitude(), (double) loc.getBearing(), (double) loc.getSpeed(), loc.getProvider());
-            } else {
-                location = new at.specure.android.api.jsons.Location(loc.getTime(), -1L, loc.getLatitude(), loc.getLongitude(), (double) loc.getAccuracy(), loc.getAltitude(), (double) loc.getBearing(), (double) loc.getSpeed(), loc.getProvider());
+        FragmentActivity activity = getActivity();
+        if (activity != null) {
+            Location loc = GeoLocationX.getInstance(activity.getApplicationContext()).getLastKnownLocation(activity, this);
+            at.specure.android.api.jsons.Location location = null;
+            if (loc != null) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
+                    location = new at.specure.android.api.jsons.Location(loc.getTime(), loc.getElapsedRealtimeNanos(), loc.getLatitude(), loc.getLongitude(), (double) loc.getAccuracy(), loc.getAltitude(), (double) loc.getBearing(), (double) loc.getSpeed(), loc.getProvider());
+                } else {
+                    location = new at.specure.android.api.jsons.Location(loc.getTime(), -1L, loc.getLatitude(), loc.getLongitude(), (double) loc.getAccuracy(), loc.getAltitude(), (double) loc.getBearing(), (double) loc.getSpeed(), loc.getProvider());
+                }
+            }
+            if (activity != null) {
+                ((MainActivity) activity).getMeasurementServers(onMeasurementServersLoaded, location, testServer.getVisibility() != View.VISIBLE);
             }
         }
-        ((MainActivity) getActivity()).getMeasurementServers(onMeasurementServersLoaded, location, true);
     }
 
     private void initializeMainScreenDefaultInfo(InterfaceTrafficGatherer interfaceTrafficGatherer) {
-        if (infoOverlayList != null) {
-            infoValueListAdapterMap.put(OverlayType.TRAFFIC, new InfoArrayAdapter(getActivity(), OverlayType.TRAFFIC, interfaceTrafficGatherer,
+        FragmentActivity activity = getActivity();
+        if ((infoOverlayList != null) && (activity != null)) {
+            infoValueListAdapterMap.put(OverlayType.TRAFFIC, new InfoArrayAdapter(activity, OverlayType.TRAFFIC, interfaceTrafficGatherer,
                     InfoOverlayEnum.UL_TRAFFIC, InfoOverlayEnum.DL_TRAFFIC));
 
-            infoValueListAdapterMap.put(OverlayType.IP, new InfoArrayAdapter(getActivity(), OverlayType.IP, interfaceTrafficGatherer, InfoOverlayEnum.IPV4,
+            infoValueListAdapterMap.put(OverlayType.IP, new InfoArrayAdapter(activity, OverlayType.IP, interfaceTrafficGatherer, InfoOverlayEnum.IPV4,
                     InfoOverlayEnum.IPV4_PUB, InfoOverlayEnum.IPV6, InfoOverlayEnum.IPV6_PUB));
 
-            infoValueListAdapterMap.put(OverlayType.LOCATION, new InfoArrayAdapter(getActivity(), OverlayType.LOCATION, interfaceTrafficGatherer,
+            infoValueListAdapterMap.put(OverlayType.LOCATION, new InfoArrayAdapter(activity, OverlayType.LOCATION, interfaceTrafficGatherer,
                     InfoOverlayEnum.LOCATION));
 
-            infoValueListAdapterMap.put(OverlayType.CPU_MEM, new InfoArrayAdapter(getActivity(), OverlayType.CPU_MEM, interfaceTrafficGatherer,
+            infoValueListAdapterMap.put(OverlayType.CPU_MEM, new InfoArrayAdapter(activity, OverlayType.CPU_MEM, interfaceTrafficGatherer,
                     InfoOverlayEnum.CPU_USAGE, InfoOverlayEnum.MEM_USAGE,
                     InfoOverlayEnum.MEM_FREE, InfoOverlayEnum.MEM_TOTAL));
         }
@@ -592,97 +1254,132 @@ public class MainMenuFragment extends Fragment implements MainFragmentInterface 
 
     @Override
     public void onPause() {
-        Log.i(DEBUG_TAG, "onPause");
+        Timber.i("onPause");
         super.onPause();
         stopScreenServices();
-
     }
 
     private void stopScreenServices() {
         infoCollector.removeAllListeners();
-        NetworkInfoCollector.getInstance().removeOnNetworkInfoChangedListener(onNetworkChangedListener);
-        if (infoRunnable != null) {
-            infoRunnable.setStop();
+        try {
+            NetworkInfoCollector.getInstance(context.getApplicationContext()).removeOnNetworkInfoChangedListener(onNetworkChangedListener);
+            if (infoRunnable != null) {
+                infoRunnable.setStop();
+            }
+            try {
+                if ((informationCollector != null) && (!LoopModeConfig.isCurrentlyPerformingLoopMode(context.getApplicationContext()))) {
+                    informationCollector.unload();
+                }
+            } catch (Exception e) {
+                FirebaseCrashlytics.getInstance().recordException(e);
+            }
+            infoHandler.removeCallbacks(infoRunnable);
+            infoHandler.removeCallbacks(interfaceTrafficRunnable);
+            startScreenServices = true;
+        } catch (Exception e) {
+            FirebaseCrashlytics.getInstance().recordException(e);
         }
-
-        if (informationCollector != null) {
-            informationCollector.unload();
-        }
-        infoHandler.removeCallbacks(infoRunnable);
-        infoHandler.removeCallbacks(interfaceTrafficRunnable);
-        startScreenServices = true;
     }
 
     @Override
     public void onResume() {
-        Log.i(DEBUG_TAG, "onResume");
+        Timber.i("onResume");
         super.onResume();
+        forceUpdate = true;
         buttonsDisabled = false;
+
         startScreenServices();
 
         ((MainActivity) getActivity()).setLockNavigationDrawer(false);
-        if (getMainActivity().isLoopModeRunning()) {
-            screenState = MainScreenState.LOOP_MODE_ACTIVE;
-            changeScreenState(screenState, "OnResume", true);
-        }
+        ((MainActivity) getActivity()).setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+        ((MainActivity) getActivity()).setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LOCKED);
+
+        getMainActivity().checkLoopModeRunning(new LoopModeActivityCheckListener() {
+            @Override
+            public void onLoopModeRunning(boolean isRunning) {
+                if (isRunning) {
+                    screenState = MainScreenState.LOOP_MODE_ACTIVE;
+                    changeScreenState(screenState, "OnResume", true);
+                } else {
+                    mainFragmentController.bindTestingService();
+                    /*screenState = MainScreenState.DEFAULT;
+                    changeScreenState(screenState, "OnResume", true);*/
+                }
+            }
+        });
+
+
+        Timber.e("IP_ADDRESS RESET on RESUME");
+        getMeasurementServersInfo();
         refreshIpAddresses();
     }
 
     private void startScreenServices() {
 
-        if (startScreenServices) {
-            infoCollector.addListener(onInfoChangedListener);
-            NetworkInfoCollector.getInstance().addOnNetworkChangedListener(onNetworkChangedListener);
-            if (informationCollector != null) {
-                informationCollector.init();
-            } else {
-                informationCollector = new InformationCollector(this.getContext(), false, false);
-            }
+        try {
+            if (startScreenServices) {
+                infoCollector.addListener(onInfoChangedListener);
+                NetworkInfoCollector.getInstance(context.getApplicationContext()).addOnNetworkChangedListener(onNetworkChangedListener);
+                if (informationCollector != null) {
+                    Timber.d("SIGNAL CHANGED INIT MainMenu Fragment CLEARED!");
+                    informationCollector.init();
+                } else {
+                    informationCollector = new InformationCollector(this.getContext(), true, true);
+                }
 
-            if (infoRunnable == null) {
-                infoRunnable = new MainInfoRunnable(informationCollector, infoHandler);
-            } else {
-                infoRunnable.startLoop();
-            }
-            infoHandler.post(interfaceTrafficRunnable);
-            infoCollector.refresh();
-            showGeolocation();
-            startScreenServices = false;
+                mainFragmentController.setInformationCollector(informationCollector);
 
+                if (infoRunnable == null) {
+                    infoRunnable = new MainInfoRunnable(informationCollector, infoHandler);
+                } else {
+                    infoRunnable.startLoop();
+                }
+                infoHandler.post(interfaceTrafficRunnable);
+                infoCollector.refresh();
+
+                MainActivity mainActivity = getMainActivity();
+                if (mainActivity != null) {
+//                if (Build.MANUFACTURER.contentEquals("Amazon")) {
+//                    Location lastKnownLocation = GPSConfig.getLastKnownLocation(mainActivity, this);
+//                    if (lastKnownLocation != null) {
+//                        showGeolocation(lastKnownLocation);
+//                    }
+//                } else {
+                    Location lastKnownLocation = GeoLocationX.getInstance(mainActivity.getApplication()).getLastKnownLocation(mainActivity, this);
+                    String decodedPosition = GeoLocationX.getInstance(mainActivity.getApplication()).getDecodedPosition();
+                    boolean enabledGPS = GeoLocationX.getInstance(mainActivity.getApplication()).isGeolocationEnabled(mainActivity);
+                    if (lastKnownLocation != null) {
+                        showGeolocation(lastKnownLocation, decodedPosition, enabledGPS);
+                    }
+//                }
+
+                }
+
+                startScreenServices = false;
+
+                if (context != null) {
+                    if (TestConfig.shouldShowResults(context.getApplicationContext())) {
+                        TestConfig.setShouldShowResults(false);
+                        mainFragmentController.showResult();
+                        Timber.d("Showing results of the last test");
+                    }
+                }
+            }
+        } catch (Exception e) {
+            FirebaseCrashlytics.getInstance().recordException(e);
         }
     }
 
-    public Runnable interfaceTrafficRunnable = new Runnable() {
-
-        @Override
-        public void run() {
-            if (interfaceTrafficGatherer != null) {
-                interfaceTrafficGatherer.run();
-                final long rxRate = interfaceTrafficGatherer.getRxRate();
-                final long txRate = interfaceTrafficGatherer.getTxRate();
-                TrafficClassificationEnum rxTrafficClass = TrafficClassificationEnum.classify(rxRate);
-                TrafficClassificationEnum txTrafficClass = TrafficClassificationEnum.classify(txRate);
-
-                infoCollector.setUlTraffic(txTrafficClass);
-                infoCollector.setDlTraffic(rxTrafficClass);
-            }
-
-            if (infoOverlay != null && infoOverlay.getVisibility() == View.VISIBLE) {
-                ((BaseAdapter) infoOverlayList.getAdapter()).notifyDataSetChanged();
-            }
-
-            infoHandler.postDelayed(interfaceTrafficRunnable, BACKGROUND_TRAFFIC_MEASUREMENT_TIME);
-        }
-    };
-
     private void refreshAntennaImage(int signal) {
-        if (antennaView.getVisibility() != View.VISIBLE) {
-            antennaView.setVisibility(View.VISIBLE);
-        }
+        if (isAdded()) {
+            if (antennaView.getVisibility() != View.VISIBLE) {
+                antennaView.setVisibility(View.VISIBLE);
+            }
 
-        int antennaImageRes = getAntennaImageResourceId(signal);
-        antennaView.setImageResource(antennaImageRes);
-        antennaView.setTag(antennaImageRes);
+            int antennaImageRes = getAntennaImageResourceId(signal);
+            antennaView.setImageResource(antennaImageRes);
+            antennaView.setTag(antennaImageRes);
+        }
     }
 
     /**
@@ -690,105 +1387,114 @@ public class MainMenuFragment extends Fragment implements MainFragmentInterface 
      * @return
      */
     private int getAntennaImageResourceId(int signal) {
-        int lastNetworkType = informationCollector.getNetwork();
-        String lastNetworkTypeString = Helperfunctions.getNetworkTypeName(lastNetworkType);
-        int signalType = informationCollector.getSignalType();
-        boolean wlan = "WLAN".equals(lastNetworkTypeString);
+        if (isAdded()) {
+            int lastNetworkType = informationCollector.getNetwork();
+            String lastNetworkTypeString = Helperfunctions.getNetworkTypeName(lastNetworkType);
+            int signalType = informationCollector.getSignalType();
+            boolean wlan = "WLAN".equals(lastNetworkTypeString);
 
-        if (showNetworkNameAndType(lastNetworkTypeString)) return R.drawable.cross;
+            if (showNetworkNameAndType(lastNetworkTypeString)) return R.drawable.cross;
 
-        showSignal(signalType);
-        showCellId(lastNetworkTypeString);
+            showSignal(signalType);
+            showCellId(lastNetworkTypeString);
 
-        double relativeSignal = -1d;
-        MinMax<Integer> signalBounds = NetworkUtil.getSignalStrengthBounds(signalType);
+            double relativeSignal = -1d;
+            MinMax<Integer> signalBounds = NetworkUtil.getSignalStrengthBounds(signalType);
 
-        if (!(signalBounds.min == Integer.MIN_VALUE || signalBounds.max == Integer.MAX_VALUE)) {
-            relativeSignal = (double) (signal - signalBounds.min) / (double) (signalBounds.max - signalBounds.min);
+            if (!(signalBounds.min == Integer.MIN_VALUE || signalBounds.max == Integer.MAX_VALUE)) {
+                relativeSignal = (double) (signal - signalBounds.min) / (double) (signalBounds.max - signalBounds.min);
+            }
+            //System.out.println("relativeSignal: " + relativeSignal + ", networkType: " + networkType + ", lastNetworkTypeString: " + lastNetworkTypeString);
+            if (relativeSignal < 0.25d) {
+                return (wlan ? R.drawable.wifi1 : R.drawable.mobil1);
+            } else if (relativeSignal < 0.5d) {
+                return (wlan ? R.drawable.wifi1 : R.drawable.mobil2);
+            } else if (relativeSignal < 0.75d) {
+                return (wlan ? R.drawable.wifi2 : R.drawable.mobil3);
+            } else {
+                return (wlan ? R.drawable.wifi3 : R.drawable.mobil4);
+            }
         }
-        //System.out.println("relativeSignal: " + relativeSignal + ", networkType: " + networkType + ", lastNetworkTypeString: " + lastNetworkTypeString);
-        if (relativeSignal < 0.25d) {
-            return (wlan ? R.drawable.wifi1 : R.drawable.mobil1);
-        } else if (relativeSignal < 0.5d) {
-            return (wlan ? R.drawable.wifi1 : R.drawable.mobil2);
-        } else if (relativeSignal < 0.75d) {
-            return (wlan ? R.drawable.wifi2 : R.drawable.mobil3);
-        } else {
-            return (wlan ? R.drawable.wifi3 : R.drawable.mobil4);
-        }
+        //default
+        return R.drawable.cross;
     }
 
     private boolean showNetworkNameAndType(String lastNetworkType) {
-        if (lastNetworkType == null || "UNKNOWN".equalsIgnoreCase(lastNetworkType)) {// || signal == Integer.MIN_VALUE) {
-            setViewVisibility(infoNetwork, View.INVISIBLE);
-            setViewVisibility(infoNetworkType, View.GONE);
-            return true;
-        } else {
-            if (InfoCollector.getInstance().getNetworkName() != null) {
-                setViewVisibility(infoNetwork, View.VISIBLE);
-                setViewText(infoNetwork, InfoCollector.getInstance().getNetworkName());
-            }
-            if (InfoCollector.getInstance().getNetworkFamily() != null) {
-                setViewVisibility(infoNetworkType, View.VISIBLE);
-                setViewText(infoNetworkType, InfoCollector.getInstance().getNetworkFamily());
+        if (this.isAdded()) {
+            if (lastNetworkType == null || "UNKNOWN".equalsIgnoreCase(lastNetworkType)) {// || signal == Integer.MIN_VALUE) {
+                setViewVisibility(infoNetwork, View.INVISIBLE);
+                setViewVisibility(infoNetworkType, View.GONE);
+                return true;
+            } else {
+                if (InfoCollector.getInstance().getNetworkName() != null) {
+                    setViewVisibility(infoNetwork, View.VISIBLE);
+                    setViewText(infoNetwork, InfoCollector.getInstance().getNetworkName());
+                }
+                if (InfoCollector.getInstance().getNetworkFamily() != null) {
+                    setViewVisibility(infoNetworkType, View.VISIBLE);
+                    setViewText(infoNetworkType, InfoCollector.getInstance().getNetworkFamily());
+                }
             }
         }
         return false;
     }
 
     private void showSignal(Integer signalType) {
-        if (informationCollector != null) {
-            int lastNetworkType = informationCollector.getNetwork();
-            String lastNetworkTypeString = Helperfunctions.getNetworkTypeName(lastNetworkType);
-            boolean showSignal = !("ETHERNET".equals(lastNetworkTypeString)
-                    || "LAN".equals(lastNetworkTypeString)
-                    || "BLUETOOTH".equals(lastNetworkTypeString));
-            if ((signalType != null) && (showSignal)) {
-                Integer signal = InfoCollector.getInstance().getSignal();
-                if ((signal != null) && (signal != Integer.MIN_VALUE)) {
-                    if (signalType == InformationCollector.SINGAL_TYPE_RSRP) {
-                        setViewVisibility(infoSignalStrength, View.VISIBLE);
-                        setViewText(infoSignalStrength, "RSRP: " + signal + " dBm");
+        if (this.isAdded())
+            if (informationCollector != null) {
+                int lastNetworkType = informationCollector.getNetwork();
+                String lastNetworkTypeString = Helperfunctions.getNetworkTypeName(lastNetworkType);
+                boolean showSignal = !("ETHERNET".equals(lastNetworkTypeString)
+                        || "LAN".equals(lastNetworkTypeString)
+                        || "BLUETOOTH".equals(lastNetworkTypeString));
+                if ((signalType != null) && (showSignal)) {
+                    Integer signal = InfoCollector.getInstance().getSignal();
+                    if ((signal != null) && (signal != Integer.MIN_VALUE)) {
+                        if (signalType == InformationCollector.SIGNAL_TYPE_RSRP) {
+                            setViewVisibility(infoSignalStrength, View.VISIBLE);
+                            setViewText(infoSignalStrength, "RSRP: " + signal + " dBm");
 
-                        Integer signalRsrq = InfoCollector.getInstance().getSignalRsrq();
-                        if (signalRsrq != null) {
-                            setViewVisibility(infoSignalStrengthExtra, View.VISIBLE);
-                            setViewText(infoSignalStrengthExtra, "RSRQ: " + signalRsrq + " dB");
+                            Integer signalRsrq = InfoCollector.getInstance().getSignalRsrq();
+                            if (signalRsrq != null) {
+                                setViewVisibility(infoSignalStrengthExtra, View.VISIBLE);
+                                setViewText(infoSignalStrengthExtra, "RSRQ: " + signalRsrq + " dB");
+                            } else {
+                                setViewVisibility(infoSignalStrengthExtra, View.GONE);
+                                setViewText(infoSignalStrengthExtra, "-");
+                            }
                         } else {
+                            setViewVisibility(infoSignalStrength, View.VISIBLE);
+                            setViewText(infoSignalStrength, signal + " dBm");
                             setViewVisibility(infoSignalStrengthExtra, View.GONE);
-                            setViewText(infoSignalStrengthExtra, "-");
+                        }
+                        int color;
+                        if (infoCollector.getSignalType() != null) {
+                            if (getResources().getBoolean(R.bool.signal_strength_colored)) {
+                                if (infoCollector.getSignalType() == InformationCollector.SIGNAL_TYPE_RSRP) {
+                                    color = SemaphoreColorHelper.resolveSemaphoreColor(getContext(), signal, SemaphoreColorHelper.SEMAPHORE_TYPE_SIGNAL_LTE);
+                                } else if (infoCollector.getSignalType() == InformationCollector.SIGNAL_TYPE_WLAN) {
+                                    color = SemaphoreColorHelper.resolveSemaphoreColor(getContext(), signal, SemaphoreColorHelper.SEMAPHORE_TYPE_SIGNAL_WIFI);
+                                } else {
+                                    color = SemaphoreColorHelper.resolveSemaphoreColor(getContext(), signal, SemaphoreColorHelper.SEMAPHORE_TYPE_SIGNAL_GSM);
+                                }
+                                setViewTextColorResource(infoSignalStrength, color);
+                            }
                         }
                     } else {
-                        setViewVisibility(infoSignalStrength, View.VISIBLE);
-                        setViewText(infoSignalStrength, signal + " dBm");
+                        setViewText(infoSignalStrength, "-");
                         setViewVisibility(infoSignalStrengthExtra, View.GONE);
-                    }
-                    int color;
-                    if (infoCollector.getSignalType() != null) {
-                        if (getResources().getBoolean(R.bool.signal_strength_colored)) {
-                            if (infoCollector.getSignalType() == InformationCollector.SINGAL_TYPE_RSRP) {
-                                color = SemaphoreColorHelper.resolveSemaphoreColor(getContext(), signal, SemaphoreColorHelper.SEMAPHORE_TYPE_SIGNAL_LTE);
-                            } else if (infoCollector.getSignalType() == InformationCollector.SINGAL_TYPE_WLAN) {
-                                color = SemaphoreColorHelper.resolveSemaphoreColor(getContext(), signal, SemaphoreColorHelper.SEMAPHORE_TYPE_SIGNAL_WIFI);
-                            } else {
-                                color = SemaphoreColorHelper.resolveSemaphoreColor(getContext(), signal, SemaphoreColorHelper.SEMAPHORE_TYPE_SIGNAL_GSM);
-                            }
-                            setViewTextColorResource(infoSignalStrength, color);
-                        }
+                        setViewVisibility(infoNetworkType, View.GONE);
+                        setViewVisibility(infoNetwork, View.INVISIBLE);
+                        setViewText(infoNetwork, "");
                     }
                 } else {
                     setViewText(infoSignalStrength, "-");
                     setViewVisibility(infoSignalStrengthExtra, View.GONE);
                     setViewVisibility(infoNetworkType, View.GONE);
                     setViewVisibility(infoNetwork, View.INVISIBLE);
+                    setViewText(infoNetwork, "");
                 }
-            } else {
-                setViewText(infoSignalStrength, "-");
-                setViewVisibility(infoSignalStrengthExtra, View.GONE);
-                setViewVisibility(infoNetworkType, View.GONE);
-                setViewVisibility(infoNetwork, View.INVISIBLE);
             }
-        }
     }
 
     private void showCellId(String lastNetworkTypeString) {
@@ -814,20 +1520,19 @@ public class MainMenuFragment extends Fragment implements MainFragmentInterface 
         }
     }
 
-    private OnMeasurementServersLoaded onMeasurementServersLoaded = new OnMeasurementServersLoaded() {
-        @Override
-        public void onServersLoaded(List<MeasurementServer> servers) {
-            updateServerList(servers);
-        }
-    };
-
     private void updateServerList(List<MeasurementServer> servers) {
         if (!servers.isEmpty()) {
             testServer.setVisibility(View.VISIBLE);
+            testServerName.setVisibility(View.VISIBLE);
+            Timber.e("SERVERS SHOW");
             View.OnTouchListener testServerOnClickListener = new View.OnTouchListener() {
                 @Override
                 public boolean onTouch(View v, MotionEvent event) {
-                    testServerName.performClick();
+                    if (isShownConsumptionWarning() || !enableMeasurementServersClick) {
+                        return false;
+                    } else {
+                        testServerName.performClick();
+                    }
                     return true;
                 }
             };
@@ -835,289 +1540,98 @@ public class MainMenuFragment extends Fragment implements MainFragmentInterface 
             testServerNameTitle.setOnTouchListener(testServerOnClickListener);
             testServerIcon.setOnTouchListener(testServerOnClickListener);
             testServer.setOnTouchListener(testServerOnClickListener);
-            this.testServers = servers;
 
-            int selectedMeasurementServerId = ConfigHelper.getSelectedMeasurementServerId(getContext());
-//            testServerName.setText(servers.get(0).getName());
-
-            int i = 0;
-            for (i = 0; i < this.testServers.size(); i++) {
-                MeasurementServer measurementServer = testServers.get(i);
-                if (measurementServer.getId() == selectedMeasurementServerId) {
-
-                    break;
+            boolean shouldUpdateList = ((this.testServers == null) || (this.testServers.isEmpty() || testServerName.getAdapter() == null));
+            if (!shouldUpdateList) {
+                if (this.testServers.size() != servers.size()) {
+                    shouldUpdateList = true;
                 }
-                if (i == this.testServers.size() - 1) {
-                    ConfigHelper.setSelectedMeasurementServerId(getContext(), this.testServers.get(0).getId());
-                    i = 0;
-                    break;
+                if (!shouldUpdateList) {
+                    for (int i = 0; i < servers.size(); i++) {
+                        MeasurementServer measurementServer1 = this.testServers.get(i);
+                        MeasurementServer measurementServer2 = servers.get(i);
+                        if (measurementServer1.getDistance() != measurementServer2.getDistance()) {
+                            shouldUpdateList = true;
+                        }
+                    }
                 }
             }
 
-            ArrayAdapter<MeasurementServer> measurementServerArrayAdapter = new MeasurementServersAdapter(MainMenuFragment.this.getContext(), R.layout.test_server_item, R.id.text, MainMenuFragment.this.testServers, getMainActivity());
-            testServerName.setAdapter(measurementServerArrayAdapter);
-            testServerName.setSelection(i);
 
-            testServerName.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-                @Override
-                public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
-                    ConfigHelper.setSelectedMeasurementServerId(getContext(), testServers.get(i).getId());
+            if (shouldUpdateList || forceUpdate) {
+
+                Timber.e("SERVERS SHOW UPDATE");
+
+                forceUpdate = false;
+
+                this.testServers = servers;
+
+                testServerName.setOnTouchListener(new View.OnTouchListener() {
+                    @Override
+                    public boolean onTouch(View v, MotionEvent event) {
+                        return isShownConsumptionWarning() || !enableMeasurementServersClick;
+                    }
+                });
+
+                int selectedMeasurementServerId = ConfigHelper.getSelectedMeasurementServerId(getContext());
+
+                int i;
+                for (i = 0; i < this.testServers.size(); i++) {
+                    MeasurementServer measurementServer = testServers.get(i);
+                    if (measurementServer.getId() == selectedMeasurementServerId) {
+
+                        break;
+                    }
+                    if (i == this.testServers.size() - 1) {
+                        ConfigHelper.setSelectedMeasurementServerId(getContext(), this.testServers.get(0).getId());
+                        i = 0;
+                        break;
+                    }
                 }
 
-                @Override
-                public void onNothingSelected(AdapterView<?> adapterView) {
+                ArrayAdapter<MeasurementServer> measurementServerArrayAdapter = new MeasurementServersAdapter(MainMenuFragment.this.getContext(), R.layout.test_server_item, R.id.text, MainMenuFragment.this.testServers, getMainActivity());
+                testServerName.setAdapter(measurementServerArrayAdapter);
+                testServerName.setSelection(i);
 
-                }
-            });
+                testServerName.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                    @Override
+                    public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
+                        ConfigHelper.setSelectedMeasurementServerId(getContext(), testServers.get(i).getId());
+                    }
+
+                    @Override
+                    public void onNothingSelected(AdapterView<?> adapterView) {
+
+                    }
+                });
+            }
+
 
         } else {
+            Timber.e("SERVERS HIDE - EMPTY LIST");
             testServer.setVisibility(View.GONE);
             this.testServers = new ArrayList<>();
         }
     }
 
-    /**
-     *
-     */
-    private final InfoCollector.OnInformationChangedListener onInfoChangedListener = new InfoCollector.OnInformationChangedListener() {
-        @Override
-        public void onInformationChanged(InfoCollector.InfoCollectorType type, Object oldValue, Object newValue) {
-            PorterDuff.Mode mode = PorterDuff.Mode.SRC_ATOP;
-            Drawable drawable = null;
-            NetworkInfoCollector netInfo;
-            switch (type) {
-                case CPU:
-                    setViewText(infoCpuStat, cpuPercentFormat.format(newValue) + "%");
-                    Log.e("cpuValue", cpuPercentFormat.format(newValue) + "%");
-                    setViewTextColorResource(infoCpuStat, CpuMemClassificationEnum.classify((Float) newValue).getResId());
-                    MainActivity mainActivity = getMainActivity();
-                    if ((mainActivity != null) && (screenState == MainScreenState.LOOP_MODE_ACTIVE)) {
-
-                        boolean loopModeRunning = mainActivity.isLoopModeRunning();
-                        if (loopModeRunning) {
-                            changeScreenState(MainScreenState.LOOP_MODE_ACTIVE, "infoRunnable", false);
-                        } else {
-                            changeScreenState(MainScreenState.DEFAULT, "infoRunnable", false);
-                        }
-                    }
-                    break;
-                case MEMORY:
-                    setViewText(infoMemStat, cpuPercentFormat.format(newValue) + "%");
-                    //setViewTextColorResource(infoMemStat, CpuMemClassificationEnum.classify((Float) newValue).getTextResId());
-                    break;
-
-                case LOCATION:
-                    showGeolocation();
-                    try {
-                        if (newValue == null) {
-                            infoValueListAdapterMap.get(OverlayType.LOCATION).removeElement(InfoOverlayEnum.LOCATION_ACCURACY);
-                            infoValueListAdapterMap.get(OverlayType.LOCATION).removeElement(InfoOverlayEnum.LOCATION_AGE);
-                            infoValueListAdapterMap.get(OverlayType.LOCATION).removeElement(InfoOverlayEnum.LOCATION_SOURCE);
-                            infoValueListAdapterMap.get(OverlayType.LOCATION).removeElement(InfoOverlayEnum.LOCATION_ALTITUDE);
-                        } else {
-                            infoValueListAdapterMap.get(OverlayType.LOCATION).addElement(InfoOverlayEnum.LOCATION_ACCURACY);
-                            infoValueListAdapterMap.get(OverlayType.LOCATION).addElement(InfoOverlayEnum.LOCATION_AGE);
-                            infoValueListAdapterMap.get(OverlayType.LOCATION).addElement(InfoOverlayEnum.LOCATION_SOURCE);
-                            infoValueListAdapterMap.get(OverlayType.LOCATION).addElement(InfoOverlayEnum.LOCATION_ALTITUDE);
-
-                            at.specure.android.api.jsons.Location location = null;
-                            Location loc = (Location) newValue;
-                            if (loc != null) {
-                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
-                                    location = new at.specure.android.api.jsons.Location(loc.getTime(), loc.getElapsedRealtimeNanos(), loc.getLatitude(), loc.getLongitude(), (double) loc.getAccuracy(), loc.getAltitude(), (double) loc.getBearing(), (double) loc.getSpeed(), loc.getProvider());
-                                } else {
-                                    location = new at.specure.android.api.jsons.Location(loc.getTime(), -1L, loc.getLatitude(), loc.getLongitude(), (double) loc.getAccuracy(), loc.getAltitude(), (double) loc.getBearing(), (double) loc.getSpeed(), loc.getProvider());
-
-                                }
-                            }
-
-                            if (!LoopModeConfig.isCurrentlyPerformingLoopMode(getContext())) {
-                                ((MainActivity) getActivity()).getMeasurementServers(onMeasurementServersLoaded, location, false);
-                            }
-                        }
-                    } catch (NullPointerException e) {
-                        //TODO: fix - do nothing if map is empty and you wanna remove something
-                    }
-                    break;
-                case NETWORK_TYPE:
-                    if (antennaView != null) {
-                        //System.out.println("NETWORK_TYPE changed to: " + newValue);
-                        Integer signal = informationCollector.getSignal();
-                        refreshAntennaImage(signal != null ? signal : Integer.MIN_VALUE);
-                    }
-
-                    //no break; here!!
-                    //if the network type or the network family changes, the same label TextView is used
-                case NETWORK_FAMILY:
-                    showNetworkNameAndType(InfoCollector.getInstance().getNetworkTypeString());
-
-                    break;
-                case NETWORK_NAME:
-                    //reset all IPs on network change name:
-                    resetAllIPandGetNewOne();
-                    break;
-                case SIGNAL_RSRQ:
-                    showSignal(infoCollector.getSignalType());
-                    break;
-                case SIGNAL:
-
-                    if (antennaView != null && newValue != null) {
-                        antennaView.setVisibility(View.VISIBLE);
-                        refreshAntennaImage((Integer) newValue);
-                    }
-                    showSignal(infoCollector.getSignalType());
-                    break;
-                case IPV4:
-                case IPV6:
-                    if (getActivity() != null) {
-                        netInfo = ((MainActivity) getActivity()).getNetworkInfoCollector();
-                        if (netInfo != null) {
-                            if (infoValueListAdapterMap.get(OverlayType.IP) != null) {
-
-
-                                if (netInfo.getPublicIpv4() != null) {
-                                    netInfo.setCaptivePortalStatus(CaptivePortalStatusEnum.NOT_FOUND);
-                                    infoValueListAdapterMap.get(OverlayType.IP).addElement(InfoOverlayEnum.IPV4_PUB, 1);
-                                } else {
-                                    if (infoValueListAdapterMap.get(OverlayType.IP) != null) {
-                                        infoValueListAdapterMap.get(OverlayType.IP).removeElement(InfoOverlayEnum.IPV4_PUB);
-                                    }
-                                }
-
-                                if (netInfo.getPublicIpv6() != null) {
-                                    netInfo.setCaptivePortalStatus(CaptivePortalStatusEnum.NOT_FOUND);
-                                    infoValueListAdapterMap.get(OverlayType.IP).addElement(InfoOverlayEnum.IPV6_PUB, 2);
-                                } else {
-                                    if (infoValueListAdapterMap.get(OverlayType.IP) != null) {
-                                        infoValueListAdapterMap.get(OverlayType.IP).removeElement(InfoOverlayEnum.IPV6_PUB);
-                                    }
-                                }
-                            }
-
-                            //Log.d(DEDBUG_TAG, "IPv4: " + netInfo.getIpv4Status() + ", IPv6: " + netInfo.getIpv6Status());
-                            if (ipv4View != null && ipv6ProgressView != null) {
-                                if (netInfo.getIpv4Status() == IpStatus.STATUS_NOT_AVAILABLE) {
-                                    ipv4ProgressView.setVisibility(View.VISIBLE);
-                                    ipv4View.setVisibility(View.GONE);
-                                } else {
-                                    ipv4ProgressView.setVisibility(View.GONE);
-                                    ipv4View.setVisibility(View.VISIBLE);
-                                    ipv4View.setImageResource(netInfo.getIpv4Status().getResourceId());
-                                }
-                            }
-                            if (ipv6View != null && ipv6ProgressView != null) {
-                                if (netInfo.getIpv6Status() == IpStatus.STATUS_NOT_AVAILABLE) {
-                                    ipv6ProgressView.setVisibility(View.VISIBLE);
-                                    ipv6View.setVisibility(View.GONE);
-                                } else {
-                                    ipv6ProgressView.setVisibility(View.GONE);
-                                    ipv6View.setVisibility(View.VISIBLE);
-                                    ipv6View.setImageResource(netInfo.getIpv6Status().getResourceId());
-                                }
-                            }
-
-                            if (netInfo.getIpv4Status().equals(IpStatus.CONNECTED_NAT)
-                                    || netInfo.getIpv4Status().equals(IpStatus.CONNECTED_NO_NAT)
-                                    || netInfo.getIpv6Status().equals(IpStatus.CONNECTED_NAT)
-                                    || netInfo.getIpv6Status().equals(IpStatus.CONNECTED_NO_NAT)) {
-                            }
-                        }
-                    }
-                    break;
-                case UL_TRAFFIC:
-                    if (ulSpeedView1 != null)
-
-                    {
-
-                        TrafficClassificationEnum trafficEnum = (TrafficClassificationEnum) newValue;
-                        switch (trafficEnum) {
-                            case NONE:
-                            case UNKNOWN:
-                                ulSpeedView1.setImageResource(R.drawable.arrow_grey);
-                                ulSpeedView2.setImageResource(R.drawable.arrow_grey);
-                                break;
-                            case LOW:
-                            case MID:
-                                drawable = getResources().getDrawable(R.drawable.arrow_green);
-                                drawable.setColorFilter(getResources().getColor(R.color.titlepage_stats_foreground), mode);
-                                ulSpeedView1.setImageDrawable(drawable);
-                                ulSpeedView2.setImageResource(R.drawable.arrow_grey);
-                                break;
-                            case HIGH:
-                                drawable = getResources().getDrawable(R.drawable.arrow_green);
-                                drawable.setColorFilter(getResources().getColor(R.color.titlepage_stats_foreground), mode);
-                                ulSpeedView1.setImageDrawable(drawable);
-                                ulSpeedView2.setImageDrawable(drawable);
-                                break;
-                            default:
-                                ulSpeedView1.setImageResource(R.drawable.arrow_grey);
-                                ulSpeedView2.setImageResource(R.drawable.arrow_grey);
-                        }
-                    }
-                    break;
-                case DL_TRAFFIC:
-                    if (dlSpeedView1 != null)
-
-                    {
-                        TrafficClassificationEnum trafficEnum = (TrafficClassificationEnum) newValue;
-                        switch (trafficEnum) {
-                            case NONE:
-                            case UNKNOWN:
-                                dlSpeedView1.setImageResource(R.drawable.arrow_grey);
-                                dlSpeedView2.setImageResource(R.drawable.arrow_grey);
-                                break;
-                            case LOW:
-                            case MID:
-                                drawable = getResources().getDrawable(R.drawable.arrow_green);
-                                drawable.setColorFilter(getResources().getColor(R.color.titlepage_stats_foreground), mode);
-                                dlSpeedView1.setImageDrawable(drawable);
-                                dlSpeedView2.setImageResource(R.drawable.arrow_grey);
-                                break;
-                            case HIGH:
-                                drawable = getResources().getDrawable(R.drawable.arrow_green);
-                                drawable.setColorFilter(getResources().getColor(R.color.titlepage_stats_foreground), mode);
-                                dlSpeedView1.setImageDrawable(drawable);
-                                dlSpeedView2.setImageDrawable(drawable);
-                                break;
-                            default:
-                                dlSpeedView1.setImageResource(R.drawable.arrow_grey);
-                                dlSpeedView2.setImageResource(R.drawable.arrow_grey);
-                        }
-                    }
-                    break;
-                case CAPTIVE_PORTAL_STATUS:
-
-                    setCaptivePortalStatus((Boolean) newValue);
-                    break;
-                case CELL_ID:
-                    showCellId(InfoCollector.getInstance().getNetworkTypeString());
-                    break;
-                case LOOP_MODE:
-                    if (screenState == MainScreenState.LOOP_MODE_ACTIVE) {
-                        testTextViewLower.setVisibility(View.VISIBLE);
-                        Integer loopModeMax = InfoCollector.getInstance().getLoopModeMax();
-                        Integer loopModeCurrent = InfoCollector.getInstance().getLoopModeCurrent();
-                        if (loopModeMax == 0) {
-                            testTextViewLower.setText(loopModeCurrent+"");
-                        } else {
-                            testTextViewLower.setText(loopModeCurrent + "/" + loopModeMax);
-                        }
-                    }
-                    break;
-                default:
-                    break;
-            }
-        }
-    };
-
     private void resetAllIPandGetNewOne() {
-        NetworkInfoCollector.getInstance().resetAllPrivateIps();
-        NetworkInfoCollector.getInstance().resetAllPublicIps();
+        Timber.e("IP CHANGE resetAllIPandGetNewOne()");
+        try {
+            NetworkInfoCollector.getInstance(context.getApplicationContext()).resetAllPrivateIps();
+            NetworkInfoCollector.getInstance(context.getApplicationContext()).resetAllPublicIps();
+        } catch (Exception e) {
+            FirebaseCrashlytics.getInstance().recordException(e);
+        }
         showNetworkNameAndType(InfoCollector.getInstance().getNetworkTypeString());
         refreshIpAddresses();
     }
 
     private void refreshIpAddresses() {
+        FragmentActivity activity = getActivity();
+        if (activity != null) {
+            ((MainActivity) activity).getMeasurementServers(onMeasurementServersLoaded, null, true);
+        }
+
         NetworkInfoCollector netInfo;
         netInfo = ((MainActivity) getActivity()).getNetworkInfoCollector();
         if (netInfo != null) {
@@ -1147,68 +1661,47 @@ public class MainMenuFragment extends Fragment implements MainFragmentInterface 
         }
     }
 
-    private void showGeolocation() {
-        if (informationCollector != null) {
-            Location location = GeoLocationX.getInstance(getMainActivity()).getLastKnownLocation(getMainActivity(), null);
-            locationInfoObject = location;
-            Log.e("LOCATION", location != null ? location.toString() : " NULL ");
-            if (locationView != null) {
-                if (locationView.getVisibility() == View.INVISIBLE) {
-                    locationView.setVisibility(View.VISIBLE);
-                }
-                locationView.setImageResource(location != null ? R.drawable.ic_action_location_found : R.drawable.ic_action_location_off);
-                if (locationButton != null) {
-                    locationButton.setOnClickListener(location != null ? detailShowOnClickListener : openLocationSettingsOnClickListener);
-                }
-            }
+    private void showGeolocation(Location location, String geodecodecodedLocation, boolean enabledGPS) {
 
-
-            String locationString = locationText.getText().toString();
-            if (/*(newValue != null) || */(location != null)) {
-
+        if (isAdded()) {
+            if (enabledGPS) {
                 if (location != null) {
-                    String oldLocationValue = locationText.getText().toString();
-                    boolean forceUpdate = (oldLocationValue.isEmpty()
-                            || oldLocationValue.equalsIgnoreCase(getString(R.string.disabled))
-                            || oldLocationValue.equalsIgnoreCase(getString(R.string.enabled))
-                            || oldLocationValue.equalsIgnoreCase(getString(R.string.searching_for_location))
-                    );
-
-                    if ((getGeolocationTask == null) || (getGeolocationTask.shouldUpdate(location.getLatitude(), location.getLongitude(), forceUpdate))) {
-                        getGeolocationTask = new GetGeolocationTask(location.getLatitude(), location.getLongitude());
-                        getGeolocationTask.setEndTaskListener(new EndStringTaskListener() {
-                            @Override
-                            public void taskEnded(String result) {
-                                if ((MainMenuFragment.this.isAdded()) && (getActivity() != null)) {
-                                    if (locationText != null) {
-                                        if (result.isEmpty()) {
-                                            locationText.setText(getString(R.string.enabled));
-                                        } else {
-                                            locationText.setText(result);
-                                        }
-
-                                    }
-                                }
-                            }
-                        });
-                        getGeolocationTask.execute();
+                    locationInfoObject = location;
+                    if (geodecodecodedLocation != null && !geodecodecodedLocation.isEmpty()) {
+                        locationText.setText(geodecodecodedLocation);
+                        setLocationIcon(null, true);
+                        locationButton.setOnClickListener(detailShowOnClickListener);
                     } else {
-                        String locationString1 = getGeolocationTask.getLocationString();
-                        if (locationString1 == null || locationString1.isEmpty()) {
-                            locationText.setText(getString(R.string.enabled));
-                        } else {
-                            locationText.setText(locationString1);
-                        }
+                        locationText.setText(getString(R.string.enabled));
+                        setLocationIcon(null, true);
+                        locationButton.setOnClickListener(detailShowOnClickListener);
                     }
                 } else {
-                    locationString = getResources().getString(R.string.searching_for_location);
-                }
-                locationText.setText(locationString);
-            } else {
-                if  (GPSConfig.isEnabledGPS(this.getContext())) {
+                    locationInfoObject = null;
                     locationText.setText(getResources().getString(R.string.searching_for_location));
+                    setLocationIcon(null, true);
+                    locationButton.setOnClickListener(detailShowOnClickListener);
                 }
+            } else {
+                locationInfoObject = null;
                 locationText.setText(R.string.disabled);
+                setLocationIcon(null, false);
+                locationView.setImageResource(R.drawable.ic_action_location_off);
+                if (locationButton != null) {
+                    locationButton.setOnClickListener(openLocationSettingsOnClickListener);
+                }
+            }
+        }
+    }
+
+    private void setLocationIcon(Location location, boolean forceEnabled) {
+        if (locationView != null) {
+            if (locationView.getVisibility() == View.INVISIBLE) {
+                locationView.setVisibility(View.VISIBLE);
+            }
+            locationView.setImageResource((location != null || forceEnabled) ? R.drawable.ic_action_location_found : R.drawable.ic_action_location_off);
+            if (locationButton != null) {
+                locationButton.setOnClickListener((location != null || forceEnabled) ? detailShowOnClickListener : openLocationSettingsOnClickListener);
             }
         }
     }
@@ -1219,22 +1712,19 @@ public class MainMenuFragment extends Fragment implements MainFragmentInterface 
     private void setCaptivePortalStatus(boolean hasCaptivePortal) {
         if (captivePortalWarning != null) {
             captivePortalWarning.setVisibility(hasCaptivePortal ? View.VISIBLE : View.GONE);
-
         }
 
-        if (!hasCaptivePortal) {
-            infoValueListAdapterMap.get(OverlayType.IP).removeElement(InfoOverlayEnum.CAPTIVE_PORTAL_STATUS);
-        } else {
-            infoValueListAdapterMap.get(OverlayType.IP).addElement(InfoOverlayEnum.CAPTIVE_PORTAL_STATUS);
+        if (infoValueListAdapterMap != null) {
+            if (infoValueListAdapterMap.get(OverlayType.IP) != null) {
+                if (!hasCaptivePortal) {
+                    infoValueListAdapterMap.get(OverlayType.IP).removeElement(InfoOverlayEnum.CAPTIVE_PORTAL_STATUS);
+                } else {
+                    infoValueListAdapterMap.get(OverlayType.IP).addElement(InfoOverlayEnum.CAPTIVE_PORTAL_STATUS);
+                }
+            }
         }
+
     }
-
-    private final OnClickListener openLocationSettingsOnClickListener = new OnClickListener() {
-        @Override
-        public void onClick(View view) {
-            showDialogToOpenGPSSettings(getString(R.string.open_gps_settings));
-        }
-    };
 
     private void showDialogToOpenGPSSettings(String dialogText) {
         final AlertDialog.Builder builder = new AlertDialog.Builder(getMainActivity());
@@ -1258,86 +1748,17 @@ public class MainMenuFragment extends Fragment implements MainFragmentInterface 
         builder.create().show();
     }
 
-    /**
-     *
-     */
-    private final OnClickListener detailShowOnClickListener = new OnClickListener() {
-        @Override
-        public void onClick(View v) {
-            if (infoOverlay != null) {
-                switch (v.getId()) {
-                    case R.id.title_page_cpu_stats_button:
-                        infoOverlayTitle.setText(getResources().getText(OverlayType.CPU_MEM.getResourceId()));
-                        infoOverlayList.setAdapter(infoValueListAdapterMap.get(OverlayType.CPU_MEM));
-                        break;
-                    case R.id.title_page_ip_button:
-                        infoOverlayTitle.setText(getResources().getText(OverlayType.IP.getResourceId()));
-                        infoOverlayList.setAdapter(infoValueListAdapterMap.get(OverlayType.IP));
-                        break;
-                    case R.id.title_page_location_button:
-                    case R.id.main_fragment__location_title:
-                    case R.id.main_fragment__location_enabled_text:
-                    case R.id.location_image:
-                        if (locationInfoObject != null) {
-                            infoOverlayTitle.setText(getResources().getText(R.string.title_screen_info_overlay_location));
-                            infoOverlayList.setAdapter(infoValueListAdapterMap.get(OverlayType.LOCATION));
-                        } else {
-                            showDialogToOpenGPSSettings(getString(R.string.open_gps_settings));
-                            return;
-                        }
-                        break;
-                    case R.id.title_page_traffic_button:
-                    default:
-                        infoOverlayTitle.setText(getResources().getText(OverlayType.TRAFFIC.getResourceId()));
-                        infoOverlayList.setAdapter(infoValueListAdapterMap.get(OverlayType.TRAFFIC));
-                        break;
-                }
-                //System.out.println("SHOWING INFO OVERLAY");
-                if (ipButton != null) {
-                    ipButton.setOnClickListener(detailHideOnClickListener);
-                }
-                //antennaView.setOnClickListener(detailHideOnClickListener);
-                if (cpuMemStatsButton != null) {
-                    cpuMemStatsButton.setOnClickListener(detailHideOnClickListener);
-                }
-
-                trafficButton.setOnClickListener(detailHideOnClickListener);
-                locationButton.setOnClickListener(detailHideOnClickListener);
-                locationView.setOnClickListener(detailHideOnClickListener);
-                locationText.setOnClickListener(detailHideOnClickListener);
-                locationTitle.setOnClickListener(detailHideOnClickListener);
-                infoOverlay.setVisibility(View.VISIBLE);
-                infoOverlay.bringToFront();
-                infoOverlayList.invalidate();
-            }
+    private boolean hideConsumptionWarning() {
+        if (isShownConsumptionWarning()) {
+            increasedConsumptionText.setVisibility(View.GONE);
+            return true;
         }
-    };
+        return false;
+    }
 
-    private final OnClickListener detailHideOnClickListener = new OnClickListener() {
-        @Override
-        public void onClick(View v) {
-            if (infoOverlay != null) {
-                if ((((InfoArrayAdapter) infoOverlayList.getAdapter()).getOverlayType().getButtonId() == v.getId()) ||
-                        v.getId() == R.id.info_overlay) {
-                    hideOverlayAndReenableOnClickListeners();
-                } else {
-                    if (((v.getId() == R.id.location_image)
-                            || (v.getId() == R.id.main_fragment__location_enabled_text)
-                            || (v.getId() == R.id.main_fragment__location_title)
-                            || (v.getId() == R.id.title_page_location_button))
-                        && ((((InfoArrayAdapter) infoOverlayList.getAdapter()).getOverlayType().getButtonId() == R.id.location_image)
-                            || (((InfoArrayAdapter) infoOverlayList.getAdapter()).getOverlayType().getButtonId() == R.id.main_fragment__location_enabled_text)
-                            || (((InfoArrayAdapter) infoOverlayList.getAdapter()).getOverlayType().getButtonId() == R.id.main_fragment__location_title)
-                            || (((InfoArrayAdapter) infoOverlayList.getAdapter()).getOverlayType().getButtonId() == R.id.title_page_location_button)
-                            )) {
-                        hideOverlayAndReenableOnClickListeners();
-                    } else {
-                        detailShowOnClickListener.onClick(v);
-                    }
-                }
-            }
-        }
-    };
+    private boolean isShownConsumptionWarning() {
+        return ((increasedConsumptionText != null) && (increasedConsumptionText.getVisibility() == View.VISIBLE));
+    }
 
     private void hideOverlayAndReenableOnClickListeners() {
         infoOverlay.setVisibility(View.GONE);
@@ -1354,50 +1775,8 @@ public class MainMenuFragment extends Fragment implements MainFragmentInterface 
         locationTitle.setOnClickListener(locationInfoObject != null ? detailShowOnClickListener : openLocationSettingsOnClickListener);
     }
 
-    private OnNetworkInfoChangedListener onNetworkChangedListener = new OnNetworkInfoChangedListener() {
-
-        @Override
-        public void onChange(InfoFlagEnum infoFlag, final Object newValue) {
-
-            Log.e("INFO NETWORK", InfoCollector.getInstance().getNetworkTypeString() + "\n" + NetworkInfoCollector.getInstance().hasConnectionFromAndroidApi() + "\n" + NetworkInfoCollector.getInstance().getActiveNetworkInfo());
-            switch (infoFlag) {
-                case NETWORK_CONNECTION_CHANGED:
-                    if ((Boolean) newValue) {
-                        if (startButton != null && startButtonText != null) {
-                            startButton.setAlpha(1f);
-                            startButton.setEnabled(true);
-                            startButtonText.setAlpha(1f);
-                        }
-                    }
-                    break;
-                default:
-                    if (infoCollector != null) {
-                        if (infoFlag == InfoFlagEnum.PRIVATE_IPV4_CHANGED || infoFlag == InfoFlagEnum.PRIVATE_IPV6_CHANGED) {
-                            if (NetworkInfoCollector.getInstance().hasConnectionFromAndroidApi()) {
-                                infoCollector.dispatchInfoChangedEvent(InfoCollector.InfoCollectorType.SIGNAL, 0, infoCollector.getSignal());
-                                infoCollector.dispatchInfoChangedEvent(InfoCollector.InfoCollectorType.SIGNAL_RSRQ, 0, infoCollector.getSignalRsrq());
-                            } else {
-                                infoCollector.setSignal(Integer.MIN_VALUE);
-                                infoCollector.setSignalRsrq(null);
-                            }
-                        }
-                        new Handler().postDelayed(new Runnable() {
-                            @Override
-                            public void run() {
-                                infoCollector.dispatchInfoChangedEvent(InfoCollector.InfoCollectorType.IPV4, infoCollector.getIpv4(), newValue);
-                                infoCollector.dispatchInfoChangedEvent(InfoCollector.InfoCollectorType.IPV6, infoCollector.getIpv6(), newValue);
-                            }
-                        }, 300);
-
-                    }
-            }
-        }
-
-    };
-
-
     @Override
-    public void onSaveInstanceState(Bundle outState) {
+    public void onSaveInstanceState(@NonNull Bundle outState) {
         super.onSaveInstanceState(outState);
         outState.putString(BUNDLE_TEST_UUID, testUuid);
         if (antennaView != null && antennaView.getTag() != null) {
@@ -1430,7 +1809,10 @@ public class MainMenuFragment extends Fragment implements MainFragmentInterface 
 
     public void setViewTextColorResource(TextView view, int colorResId) {
         if (view != null) {
-            view.setTextColor(getActivity().getResources().getColor(colorResId));
+            FragmentActivity activity = getActivity();
+            if (activity != null) {
+                view.setTextColor(activity.getResources().getColor(colorResId));
+            }
         }
     }
 
@@ -1451,7 +1833,9 @@ public class MainMenuFragment extends Fragment implements MainFragmentInterface 
     @Override
     public void onDestroy() {
         super.onDestroy();
-        mainFragmentController.onDestroy();
+        if (getActivity() != null) {
+            mainFragmentController.onDestroy();
+        }
         System.gc();
     }
 
@@ -1464,6 +1848,7 @@ public class MainMenuFragment extends Fragment implements MainFragmentInterface 
     }
 
     public boolean onBackPressed() {
+        if (hideConsumptionWarning()) return true;
         switch (screenState) {
             case DEFAULT:
                 buttonsDisabled = false;
@@ -1476,6 +1861,7 @@ public class MainMenuFragment extends Fragment implements MainFragmentInterface 
                 }
                 return false;
             case TESTING:
+            case LOOP_MODE_ACTIVE:
                 TestService testTestService = mainFragmentController.getTestTestService();
                 if (testTestService == null || !testTestService.isTestRunning())
                     return false;
@@ -1506,12 +1892,31 @@ public class MainMenuFragment extends Fragment implements MainFragmentInterface 
 
     @Override
     public void setJitterText(String jitterText) {
+        Timber.d("TUUI: prepare to set jitter: " + jitterText + "  visible: " + (testJitterProgressValue.getVisibility() == View.VISIBLE));
         testJitterProgressValue.setText(jitterText);
+        Timber.d("TUUI: jitter: " + jitterText + "  visible: " + (testJitterProgressValue.getVisibility() == View.VISIBLE));
     }
 
     public void setSignalValue(Integer signal) {
-        if (signal != null)
-            testSignalProgressValue.setText(String.valueOf(signal) + " " + getString(R.string.test_dbm));
+        if (isAdded()) {
+            if (signal != null) {
+                if (testSignalProgressValue != null) {
+                    testSignalProgressValue.setVisibility(View.VISIBLE);
+                    testSignalProgressValue.setText(String.valueOf(signal) + " " + getString(R.string.test_dbm));
+                } else {
+                    testSignalProgressValue.setVisibility(View.VISIBLE);
+                    testSignalProgressValue.setText("- " + getString(R.string.test_dbm));
+                }
+                if (testSignalProgressTitle != null) {
+                    testSignalProgressTitle.setVisibility(View.VISIBLE);
+                }
+            } else {
+                testSignalProgressTitle.setVisibility(View.VISIBLE);
+                testSignalProgressValue.setVisibility(View.VISIBLE);
+                testSignalProgressValue.setText("- " + getString(R.string.test_dbm));
+            }
+        }
+
     }
 
     @Override
@@ -1519,7 +1924,9 @@ public class MainMenuFragment extends Fragment implements MainFragmentInterface 
         testViewQoSResultFailed.setText(String.valueOf(testsFailed));
         testViewQoSResultPassed.setText(String.valueOf(testsCount - testsFailed));
         testViewQoSResultPerformed.setText(String.valueOf(testsCount));
-        testViewQoSResultPercentage.setText(getResources().getString(R.string.result_page_title_qos) + ": " + successPercentage + "%");
+        if (isAdded()) {
+            testViewQoSResultPercentage.setText(getString(R.string.result_page_title_qos) + ": " + successPercentage + "%");
+        }
     }
 
     @Override
@@ -1529,12 +1936,15 @@ public class MainMenuFragment extends Fragment implements MainFragmentInterface 
 
     @Override
     public void setQosTestProgress(int i, boolean hidePointer) {
-
+        testViewLower.setValueAnimated(i);
+        if (hidePointer) {
+            testViewLower.setShowArrow(false);
+        }
     }
 
     @Override
     public void setTestProgress(int i) {
-
+        testViewUpper.setValue(i);
     }
 
     @Override
@@ -1545,7 +1955,14 @@ public class MainMenuFragment extends Fragment implements MainFragmentInterface 
     @Override
     public void updateDownloadGraph(String value, int downloadStatusStringID, int unitStringID) {
         if (testDownloadGraphValue != null) {
-            testDownloadGraphValue.setText(value);
+            try {
+                float v = Float.parseFloat(value);
+                Float aFloat = addToFifoandGetMedian(v, downloadFifo);
+                value = SpeedTestStatViewController.InfoStat.DOWNLOAD.format((long) (aFloat * SpeedTestStatViewController.InfoStat.DOWNLOAD.getRoundingValue()));
+            } catch (NumberFormatException ignored) {
+                // do nothing
+            }
+            testDownloadGraphValue.setText(value.split(" ")[0]);
         }
         if (testDownloadGraphTitle != null) {
             testDownloadGraphTitle.setText(downloadStatusStringID);
@@ -1553,13 +1970,35 @@ public class MainMenuFragment extends Fragment implements MainFragmentInterface 
         if (testDownloadGraphUnits != null) {
             testDownloadGraphUnits.setText(unitStringID);
         }
+    }
 
+    private Float addToFifoandGetMedian(float v, ArrayList<Float> fifoArray) {
+        int bufferSize = 10;
+        fifoArray.add(v);
+        if (fifoArray.size() > 10) {
+            fifoArray.remove(0);
+        }
+        float valuesAdded = 0;
+        for (int i = 0; i < fifoArray.size(); i++) {
+            valuesAdded += fifoArray.get(i);
+        }
+        Float result = 0F;
+        if (fifoArray.size() > 0)
+            result = valuesAdded / fifoArray.size();
+        return result;
     }
 
     @Override
     public void updateUploadGraph(String value, int uploadStatusStringID, int unitStringID) {
         if (testUploadGraphValue != null) {
-            testUploadGraphValue.setText(value);
+            try {
+                float v = Float.parseFloat(value);
+                Float aFloat = addToFifoandGetMedian(v, uploadFifo);
+                value = SpeedTestStatViewController.InfoStat.UPLOAD.format((long) (aFloat * SpeedTestStatViewController.InfoStat.UPLOAD.getRoundingValue()));
+            } catch (NumberFormatException ignored) {
+                // do nothing
+            }
+            testUploadGraphValue.setText(value.split(" ")[0]);
         }
         if (testUploadGraphTitle != null) {
             testUploadGraphTitle.setText(uploadStatusStringID);
@@ -1567,6 +2006,21 @@ public class MainMenuFragment extends Fragment implements MainFragmentInterface 
         if (testUploadGraphUnits != null) {
             testUploadGraphUnits.setText(unitStringID);
         }
+    }
+
+    @Override
+    public int getUnitStringId() {
+        return R.string.test_mbps;
+    }
+
+    @Override
+    public int getUploadStatusStringId() {
+        return R.string.test_bottom_test_status_up;
+    }
+
+    @Override
+    public int getDownloadStatusStringId() {
+        return R.string.test_bottom_test_status_down;
     }
 
     @Override
@@ -1596,9 +2050,73 @@ public class MainMenuFragment extends Fragment implements MainFragmentInterface 
     }
 
     @Override
-    public void setSpeedGaugeProgress(int i) {
+    public String getTestUUID() {
+        return this.testUuid;
+    }
 
+    @Override
+    public int getTestErrorQosStringId() {
+        return R.string.test_toast_error_text_qos;
+    }
+
+    @Override
+    public int getTestErrorStringId() {
+        return R.string.test_dialog_error_text;
+    }
+
+    @Override
+    public int getProgressTitleId() {
+        return R.string.test_progress_title;
+    }
+
+    @Override
+    public int getProgressTextId() {
+        return R.string.test_progress_text;
+    }
+
+    @Override
+    public int getAbortDialogTitleId() {
+        return R.string.test_dialog_abort_title;
+    }
+
+    @Override
+    public int getAbortDialogTextId() {
+        return R.string.test_dialog_abort_text;
+    }
+
+    @Override
+    public int getAbortDialogPositiveButtonText() {
+        return R.string.test_dialog_abort_yes;
+    }
+
+    @Override
+    public int getAbortDialogNegativeButtonText() {
+        return R.string.test_dialog_abort_no;
+    }
+
+    @Override
+    public int getTestErrorTitleId() {
+        return R.string.test_dialog_error_title;
+    }
+
+    @Override
+    public int getErrorControlServerConnectionStringId() {
+        return R.string.test_dialog_error_control_server_conn;
+    }
+
+    @Override
+    public void setSpeedGaugeProgress(int i) {
+        testViewLower.setValueAnimated(i);
     }
 
 
+    @Override
+    public String setActionBarTitle() {
+        return "";
+    }
+
+    @Override
+    public void onLocationChange(Location location, String decodedLocation, boolean enabledGPS) {
+        showGeolocation(location, decodedLocation, enabledGPS);
+    }
 }

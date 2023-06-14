@@ -17,27 +17,36 @@
 package at.specure.android.screens.licenses;
 
 import android.os.Bundle;
-import androidx.appcompat.app.ActionBar;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.widget.Toolbar;
+
+import android.util.Base64;
 import android.view.MenuItem;
 import android.webkit.WebView;
 
-
 import com.specure.opennettest.R;
 
+import androidx.appcompat.app.ActionBar;
+import androidx.appcompat.widget.Toolbar;
 import at.specure.android.configs.ConfigHelper;
+import at.specure.android.configs.LocaleConfig;
+import at.specure.android.screens.main.BasicActivity;
 
 
-public class LicensesActivity extends AppCompatActivity {
+public class LicensesActivity extends BasicActivity {
 
     private WebView webView;
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        if (LocaleConfig.isUserAbleToChangeLanguage(this)) {
+            if (savedInstanceState == null) {
+                LocaleConfig.initializeApp(this, false);
+            }
+        }
+
         setContentView(R.layout.activity_licenses);
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        Toolbar toolbar = findViewById(R.id.toolbar);
         toolbar.setTitle(R.string.title_activity_licenses);
 
 //        toolbar.setNavigationIcon(R.drawable.backbtn_back);
@@ -61,9 +70,12 @@ public class LicensesActivity extends AppCompatActivity {
             }
         });
 
-        webView = (WebView) findViewById(R.id.licenses__webview);
+        webView = findViewById(R.id.licenses__webview);
+        String htmlContent = ConfigHelper.getLicensesString(this);
+        String encodedHtml = Base64.encodeToString(htmlContent.getBytes(), Base64.NO_PADDING);
+        webView.loadData(encodedHtml, "text/html", "base64");
 
-        webView.loadData(ConfigHelper.getLicensesString(this),"text/html","utf-8");
+//        webView.loadDataWithBaseURL(null, ConfigHelper.getLicensesString(this), "text/html; charset=utf-8", "utf-8", null);
     }
 
     @Override

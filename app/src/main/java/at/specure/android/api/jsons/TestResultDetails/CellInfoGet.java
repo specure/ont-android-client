@@ -4,31 +4,40 @@ import com.google.gson.annotations.SerializedName;
 
 public class CellInfoGet {
 
+    /**
+     * Download E/U/ARFCN
+     */
     @SerializedName("arfcn_number")
-    Integer arfcnNumber;
+    public Integer arfcnNumber;
 
     @SerializedName("tstamp")
     Long timestamp;
 
     /**
-     * EARFCN / UARFCN / ARFCN
+     * EARFCN / UARFCN / ARFCN / NRARFCN
      */
     @SerializedName("type")
-    String arfcnType;
+    public String arfcnType;
 
     @SerializedName("band")
-    Integer band;
+    public Integer band;
 
     @SerializedName("band_name")
-    String bandName;
+    public String bandName;
 
     @SerializedName("frequency_download")
-    Float frequencyDownload;
+    public Float frequencyDownload;
 
     @SerializedName("frequency_upload")
-    Float frequencyUpload;
+    public Float frequencyUpload;
 
     @SerializedName("bandwidth")
-    Float bandwidth;
+    public Float bandwidth;
+
+    public CellInfoGet(long timestamp, String type, Integer number) {
+        this.timestamp = timestamp;
+        this.arfcnType = type;
+        this.arfcnNumber = number;
+    }
 
 }

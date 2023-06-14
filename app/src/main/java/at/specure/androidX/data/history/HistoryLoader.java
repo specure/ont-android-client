@@ -2,9 +2,11 @@ package at.specure.androidX.data.history;
 
 import android.content.Context;
 
+import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.reflect.TypeToken;
+import com.specure.opennettest.BuildConfig;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
@@ -19,6 +21,7 @@ import at.specure.android.api.jsons.MeasurementServer;
 import at.specure.android.configs.ConfigHelper;
 import at.specure.android.screens.main.MainActivity;
 import at.specure.android.util.EndTaskListener;
+import at.specure.androidX.data.badges.Badge;
 import timber.log.Timber;
 
 public class HistoryLoader extends AsyncTaskLoader<List<HistoryItem>> {
@@ -58,32 +61,19 @@ public class HistoryLoader extends AsyncTaskLoader<List<HistoryItem>> {
                 Gson gson = new Gson();
                 HistoryItem[] historyItemsArray = gson.fromJson(historyList, HistoryItem[].class);
                 historyItems = Arrays.asList(historyItemsArray);
-
-                //could be removed when information collector will be fixed
+//                historyItems.get(0).networkType = "5G";
+//                historyItems.get(1).networkType = "5G - NR";
+//                historyItems.get(2).networkType = "5G - NRNSA";
                 historyItemsFilteredFromBad = new ArrayList<HistoryItem>();
-                if (historyItems != null) {
-                    for (HistoryItem historyItem : historyItems) {
-                        if (historyItem != null) {
-                            String ping = historyItem.getPing();
-                            try {
-                                Long aLong = Long.valueOf(ping);
-                                if (aLong != Long.MAX_VALUE) {
-                                    historyItemsFilteredFromBad.add(historyItem);
-                                }
-                            } catch (Exception ignored) {
-                                historyItemsFilteredFromBad.add(historyItem);
-                            }
-                        }
-                    }
-                }
 
-
-                return historyItemsFilteredFromBad;
+                Timber.e("History items filtering skipped");
+                return historyItems;
             } else {
                 return historyItems = new ArrayList<>();
             }
         } catch (Exception e) {
-            Timber.e("ERROR GETTING HISTORY ITEMS");
+            Timber.e("ERROR GETTING HISTORY ITEMS %s", e.getLocalizedMessage());
+            FirebaseCrashlytics.getInstance().recordException(e);
             return historyItems = new ArrayList<>();
         }
     }

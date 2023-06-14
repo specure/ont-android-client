@@ -30,7 +30,9 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 
 import at.specure.android.api.ControlServerConnection;
+import at.specure.android.api.reqres.check_survey.SurveySettings;
 import at.specure.android.configs.ConfigHelper;
+import at.specure.android.configs.SurveyConfig;
 import at.specure.android.screens.main.MainActivity;
 import at.specure.android.util.EndTaskListener;
 import timber.log.Timber;
@@ -239,6 +241,22 @@ public class CheckSettingsTask extends AsyncTask<Void, Void, JsonArray>
                     	}
                     }
 
+
+                    // SURVEY
+                    try {
+                        if (SurveyConfig.isSurveyEnabledInApp(activity)) {
+                            final JsonObject surveyObject = resultListItem.getAsJsonObject("survey_settings");
+                            Gson gson = new Gson();
+                            SurveySettings surveySettings = gson.fromJson(surveyObject, SurveySettings.class);
+                            if (surveySettings.isActive) {
+                                SurveyConfig.saveCurrentSurveySettings(activity, surveySettings.surveyUrl, surveySettings.timestampStarted);
+                            } else {
+                                SurveyConfig.saveCurrentSurveySettings(activity, null, 0);
+                            }
+                        }
+                    } catch (Exception e) {
+                        //do nothing
+                    }
 
                     // ///////////////////////////////////////////////////////
                     // HISTORY / FILTER

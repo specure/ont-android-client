@@ -43,7 +43,9 @@ public class PrivacyConfig {
         if (context != null) {
             SharedPreferences sharedPreferences = PreferenceConfig.getPreferenceSharedPreferences(context);
             permitted = sharedPreferences.getBoolean(CRASH_ANALYTICS_PERMITTED_KEY, false);
-            return true;
+            if (context.getResources().getBoolean(R.bool.override_send_crash_info)) {
+                return true;
+            }
         }
         return permitted;
     }
@@ -88,6 +90,9 @@ public class PrivacyConfig {
     }
 
     public static boolean showPublishPersonalDataInSettings(Context context) {
+        if (context.getResources().getBoolean(R.bool.publish_personal_data_visible)) {
+            return true;
+        }
         return false;
     }
 

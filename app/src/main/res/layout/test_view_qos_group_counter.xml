@@ -26,12 +26,14 @@
 
     <TextView
         android:id="@+id/test_view_qos_groupname"
+        style="@style/QoSTheme.TextView.Test.QoSProgress"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="8" />
 
     <TextView
         android:id="@+id/test_view_qos_progress"
+        style="@style/QoSTheme.TextView.Test.QoSProgress"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="0"

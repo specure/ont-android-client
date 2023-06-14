@@ -20,9 +20,15 @@ import android.telephony.TelephonyManager;
 
 import com.google.gson.annotations.SerializedName;
 
+import java.util.List;
+
 import at.specure.android.database.obj.TSignal;
+import at.specure.android.util.InformationCollector;
 
 public final class Signal {
+
+    public static final transient int UNKNOWN = Integer.MIN_VALUE;
+    public static final transient int NETWORK_WIFI = 99;
 
     @SerializedName("time")
     private Long time;
@@ -34,57 +40,106 @@ public final class Signal {
     private Integer networkTypeId;
 
     @SerializedName("lte_rsrp")
-    private Integer lteRsrp;           // signal strength value as RSRP, used in LTE
+    private Integer lteRsrp = null;           // signal strength value as RSRP, used in LTE
 
     @SerializedName("lte_rsrq")
-    private Integer lteRsrq;           // signal quality RSRQ, used in LTE
+    private Integer lteRsrq = null;           // signal quality RSRQ, used in LTE
 
     @SerializedName("lte_rssnr")
-    private Integer lteRssnr;
+    private Integer lteRssnr = null;
 
     @SerializedName("lte_cqi")
-    private Integer lteCqi;
+    private Integer lteCqi = null;
+
+    /**
+     * used for wifi only
+     */
+    @SerializedName("wifi_link_speed")
+    Integer wifiLinkSpeed = null; // e.g 702
+
+    /**
+     * used for wifi only
+     */
+    @SerializedName("wifi_rssi")
+    Integer wifiRSSI = null; // e.g. -48
+
 
     /**
      * used for 2G/3G only
      */
     @SerializedName("signal_strength")
-    private Integer signalStrength;
+    private Integer signalStrength = null;
 
     /**
      * used for 2G/3G only
      */
     @SerializedName("gsm_bit_error_rate")
-    private Integer gsmBitErrorRate;
+    private Integer gsmBitErrorRate = null;
 
     @SerializedName("time_ns")
     private Long timeNs;            // relative ts in ns
 
 
-    public Signal(Long time, Integer networkTypeId, Integer lteRsrp, Integer lteRsrq, Integer lteRssnr, Integer lteCqi, Integer signalStrength, Integer gsmBitErrorRate, Long timeNs) {
-        this.time = time;
-        this.networkTypeId = networkTypeId;
-        this.lteRsrp = lteRsrp;
-        this.lteRsrq = lteRsrq;
-        this.lteRssnr = lteRssnr;
-        this.lteCqi = lteCqi;
-        this.signalStrength = signalStrength;
-        this.gsmBitErrorRate = gsmBitErrorRate;
-        this.timeNs = timeNs;
+    /**
+     * Use this for mobile network signal
+     *
+     * @param networkTypeId
+     * @param lteRsrp
+     * @param lteRsrq
+     * @param lteRssnr
+     * @param lteCqi
+     * @param signalStrength
+     * @param gsmBitErrorRate
+     */
+    public Signal(Integer networkTypeId, Integer lteRsrp, Integer lteRsrq, Integer lteRssnr, Integer lteCqi, Integer signalStrength, Integer gsmBitErrorRate) {
+        this.time = System.currentTimeMillis(); // get from old object
+        this.timeNs = System.nanoTime(); // get from old object
+        if (this.networkTypeId != null && (this.networkTypeId == 40 || this.networkTypeId == 41)) {
+            // in the case it is 40 or 41 we force to be LTE signal type (code 13)because of backend has trouble to handle it
+            this.networkTypeId = 13;
+        } else {
+            this.networkTypeId = networkTypeId;
+        }
+        this.lteRsrp = (lteRsrp != null && lteRsrp != UNKNOWN) ? lteRsrp : null;
+        this.lteRsrq = (lteRsrq != null && lteRsrq != UNKNOWN) ? lteRsrq : null;
+        this.lteRssnr = (lteRssnr != null && lteRssnr != UNKNOWN) ? lteRssnr : null;
+        this.lteCqi = (lteCqi != null && lteCqi != UNKNOWN) ? lteCqi : null;
+        this.signalStrength = (signalStrength != null && signalStrength != UNKNOWN) ? signalStrength : null;
+        this.gsmBitErrorRate = (gsmBitErrorRate != null && gsmBitErrorRate != UNKNOWN) ? gsmBitErrorRate : null;
     }
 
+    /**
+     * Use this for wifi signal
+     *
+     * @param wifiLinkSpeed
+     * @param wifiRssi
+     */
+    public Signal(Integer wifiLinkSpeed, Integer wifiRssi) {
+        this.time = System.currentTimeMillis(); // get from old object
+        this.timeNs = System.nanoTime(); // get from old object
+        this.networkTypeId = NETWORK_WIFI;
+        this.wifiLinkSpeed = (wifiLinkSpeed != null && wifiLinkSpeed != UNKNOWN) ? wifiLinkSpeed : null;
+        this.wifiRSSI = (wifiRssi != null && wifiRssi != UNKNOWN) ? wifiRssi : null;
+    }
+
+
+    /**
+     * we save only mobile network for zero measurements
+     *
+     * @param signal
+     */
     public Signal(TSignal signal) {
         this.time = signal.time;
         this.networkTypeId = signal.networkTypeId;
-        this.lteRsrp = signal.lteRSRP;
-        this.lteRsrq = signal.lteRSRQ;
-        this.lteRssnr = signal.lteRSSNR;
-        this.lteCqi = signal.lteCQI;
-        this.signalStrength = signal.signalStrength;
-        this.gsmBitErrorRate = signal.gsmBitErrorRate;
+        this.lteRsrp = (lteRsrp != null && lteRsrp != UNKNOWN) ? lteRsrp : null;
+        this.lteRsrq = (lteRsrq != null && lteRsrq != UNKNOWN) ? lteRsrq : null;
+        this.lteRssnr = (lteRssnr != null && lteRssnr != UNKNOWN) ? lteRssnr : null;
+        this.lteCqi = (lteCqi != null && lteCqi != UNKNOWN) ? lteCqi : null;
+        this.signalStrength = (signalStrength != null && signalStrength != UNKNOWN) ? signalStrength : null;
+        this.gsmBitErrorRate = (gsmBitErrorRate != null && gsmBitErrorRate != UNKNOWN) ? gsmBitErrorRate : null;
         this.timeNs = signal.timeAge;
 
-        if ((signalStrength == 0) && (lteRsrp == 0)) {
+        if (((signalStrength == null) || (signalStrength == 0)) && ((lteRsrp == null) || (lteRsrp == 0))) {
             this.signalStrength = null;
             this.gsmBitErrorRate = null;
             this.lteRsrp = null;
@@ -93,7 +148,7 @@ public final class Signal {
             this.lteCqi = null;
         }
 
-        if (lteRsrp == 0) {
+        if ((lteRsrp == null) || (lteRsrp == 0)) {
             this.lteRsrp = null;
             this.lteRsrq = null;
             this.lteRssnr = null;
@@ -108,7 +163,7 @@ public final class Signal {
             this.lteCqi = null;
         }
 
-        if (signalStrength == 0) {
+        if (signalStrength != null && signalStrength == 0) {
             this.signalStrength = null;
             this.gsmBitErrorRate = null;
         }
@@ -127,56 +182,34 @@ public final class Signal {
         return networkTypeId;
     }
 
-    public void setNetworkTypeId(Integer networkTypeId) {
-        this.networkTypeId = networkTypeId;
-    }
 
     public Integer getLteRsrp() {
         return lteRsrp;
     }
 
-    public void setLteRsrp(Integer lteRsrp) {
-        this.lteRsrp = lteRsrp;
-    }
 
     public Integer getLteRsrq() {
         return lteRsrq;
     }
 
-    public void setLteRsrq(Integer lteRsrq) {
-        this.lteRsrq = lteRsrq;
-    }
 
     public Integer getLteRssnr() {
         return lteRssnr;
     }
 
-    public void setLteRssnr(Integer lteRssnr) {
-        this.lteRssnr = lteRssnr;
-    }
 
     public Integer getLteCqi() {
         return lteCqi;
     }
 
-    public void setLteCqi(Integer lteCqi) {
-        this.lteCqi = lteCqi;
-    }
 
     public Integer getSignalStrength() {
         return signalStrength;
     }
 
-    public void setSignalStrength(Integer signalStrength) {
-        this.signalStrength = signalStrength;
-    }
 
     public Integer getGsmBitErrorRate() {
         return gsmBitErrorRate;
-    }
-
-    public void setGsmBitErrorRate(Integer gsmBitErrorRate) {
-        this.gsmBitErrorRate = gsmBitErrorRate;
     }
 
     public Long getTimeNs() {

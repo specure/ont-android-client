@@ -21,10 +21,14 @@ import android.content.Context;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Build;
+import android.telephony.CellIdentity;
+import android.telephony.CellIdentityNr;
 import android.telephony.CellInfo;
 import android.telephony.CellInfoCdma;
 import android.telephony.CellInfoGsm;
 import android.telephony.CellInfoLte;
+import android.telephony.CellInfoNr;
+import android.telephony.CellInfoTdscdma;
 import android.telephony.CellInfoWcdma;
 import android.telephony.CellSignalStrength;
 import android.telephony.CellSignalStrengthCdma;
@@ -35,6 +39,7 @@ import android.telephony.TelephonyManager;
 
 import java.util.List;
 
+import at.specure.android.api.jsons.TestResultDetails.CellInfoGet;
 import at.specure.android.configs.PermissionHandler;
 import at.specure.android.util.InformationCollector;
 import at.specure.util.BandCalculationUtil;
@@ -157,47 +162,6 @@ public class RealTimeInformation {
      * @param context
      * @return
      */
-    public static Integer getCurrentSignalStrength(Context context) {
-        Integer result = null;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
-            // for example value of first element
-            boolean coarseLocationPermitted = PermissionHandler.isCoarseLocationPermitted(context);
-            if (coarseLocationPermitted) {
-                // permission checked in static method above
-                @SuppressLint("MissingPermission") List<CellInfo> allCellInfo = getTelephonyManager(context).getAllCellInfo();
-                if (allCellInfo != null && allCellInfo.size() > 0) {
-                    CellInfo cellInfo = allCellInfo.get(0);
-                    if (cellInfo != null) {
-                        if (cellInfo instanceof CellInfoGsm) {
-                            CellInfoGsm cellinfogsm = (CellInfoGsm) cellInfo;
-                            CellSignalStrengthGsm cellSignalStrength = cellinfogsm.getCellSignalStrength();
-                            result = cellSignalStrength.getDbm();
-                        } else if (cellInfo instanceof CellInfoLte) {
-                            CellInfoLte cellinfolte = (CellInfoLte) cellInfo;
-                            CellSignalStrengthLte cellSignalStrength = cellinfolte.getCellSignalStrength();
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                                result = cellSignalStrength.getRsrp();
-                            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
-                                result = cellSignalStrength.getDbm();
-                            }
-                        } else if (cellInfo instanceof CellInfoCdma) {
-                            CellInfoCdma cellinfoCdma = (CellInfoCdma) cellInfo;
-                            CellSignalStrengthCdma cellSignalStrength = cellinfoCdma.getCellSignalStrength();
-                            result = cellSignalStrength.getCdmaDbm();
-                        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
-                            if (cellInfo instanceof CellInfoWcdma) {
-                                CellInfoWcdma cellinfowcdma = (CellInfoWcdma) cellInfo;
-                                CellSignalStrengthWcdma cellSignalStrength = cellinfowcdma.getCellSignalStrength();
-                                result = cellSignalStrength.getDbm();
-                            }
-                        }
-                        return result;
-                    }
-                }
-            }
-        }
-        return result;
-    }
 
     private static ConnectivityManager getConnectivityManager(Context context) {
         ConnectivityManager connectivityManager = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
@@ -245,6 +209,8 @@ public class RealTimeInformation {
                                     return BandCalculationUtil.getBandFromEarfcn(Integer.parseInt(arfcnValue));
                                 } else if (arfcnType.toLowerCase().contains("arfcn")) {
                                     return BandCalculationUtil.getBandFromArfcn(Integer.parseInt(arfcnValue));
+                                } else if (arfcnType.toLowerCase().contains("nrarfcn")) {
+                                    return BandCalculationUtil.getBandFromNrarfcn(Integer.parseInt(arfcnValue));
                                 }
                             }
 
@@ -259,7 +225,7 @@ public class RealTimeInformation {
         return null;
     }
 
-    public static InformationCollector.CellInfoItem getARFCNCellInfo(Context context) {
+    public static CellInfoGet getARFCNCellInfo(Context context) {
         List<CellInfo> cellInfo = getCellInfo(context);
         try {
             if ((cellInfo != null) && (!cellInfo.isEmpty())) {
@@ -275,14 +241,58 @@ public class RealTimeInformation {
 
                             if ((arfcnType != null) && (arfcnValue != null) && !arfcnValue.isEmpty()) {
                                 if (arfcnType.toLowerCase().contains("uarfcn")) {
-                                    return new InformationCollector.CellInfoItem(System.currentTimeMillis(), "UARFCN", Integer.parseInt(arfcnValue));
+                                    return new CellInfoGet(System.currentTimeMillis(), "UARFCN", Integer.parseInt(arfcnValue));
                                 } else if (arfcnType.toLowerCase().contains("earfcn")) {
-                                    return new InformationCollector.CellInfoItem(System.currentTimeMillis(), "EARFCN", Integer.parseInt(arfcnValue));
+                                    return new CellInfoGet(System.currentTimeMillis(), "EARFCN", Integer.parseInt(arfcnValue));
                                 } else if (arfcnType.toLowerCase().contains("arfcn")) {
-                                    return new InformationCollector.CellInfoItem(System.currentTimeMillis(), "ARFCN", Integer.parseInt(arfcnValue));
+                                    return new CellInfoGet(System.currentTimeMillis(), "ARFCN", Integer.parseInt(arfcnValue));
+                                } else if (arfcnType.toLowerCase().contains("nrarfcn")) {
+                                    return new CellInfoGet(System.currentTimeMillis(), "NRARFCN", Integer.parseInt(arfcnValue));
                                 }
                             }
 
+                        }
+                    }
+                }
+
+                Integer arfcn = null;
+                if (cellInfo1 instanceof CellInfoLte) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                        arfcn = ((CellInfoLte) cellInfo1).getCellIdentity().getEarfcn();
+                        if (isArfcnAvailable(arfcn)) {
+                            return new CellInfoGet(System.currentTimeMillis(), "EARFCN", arfcn);
+                        }
+                    }
+                } else if (cellInfo1 instanceof CellInfoCdma) {
+                    // not able to get CDMA band information
+                }
+
+
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                    if (cellInfo1 instanceof CellInfoWcdma) {
+                        arfcn = ((CellInfoWcdma) cellInfo1).getCellIdentity().getUarfcn();
+                        if (isArfcnAvailable(arfcn)) {
+                            return new CellInfoGet(System.currentTimeMillis(), "UARFCN", arfcn);
+                        }
+                    } else if (cellInfo1 instanceof CellInfoGsm) {
+                        arfcn = ((CellInfoGsm) cellInfo1).getCellIdentity().getArfcn();
+                        if (isArfcnAvailable(arfcn)) {
+                            return new CellInfoGet(System.currentTimeMillis(), "ARFCN", arfcn);
+                        }
+                    }
+                }
+
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    if (cellInfo1 instanceof CellInfoNr) {
+                        CellIdentity cellIdentity = ((CellInfoNr) cellInfo1).getCellIdentity();
+                        if (cellIdentity != null) {
+                            arfcn = ((CellIdentityNr) cellIdentity).getNrarfcn();
+                            return new CellInfoGet(System.currentTimeMillis(), "NRARFCN", arfcn);
+                        }
+                    } else if (cellInfo1 instanceof CellInfoTdscdma) {
+                        arfcn = ((CellInfoTdscdma) cellInfo1).getCellIdentity().getUarfcn();
+                        if (isArfcnAvailable(arfcn)) {
+                            return new CellInfoGet(System.currentTimeMillis(), "UARFCN", arfcn);
                         }
                     }
                 }
@@ -294,11 +304,88 @@ public class RealTimeInformation {
         return null;
     }
 
+    public static CellInfoGet parseFromCellInfo(CellInfo cellInfo) {
+        try {
+            if (cellInfo != null) {
+                String s = cellInfo.toString();
+                String[] parsedString = s.split(" ");
+                for (String s1 : parsedString) {
+                    if (s1.toLowerCase().contains("arfcn")) {
+                        String[] split = s1.split("=");
+                        if (split.length > 1) {
+                            String arfcnType = split[0];
+                            String arfcnValue = split[1].replace("{", "").replace("}", "");
 
+                            if ((arfcnType != null) && (arfcnValue != null) && !arfcnValue.isEmpty()) {
+                                if (arfcnType.toLowerCase().contains("uarfcn")) {
+                                    return new CellInfoGet(System.currentTimeMillis(), "UARFCN", Integer.parseInt(arfcnValue));
+                                } else if (arfcnType.toLowerCase().contains("earfcn")) {
+                                    return new CellInfoGet(System.currentTimeMillis(), "EARFCN", Integer.parseInt(arfcnValue));
+                                } else if (arfcnType.toLowerCase().contains("arfcn")) {
+                                    return new CellInfoGet(System.currentTimeMillis(), "ARFCN", Integer.parseInt(arfcnValue));
+                                } else if (arfcnType.toLowerCase().contains("nrarfcn")) {
+                                    return new CellInfoGet(System.currentTimeMillis(), "NRARFCN", Integer.parseInt(arfcnValue));
+                                }
+                            }
+                        }
+                    }
+                }
+                Integer arfcn = null;
+                if (cellInfo instanceof CellInfoLte) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                        arfcn = ((CellInfoLte) cellInfo).getCellIdentity().getEarfcn();
+                        if (isArfcnAvailable(arfcn)) {
+                            return new CellInfoGet(System.currentTimeMillis(), "EARFCN", arfcn);
+                        }
+                    }
+                } else if (cellInfo instanceof CellInfoCdma) {
+                    // not able to get CDMA band information
+                }
+
+
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                    if (cellInfo instanceof CellInfoWcdma) {
+                        arfcn = ((CellInfoWcdma) cellInfo).getCellIdentity().getUarfcn();
+                        if (isArfcnAvailable(arfcn)) {
+                            return new CellInfoGet(System.currentTimeMillis(), "UARFCN", arfcn);
+                        }
+                    } else if (cellInfo instanceof CellInfoGsm) {
+                        arfcn = ((CellInfoGsm) cellInfo).getCellIdentity().getArfcn();
+                        if (isArfcnAvailable(arfcn)) {
+                            return new CellInfoGet(System.currentTimeMillis(), "ARFCN", arfcn);
+                        }
+                    }
+                }
+
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    if (cellInfo instanceof CellInfoNr) {
+                        CellIdentity cellIdentity = ((CellInfoNr) cellInfo).getCellIdentity();
+                        if (cellIdentity != null) {
+                            arfcn = ((CellIdentityNr) cellIdentity).getNrarfcn();
+                            return new CellInfoGet(System.currentTimeMillis(), "NRARFCN", arfcn);
+                        }
+                    } else if (cellInfo instanceof CellInfoTdscdma) {
+                        arfcn = ((CellInfoTdscdma) cellInfo).getCellIdentity().getUarfcn();
+                        if (isArfcnAvailable(arfcn)) {
+                            return new CellInfoGet(System.currentTimeMillis(), "UARFCN", arfcn);
+                        }
+                    }
+                }
+
+            }
+        } catch (NumberFormatException e) {
+            return null;
+        }
+        return null;
+    }
+
+    public static boolean isArfcnAvailable(Integer arfcn) {
+        return arfcn != null && arfcn != Integer.MAX_VALUE;
+    }
 
     public static String getCellId(Context context) {
         String result = "";
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1 && context != null) {
             List<CellInfo> cellInfos = getCellInfo(context);
             if ((cellInfos != null) && (!cellInfos.isEmpty())) {
                 CellInfo cellInfo = cellInfos.get(0);
@@ -333,63 +420,4 @@ public class RealTimeInformation {
         }
         return result;
     }
-
-    /**
-     * Returns the network that the phone is on (e.g. Wifi, Edge, GPRS, etc).
-     */
-    public static int getNetwork(Context context) {
-        int result = TelephonyManager.NETWORK_TYPE_UNKNOWN;
-
-        ConnectivityManager connManager = getConnectivityManager(context);
-        if (connManager != null) {
-            final NetworkInfo activeNetworkInfo = connManager.getActiveNetworkInfo();
-            if (activeNetworkInfo != null) {
-                final int type = activeNetworkInfo.getType();
-                switch (type) {
-                    case ConnectivityManager.TYPE_WIFI:
-                        result = NETWORK_WIFI;
-                        break;
-
-                    case ConnectivityManager.TYPE_BLUETOOTH:
-                        result = NETWORK_BLUETOOTH;
-                        break;
-
-                    case ConnectivityManager.TYPE_ETHERNET:
-                        result = NETWORK_ETHERNET;
-                        break;
-
-                    case ConnectivityManager.TYPE_MOBILE:
-                    case ConnectivityManager.TYPE_MOBILE_DUN:
-                    case ConnectivityManager.TYPE_MOBILE_HIPRI:
-                    case ConnectivityManager.TYPE_MOBILE_MMS:
-                    case ConnectivityManager.TYPE_MOBILE_SUPL:
-                        TelephonyManager telephonyManager = getTelephonyManager(context);
-                        result = telephonyManager.getNetworkType();
-                        break;
-                }
-            }
-        }
-        return result;
-    }
-
-//    public static Location getLocationInfo(Context context) {
-//
-//        if (locationManager == null) {
-//            // init location Manager
-//            locationManager = new InformationCollector.InfoGeoLocation(context);
-//            locationManager.start();
-//        }
-//        final Location curLocation = locationManager.getLastKnownLocation();
-//
-//        if (curLocation != null && this.collectInformation) {
-//            geoLocations.add(new InformationCollector.GeoLocationItem(curLocation.getTime(), curLocation.getLatitude(), curLocation
-//                    .getLongitude(), curLocation.getAccuracy(), curLocation.getAltitude(), curLocation.getBearing(),
-//                    curLocation.getSpeed(), curLocation.getProvider()));
-//            Timber.i(DEBUG_TAG, "Location: " + curLocation.toString());
-//        }
-//
-//        return curLocation;
-//
-//    }
-
 }

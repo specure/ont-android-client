@@ -7,11 +7,10 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import androidx.recyclerview.widget.RecyclerView;
-
 import com.bumptech.glide.Glide;
 import com.specure.opennettest.R;
 
+import androidx.recyclerview.widget.RecyclerView;
 import at.specure.android.SupportedLocales;
 import at.specure.android.configs.LocaleConfig;
 

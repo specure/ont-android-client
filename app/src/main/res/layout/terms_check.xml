@@ -27,31 +27,39 @@
     android:paddingTop="8dp" >
 
     <TextView
+        style="@style/blockHeader"
+        android:id="@+id/header"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginBottom="2dp"
         android:layout_marginLeft="2dp"
-        android:text="@string/terms" />
+        android:text="@string/terms"
+        android:layout_marginStart="2dp" />
 
-    <ScrollView
+    <!--<ScrollView-->
+    <!--style="@style/listViewResult"-->
+    <!--android:layout_width="match_parent"-->
+    <!--android:layout_height="0dp"-->
+    <!--android:layout_marginTop="5dp"-->
+    <!--android:layout_weight="1"-->
+    <!--android:background="@color/transparent" >-->
+
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_marginTop="5dp"
-        android:layout_weight="1">
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+        android:layout_weight="1"
             android:orientation="vertical" >
 
             <WebView
                 android:id="@+id/termsCheckWebViewLong"
-                android:layout_width="wrap_content"
-                android:layout_height="match_parent" />
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@color/transparent" />
         </LinearLayout>
-    </ScrollView>
+    <!--</ScrollView>-->
 
     <TextView
+        style="@style/textSmallLight"
         android:id="@+id/termsAcceptText"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -62,7 +70,7 @@
     <LinearLayout
         android:layout_marginTop="2dp"
         android:baselineAligned="false"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal" >
 
@@ -75,11 +83,14 @@
 
             <Button
                 android:id="@+id/termsDeclineButton"
-                android:layout_width="wrap_content"
+
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_alignParentTop="true"
                 android:layout_centerHorizontal="true"
                 android:text="@string/terms_decline_button"
+                android:gravity="center"
+                style="@style/Specure.Widget.Button"
                 android:textColor="@android:color/white"
                 android:background="@drawable/button_selector" />
 
@@ -94,12 +105,14 @@
 
             <Button
                 android:id="@+id/termsAcceptButton"
-                android:layout_width="wrap_content"
+                style="@style/Specure.Widget.Button"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_alignParentTop="true"
                 android:layout_centerHorizontal="true"
                 android:textColor="@android:color/white"
-                android:text="@string/terms_accept_button" 
+                android:text="@string/terms_accept_button"
+                android:gravity="center"
                 android:background="@drawable/button_selector" />
         </RelativeLayout>
     </LinearLayout>

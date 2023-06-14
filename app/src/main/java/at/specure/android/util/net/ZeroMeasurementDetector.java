@@ -27,10 +27,10 @@ import android.os.Bundle;
 import androidx.annotation.Nullable;
 import android.telephony.CellInfo;
 import android.telephony.TelephonyManager;
-import android.util.Log;
 import android.widget.Toast;
 
 import com.google.firebase.analytics.FirebaseAnalytics;
+import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.specure.opennettest.R;
 
 import java.util.ArrayList;
@@ -39,6 +39,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.TimeZone;
 
+import at.specure.android.api.jsons.CellLocation;
+import at.specure.android.api.jsons.Signal;
 import at.specure.android.configs.Config;
 import at.specure.android.configs.ConfigHelper;
 import at.specure.android.configs.RuntimeProperties;
@@ -55,6 +57,7 @@ import at.specure.android.util.BasicInfo;
 import at.specure.android.util.Helperfunctions;
 import at.specure.android.util.InformationCollector;
 import at.specure.android.util.location.GeoLocationX;
+import at.specure.androidX.data.test.testResultRequest.TestResultProperties;
 import timber.log.Timber;
 
 import static at.specure.android.configs.PermissionHandler.isCoarseLocationPermitted;
@@ -70,114 +73,115 @@ public class ZeroMeasurementDetector {
     @SuppressLint({"NewApi", "MissingPermission"})
     public static boolean detectZeroMeasurement(@Nullable final Activity activity, final Context context, InformationCollector informationCollector) {
 
+        try {
+            Timber.e("ZERO CHECKING START");
 
-        Timber.e( "ZERO CHECKING START");
+            boolean zeroMeasurementDetected = false;
+            TelephonyManager telephonyManager = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
+            List<CellInfo> allCellInfo = null;
 
-        boolean zeroMeasurementDetected = false;
-        TelephonyManager telephonyManager = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
-        List<CellInfo> allCellInfo = null;
-
-        ConnectivityManager cm = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
-        NetworkInfo activeNetworkInfo = null;
-        if (cm != null) {
-            activeNetworkInfo = cm.getActiveNetworkInfo();
-        }
-
-        boolean apiLevel17andBigger = Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1;
-
-        boolean accessToLocationGranted = isCoarseLocationPermitted(context);
-
-        if (apiLevel17andBigger && accessToLocationGranted) {
-            //it is checked in static method
-            if (telephonyManager != null) {
-                allCellInfo = telephonyManager.getAllCellInfo();
+            ConnectivityManager cm = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+            NetworkInfo activeNetworkInfo = null;
+            if (cm != null) {
+                activeNetworkInfo = cm.getActiveNetworkInfo();
             }
-        }
+
+            boolean apiLevel17andBigger = Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1;
+
+            boolean accessToLocationGranted = isCoarseLocationPermitted(context);
+
+            if (apiLevel17andBigger && accessToLocationGranted) {
+                //it is checked in static method
+                if (telephonyManager != null) {
+                    allCellInfo = telephonyManager.getAllCellInfo();
+                }
+            }
 
 
-        boolean noConnection = false;
+            boolean noConnection = false;
 
 //        Integer signal = RealTimeInformation.getCurrentSignalStrength(context);
 //        boolean isSignalLTE = RealTimeInformation.getCurrentSignalStrengthObject(context) instanceof CellSignalStrengthLte;
 
-        if (informationCollector == null) {
-            Timber.e( "UNABLE TO DETECT ZERO BECAUSE information collector is NULL");
-            eventLog(context, "0", "X", System.currentTimeMillis(), "ERROR, IC NULL");
+            if (informationCollector == null) {
+                Timber.e("UNABLE TO DETECT ZERO BECAUSE information collector is NULL");
+                eventLog(context, "0", "X", System.currentTimeMillis(), "ERROR, IC NULL");
 
-            return false;
-        }
+                return false;
+            }
 
-        informationCollector.reInit();
+            informationCollector.reInit();
+            Timber.d("SIGNAL CHANGED ZMD 114 reinit CLEARED!");
 
-        Integer signal = informationCollector.getSignal();
-        InformationCollector.SignalItem lastSignal = informationCollector.getLastSignalItem();
-        boolean networkLTE = informationCollector.isNetworkLTE();
-        boolean isSignalLTE = informationCollector.getSignalType() == InformationCollector.SINGAL_TYPE_RSRP && networkLTE;
-        int lastNetworkType = informationCollector.getNetwork();
-        Integer signalRsrq = informationCollector.getSignalRsrq();
-        //Integer currentSignalStrength = RealTimeInformation.getCurrentSignalStrength(context);
-        //CellSignalStrength currentSignalStrengthObject = RealTimeInformation.getCurrentSignalStrengthObject(context);
+            Integer signal = informationCollector.getSignal();
+            Signal lastSignal = informationCollector.getLastSignalItem();
+            boolean networkLTE = informationCollector.isNetworkLTE();
+            boolean isSignalLTE = informationCollector.getSignalType() == InformationCollector.SIGNAL_TYPE_RSRP && networkLTE;
+            int lastNetworkType = informationCollector.getNetwork();
+            Integer signalRsrq = informationCollector.getSignalRsrq();
+            //Integer currentSignalStrength = RealTimeInformation.getCurrentSignalStrength(context);
+            //CellSignalStrength currentSignalStrengthObject = RealTimeInformation.getCurrentSignalStrengthObject(context);
 
-        String info = "";
-        if ((activeNetworkInfo == null) || (!activeNetworkInfo.isConnected())) {
-            info = info + "\nactiveNetworkInfo is null";
-        } else {
-            info = info + "\nactiveNetworkInfo is: " + activeNetworkInfo;
-        }
+            String info = "";
+            if ((activeNetworkInfo == null) || (!activeNetworkInfo.isConnected())) {
+                info = info + "\nactiveNetworkInfo is null";
+            } else {
+                info = info + "\nactiveNetworkInfo is: " + activeNetworkInfo;
+            }
 
-        if (allCellInfo != null) {
-            info = info + "\nallCellInfo is: " + allCellInfo;
-        } else {
-            info = info + "\nallCellInfo is: null";
-        }
+            if (allCellInfo != null) {
+                info = info + "\nallCellInfo is: " + allCellInfo;
+            } else {
+                info = info + "\nallCellInfo is: null";
+            }
 
-        if (signal != null) {
-            info = info + "\nsignal is: " + signal;
-        } else {
-            info = info + "\nsignal is: null";
-        }
+            if (signal != null) {
+                info = info + "\nsignal is: " + signal;
+            } else {
+                info = info + "\nsignal is: null";
+            }
 
-        if ((activeNetworkInfo == null) || (!activeNetworkInfo.isConnected())) {//&& ((allCellInfo == null) || (allCellInfo.isEmpty())) && (apiLevel17andBigger)) {
-            noConnection = true;
-            info = info + "\nRESULT: true";
-        } else {
-            info = info + "\nRESULT: false";
-            info = info + "\n DETAIL: " + activeNetworkInfo.getDetailedState();
-        }
+            if ((activeNetworkInfo == null) || (!activeNetworkInfo.isConnected())) {//&& ((allCellInfo == null) || (allCellInfo.isEmpty())) && (apiLevel17andBigger)) {
+                noConnection = true;
+                info = info + "\nRESULT: true";
+            } else {
+                info = info + "\nRESULT: false";
+                info = info + "\n DETAIL: " + activeNetworkInfo.getDetailedState();
+            }
 
-        Timber.e("ZERO SUB %s", info);
+            Timber.e("ZERO SUB %s", info);
 
-        NetworkInfoCollector networkInfoCollectorInstance = NetworkInfoCollector.getInstance();
-        if (networkInfoCollectorInstance != null) {
-            Timber.e("ACTUAL STATUS: %s", networkInfoCollectorInstance.getActiveNetworkInfo());
-        }
-        // Zero measurement identification
+            NetworkInfoCollector networkInfoCollectorInstance = NetworkInfoCollector.getInstance(context);
+            if (networkInfoCollectorInstance != null) {
+                Timber.e("ACTUAL STATUS: %s", networkInfoCollectorInstance.getActiveNetworkInfo());
+            }
+            // Zero measurement identification
 
-        boolean airplaneModeOn = RuntimeProperties.isAirplaneModeOn(context);
-        boolean mobileDataEnabled = RuntimeProperties.isMobileDataEnabled(context);
+            boolean airplaneModeOn = RuntimeProperties.isAirplaneModeOn(context);
+            boolean mobileDataEnabled = RuntimeProperties.isMobileDataEnabled(context);
 
 
-        Timber.e( "ZERO? am: %s \n mobileDataEnabled: %s \n noConnection: %s \n signal: %s \n + signal type 4G: %s \n\n LAST SIGNAL: %s"// + " \n CurrentSignal: " + currentSignalStrength + " \n currentSignalStrengthObject: " + (currentSignalStrengthObject == null ? "NULL" : currentSignalStrengthObject.toString()));
-        ,airplaneModeOn, mobileDataEnabled, noConnection, signal,isSignalLTE,((lastSignal == null) ? "null" : lastSignal.toJson()));
-        boolean noConnectionDetected = !airplaneModeOn && mobileDataEnabled && noConnection;
-        /*
-         * Zero measurement by no signal at all
-         */
-        if (noConnectionDetected) {
-            Timber.e( "ZERO DETECTED AT NO SIGNAL AT ALL");
-            eventLog(context, "0", "X", System.currentTimeMillis(), "OK, NO SIGNAL AT ALL");
-            zeroMeasurementDetected = true;
-        }
-        /*
-         * Zero measurement by low signal
-         */
-        else if (activeNetworkInfo != null) {// && (networkInfoCollector.getActiveNetworkInfo().getDetailedState() == NetworkInfo.DetailedState.CONNECTED) {
-            int networkType = activeNetworkInfo.getType();
-            if (networkType == ConnectivityManager.TYPE_MOBILE) {
-                int subtype = activeNetworkInfo.getSubtype();
-                if (networkInfoCollectorInstance != null) {
-                    Timber.e("ACTUAL STATUS: %s \n Subtype: %s", networkInfoCollectorInstance.getActiveNetworkInfo(), subtype);
-                }
+            Timber.e("ZERO? am: %s \n mobileDataEnabled: %s \n noConnection: %s \n signal: %s \n + signal type 4G: %s \n\n LAST SIGNAL: %s"// + " \n CurrentSignal: " + currentSignalStrength + " \n currentSignalStrengthObject: " + (currentSignalStrengthObject == null ? "NULL" : currentSignalStrengthObject.toString()));
+                    , airplaneModeOn, mobileDataEnabled, noConnection, signal, isSignalLTE, ((lastSignal == null) ? "null" : lastSignal));
+            boolean noConnectionDetected = !airplaneModeOn && mobileDataEnabled && noConnection;
+            /*
+             * Zero measurement by no signal at all
+             */
+            if (noConnectionDetected) {
+                Timber.e("ZERO DETECTED AT NO SIGNAL AT ALL");
+                eventLog(context, "0", "X", System.currentTimeMillis(), "OK, NO SIGNAL AT ALL");
+                zeroMeasurementDetected = true;
+            }
+            /*
+             * Zero measurement by low signal
+             */
+            else if (activeNetworkInfo != null) {// && (networkInfoCollector.getActiveNetworkInfo().getDetailedState() == NetworkInfo.DetailedState.CONNECTED) {
+                int networkType = activeNetworkInfo.getType();
+                if (networkType == ConnectivityManager.TYPE_MOBILE) {
+                    int subtype = activeNetworkInfo.getSubtype();
+                    if (networkInfoCollectorInstance != null) {
+                        Timber.e("ACTUAL STATUS: %s \n Subtype: %s", networkInfoCollectorInstance.getActiveNetworkInfo(), subtype);
+                    }
 
                /* NetworkInfo.DetailedState detailedState = NetworkInfoCollector.getInstance().getActiveNetworkInfo().getDetailedState();
 
@@ -190,111 +194,111 @@ public class ZeroMeasurementDetector {
                 Timber.e( "DETAILED STATE OF NETWORK: " + detailedState.name());*/
 
 
-                // if signal is low or mobile client is not connected we are detecting
-                if (signal != null) {
-                    if (isSignalLTE && (signal < ZeroMeasurementsConfig.get4gThreshold(context))) {
-                        eventLog(context, signal + "", "4G", System.currentTimeMillis(), "OK, LOW 4G SIGNAL");
-                        zeroMeasurementDetected = true;
-                    } else {
-                        if (RealTimeInformation.getNetworkGeneration(subtype, context) == RealTimeInformation.NETWORK_GENERAITON_2G
-                                && signal < ZeroMeasurementsConfig.get2gThreshold(context)) {
+                    // if signal is low or mobile client is not connected we are detecting
+                    if (signal != null) {
+                        if (isSignalLTE && (signal < ZeroMeasurementsConfig.get4gThreshold(context))) {
+                            eventLog(context, signal + "", "4G", System.currentTimeMillis(), "OK, LOW 4G SIGNAL");
                             zeroMeasurementDetected = true;
-                            Timber.e( "ZERO DETECTED AT LOW SIGNAL");
-                            eventLog(context, signal + "", "2G", System.currentTimeMillis(), "OK, LOW 2G SIGNAL");
                         } else {
-                            if (RealTimeInformation.getNetworkGeneration(subtype, context) == RealTimeInformation.NETWORK_GENERAITON_3G
-                                    && signal < ZeroMeasurementsConfig.get3gThreshold(context)) {
+                            if (RealTimeInformation.getNetworkGeneration(subtype, context) == RealTimeInformation.NETWORK_GENERAITON_2G
+                                    && signal < ZeroMeasurementsConfig.get2gThreshold(context)) {
                                 zeroMeasurementDetected = true;
-                                Timber.e( "ZERO DETECTED AT LOW SIGNAL");
-                                eventLog(context, signal + "", "3G", System.currentTimeMillis(), "OK, LOW 3G SIGNAL");
+                                Timber.e("ZERO DETECTED AT LOW SIGNAL");
+                                eventLog(context, signal + "", "2G", System.currentTimeMillis(), "OK, LOW 2G SIGNAL");
+                            } else {
+                                if (RealTimeInformation.getNetworkGeneration(subtype, context) == RealTimeInformation.NETWORK_GENERAITON_3G
+                                        && signal < ZeroMeasurementsConfig.get3gThreshold(context)) {
+                                    zeroMeasurementDetected = true;
+                                    Timber.e("ZERO DETECTED AT LOW SIGNAL");
+                                    eventLog(context, signal + "", "3G", System.currentTimeMillis(), "OK, LOW 3G SIGNAL");
+                                }
                             }
                         }
                     }
                 }
             }
-        }
 
-        if (zeroMeasurementDetected) {
-            Timber.e( "Zero measurement detected");
-            if (activity != null) {
-                activity.runOnUiThread(new Runnable() {
-                    public void run() {
-                        Toast.makeText(activity.getBaseContext(), R.string.zero_measurement_detected, Toast.LENGTH_SHORT).show();
-                    }
-                });
-            }
+            if (zeroMeasurementDetected) {
+                Timber.e("Zero measurement detected");
+                if (activity != null) {
+                    activity.runOnUiThread(new Runnable() {
+                        public void run() {
+                            Toast.makeText(activity.getBaseContext(), R.string.zero_measurement_detected, Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                }
 
-            if (informationCollector == null) {
-                Timber.e( "UNABLE TO SAVE ZERO BECAUSE information collector is NULL");
-                eventLog(context, signal + "", isSignalLTE ? "4G" : "3G/2G", System.currentTimeMillis(), "ERROR, DETECTED - UNABLE TO SAVE - IC NULL");
-                return false;
-            }
+                if (informationCollector == null) {
+                    Timber.e("UNABLE TO SAVE ZERO BECAUSE information collector is NULL");
+                    eventLog(context, signal + "", isSignalLTE ? "4G" : "3G/2G", System.currentTimeMillis(), "ERROR, DETECTED - UNABLE TO SAVE - IC NULL");
+                    return false;
+                }
 
 //            InformationCollector fullInfo = new InformationCollector(context, true, true);
-            final String uuid = informationCollector.getUUID();
+                final String uuid = ConfigHelper.getUUID(context.getApplicationContext());
 
-            Locale locale;
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                locale = context.getResources().getConfiguration().getLocales().get(0);
-            } else {
-                locale = context.getResources().getConfiguration().locale;
-            }
-            String iso3Language = locale.getLanguage();
+                Locale locale;
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                    locale = context.getResources().getConfiguration().getLocales().get(0);
+                } else {
+                    locale = context.getResources().getConfiguration().locale;
+                }
+                String iso3Language = locale.getLanguage();
 
-            BasicInfo basicInfo = InformationCollector.getBasicInfo(context);
+                BasicInfo basicInfo = InformationCollector.getBasicInfo(context);
 
-            List<InformationCollector.CellLocationItem> cellLocations = informationCollector.getCellLocations();
-            List<TCellLocation> tCellLocations = TCellLocation.convertToTs(cellLocations, CellLocationType.ZERO_MEASUREMENT_CELL_LOCATION);
+                List<CellLocation> cellLocations = informationCollector.getCellLocations();
+                List<TCellLocation> tCellLocations = TCellLocation.convertToTs(cellLocations, CellLocationType.ZERO_MEASUREMENT_CELL_LOCATION);
 
 
-            ArrayList<InformationCollector.SignalItem> signals = new ArrayList<>();
-            signals.add(lastSignal);
-            InformationCollector.SignalItem signalItem = null;
-            if (!signals.isEmpty()) {
-                signalItem = signals.get(signals.size() - 1);
-            }
+                ArrayList<Signal> signals = new ArrayList<>();
+                signals.add(lastSignal);
+                Signal signalItem = null;
+                if (!signals.isEmpty()) {
+                    signalItem = signals.get(signals.size() - 1);
+                }
 //            InformationCollector.SignalItem signalItem = informationCollector.getLastSignalItem();
 
-            ArrayList<TSignal> tSignals = new ArrayList<>();
-            if ((signalItem != null) && (!noConnectionDetected)) {
-                TSignal tSignal = new TSignal(signalItem, InformationCollector.UNKNOWN, SignalType.ZERO_MEASUREMENT_SIGNAL);
+                ArrayList<TSignal> tSignals = new ArrayList<>();
+                if ((signalItem != null) && (!noConnectionDetected)) {
+                    TSignal tSignal = new TSignal(signalItem, InformationCollector.UNKNOWN, SignalType.ZERO_MEASUREMENT_SIGNAL);
 
-                String lastNetworkTypeString = Helperfunctions.getNetworkTypeName(lastNetworkType);
-                if (!"BLUETOOTH".equals(lastNetworkTypeString) && !"ETHERNET".equals(lastNetworkTypeString)) {
-                    if (signal != null && signal > Integer.MIN_VALUE) {
-                        if (isSignalLTE) {
-                            tSignal.lteRSRP = signal;
-                            if (signalRsrq != null) {
-                                tSignal.lteRSRQ = signalRsrq;
+                    String lastNetworkTypeString = Helperfunctions.getNetworkTypeName(lastNetworkType);
+                    if (!"BLUETOOTH".equals(lastNetworkTypeString) && !"ETHERNET".equals(lastNetworkTypeString)) {
+                        if (signal != null && signal > Integer.MIN_VALUE) {
+                            if (isSignalLTE) {
+                                tSignal.lteRSRP = signal;
+                                if (signalRsrq != null) {
+                                    tSignal.lteRSRQ = signalRsrq;
+                                }
+                            } else {
+                                tSignal.signalStrength = signal;
+                                tSignal.lteRSRP = null;
+                                tSignal.lteRSRQ = null;
+                                tSignal.lteCQI = null;
+                                tSignal.lteRSSNR = null;
                             }
-                        } else {
-                            tSignal.signalStrength = signal;
-                            tSignal.lteRSRP = null;
-                            tSignal.lteRSRQ = null;
-                            tSignal.lteCQI = null;
-                            tSignal.lteRSSNR = null;
                         }
+                    }
+
+                    // maybe unnecessary, because database save 0 when Integer is null
+                    if (signal != null && signal == 0) {
+                        tSignal.signalStrength = null;
+                        tSignal.lteRSRP = null;
+                        tSignal.lteRSRQ = null;
+                        tSignal.lteCQI = null;
+                        tSignal.lteRSSNR = null;
+                        tSignal.gsmBitErrorRate = null;
+                    }
+
+                    // If connection is lost signals are removed
+                    if (!(noConnectionDetected)) {
+                        tSignals.add(tSignal);
                     }
                 }
 
-                // maybe unnecessary, because database save 0 when Integer is null
-                if (signal != null && signal == 0) {
-                    tSignal.signalStrength = null;
-                    tSignal.lteRSRP = null;
-                    tSignal.lteRSRQ = null;
-                    tSignal.lteCQI = null;
-                    tSignal.lteRSSNR = null;
-                    tSignal.gsmBitErrorRate = null;
-                }
-
-                // If connection is lost signals are removed
-                if (!(noConnectionDetected)) {
-                    tSignals.add(tSignal);
-                }
-            }
-
-            ArrayList<TLocation> tLocations = new ArrayList<>();
-            Location loc = GeoLocationX.getInstance(context).getLastKnownLocation(context, null);
+                ArrayList<TLocation> tLocations = new ArrayList<>();
+                Location loc = GeoLocationX.getInstance(context).getLastKnownLocation(context, null);
 
             /*if ((loc == null) || ((loc.getAltitude() == 0.0) && (loc.getLongitude() == 0.0))) {
                 Timber.e( "Not saved due to lack of position");
@@ -308,57 +312,69 @@ public class ZeroMeasurementDetector {
                 return true;
             } else */
 
-            if (loc == null) {
-                eventLog(context, signal + "", isSignalLTE ? "4G" : "3G/2G", System.currentTimeMillis(), "ERROR, DETECTED - UNABLE TO SAVE - GPS NULL");
-            }
-
-            if (loc != null) {
-                TLocation tLocation;
-                if (apiLevel17andBigger) {
-                    tLocation = new TLocation(loc.getTime(), loc.getElapsedRealtimeNanos(), loc.getLatitude(), loc.getLongitude(), (double) loc.getAccuracy(), loc.getAltitude(), (double) loc.getBearing(), (double) loc.getSpeed(), loc.getProvider(), LocationType.ZERO_MEASUREMENT_LOCATION);
-                } else {
-                    tLocation = new TLocation(loc.getTime(), -1L, loc.getLatitude(), loc.getLongitude(), (double) loc.getAccuracy(), loc.getAltitude(), (double) loc.getBearing(), (double) loc.getSpeed(), loc.getProvider(), LocationType.ZERO_MEASUREMENT_LOCATION);
-
+                if (loc == null) {
+                    eventLog(context, signal + "", isSignalLTE ? "4G" : "3G/2G", System.currentTimeMillis(), "ERROR, DETECTED - UNABLE TO SAVE - GPS NULL");
                 }
-                tLocation.type = LocationType.ZERO_MEASUREMENT_LOCATION;
-                tLocations.add(tLocation);
+
+                if (loc != null) {
+                    TLocation tLocation;
+                    if (apiLevel17andBigger) {
+                        tLocation = new TLocation(loc.getTime(), loc.getElapsedRealtimeNanos(), loc.getLatitude(), loc.getLongitude(), (double) loc.getAccuracy(), loc.getAltitude(), (double) loc.getBearing(), (double) loc.getSpeed(), loc.getProvider(), LocationType.ZERO_MEASUREMENT_LOCATION);
+                    } else {
+                        tLocation = new TLocation(loc.getTime(), -1L, loc.getLatitude(), loc.getLongitude(), (double) loc.getAccuracy(), loc.getAltitude(), (double) loc.getBearing(), (double) loc.getSpeed(), loc.getProvider(), LocationType.ZERO_MEASUREMENT_LOCATION);
+
+                    }
+                    tLocation.type = LocationType.ZERO_MEASUREMENT_LOCATION;
+                    tLocations.add(tLocation);
+                }
+
+
+                TestResultProperties info1 = informationCollector.getInfo("");
+
+                TZeroMeasurement tZeroMeasurement = new TZeroMeasurement(null,
+                        uuid,
+                        Config.RMBT_CLIENT_NAME,
+                        at.specure.client.helper.Config.RMBT_VERSION_NUMBER,
+                        iso3Language,
+                        System.currentTimeMillis(),
+                        uuid,
+                        basicInfo.platform,
+                        basicInfo.product,
+                        String.valueOf(basicInfo.apiLevel),
+                        info1 != null ? info1.telephonyNetworkOperator : null,
+                        String.valueOf(basicInfo.getCodeVersion()),
+                        info1 != null ? String.valueOf(info1.telephonyNetworkIsRoaming) : null,
+                        basicInfo.osVersion,
+                        informationCollector.getTelManager().getNetworkCountryIso(),
+                        String.valueOf(lastNetworkType),
+                        informationCollector.getTelManager().getNetworkOperatorName(),
+                        informationCollector.getTelManager().getSimOperatorName(),
+                        basicInfo.model,
+                        info1 != null ? info1.telephonyNetworkSimOperator : null,
+                        basicInfo.device,
+                        String.valueOf(informationCollector.getTelManager().getPhoneType()),
+                        String.valueOf(informationCollector.getTelManager().getDataState()),
+                        informationCollector.getTelManager().getSimCountryIso(),
+                        TimeZone.getDefault().getID(),
+                        tCellLocations,
+                        tLocations,
+                        tSignals,
+                        ZeroMeasurementState.NOT_SENT
+                );
+
+
+                eventLog(context, signal + "", isSignalLTE ? "4G" : "3G/2G", System.currentTimeMillis(), "OK, SAVING ZERO");
+                tZeroMeasurement.save(context);
+                return true;
             }
+        } catch (Exception e) {
 
+            try {
+                FirebaseCrashlytics.getInstance().recordException(e);
+                FirebaseCrashlytics.getInstance().recordException(new Exception("ZeroMeasurement FAIL"));
+            } catch (Exception ignored) {
 
-            TZeroMeasurement tZeroMeasurement = new TZeroMeasurement(null,
-                    uuid,
-                    Config.RMBT_CLIENT_NAME,
-                    at.specure.client.helper.Config.RMBT_VERSION_NUMBER,
-                    iso3Language,
-                    System.currentTimeMillis(),
-                    uuid,
-                    basicInfo.platform,
-                    basicInfo.product,
-                    String.valueOf(basicInfo.apiLevel),
-                    informationCollector.getInfo("TELEPHONY_NETWORK_OPERATOR"),//getTelManager().getNetworkOperator(), TELEPHONY_NETWORK_OPERATOR
-                    String.valueOf(basicInfo.getCodeVersion()),
-                    informationCollector.getInfo("TELEPHONY_NETWORK_IS_ROAMING"),
-                    basicInfo.osVersion,
-                    informationCollector.getTelManager().getNetworkCountryIso(),
-                    String.valueOf(lastNetworkType),
-                    informationCollector.getTelManager().getNetworkOperatorName(),
-                    informationCollector.getTelManager().getSimOperatorName(),
-                    basicInfo.model,
-                    informationCollector.getInfo("TELEPHONY_NETWORK_SIM_OPERATOR"), //getTelManager().getSimOperator(),
-                    basicInfo.device,
-                    String.valueOf(informationCollector.getTelManager().getPhoneType()),
-                    String.valueOf(informationCollector.getTelManager().getDataState()),
-                    informationCollector.getTelManager().getSimCountryIso(),
-                    tCellLocations,
-                    tLocations,
-                    tSignals,
-                    ZeroMeasurementState.NOT_SENT
-            );
-
-
-            eventLog(context, signal + "", isSignalLTE ? "4G" : "3G/2G", System.currentTimeMillis(), "OK, SAVING ZERO");
-            tZeroMeasurement.save(context);
-            return true;
+            }
         }
 
         return false;

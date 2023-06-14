@@ -29,8 +29,8 @@ import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.Region;
 import android.graphics.drawable.Drawable;
-
 import androidx.annotation.NonNull;
+import android.util.Log;
 
 import java.text.Format;
 import java.text.NumberFormat;

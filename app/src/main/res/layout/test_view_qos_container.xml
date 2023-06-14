@@ -1,5 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!--
+<?xml version="1.0" encoding="utf-8"?><!--
     Copyright 2014-2017 Specure GmbH
    
     Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,38 +15,50 @@
  -->
 
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:padding="3dp"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
+    android:layout_height="match_parent"
+    android:background="@color/transparent"
+    android:divider="@drawable/divider_horizontal"
     android:dividerPadding="2dp"
     android:orientation="vertical"
+    android:padding="3dp"
     android:showDividers="middle">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:maxHeight="96dp"
         android:orientation="horizontal"
         android:paddingLeft="8dp"
-        android:paddingRight="8dp" >
+        android:paddingRight="8dp">
 
         <TextView
+            style="@style/QoSTheme.TextView.Test.QoSProgress.Title"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="8"
             android:text="@string/test_label_quality_test" />
 
         <TextView
+            style="@style/QoSTheme.TextView.Test.QoSProgress.Title"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="5"
             android:text="@string/test_label_progress" />
     </LinearLayout>
 
-    <RelativeLayout
-        android:id="@+id/test_view_group_count_container"
+    <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:animateLayoutChanges="true" >
-    </RelativeLayout>
+        android:layout_height="80dp">
+
+        <LinearLayout
+            android:id="@+id/test_view_group_count_container"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:animateLayoutChanges="true"
+            android:orientation="vertical" />
+    </ScrollView>
 
 </LinearLayout>
+
+

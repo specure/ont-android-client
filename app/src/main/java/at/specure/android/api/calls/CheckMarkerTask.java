@@ -21,7 +21,11 @@ import android.os.AsyncTask;
 
 import com.google.gson.JsonArray;
 
+import java.util.Map;
+
 import at.specure.android.api.ControlServerConnection;
+import at.specure.android.configs.FeatureConfig;
+import at.specure.android.screens.main.MainActivity;
 import at.specure.android.util.EndTaskListener;
 import at.specure.androidX.data.map_filter.mappers.MapFilterSaver;
 

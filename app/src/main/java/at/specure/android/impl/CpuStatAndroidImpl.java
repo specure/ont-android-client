@@ -17,9 +17,11 @@ package at.specure.android.impl;
 
 import com.specure.opennettest.R;
 
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import at.specure.util.tools.CpuStat;
+import at.specure.util.tools.CpuStat.CpuUsage.CoreUsage;
 
 public class CpuStatAndroidImpl extends CpuStat {
 	

@@ -15,7 +15,7 @@
  *******************************************************************************/
 package at.specure.util.net.udp;
 
-import com.crashlytics.android.Crashlytics;
+import com.google.firebase.crashlytics.FirebaseCrashlytics;
 
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
@@ -114,7 +114,7 @@ public class NioUdpStreamSender implements StreamSender<DatagramChannel> {
                 if (Thread.interrupted()) {
                     isRunning.set(false);
                     try {
-                        Crashlytics.logException(new Exception("NioUdpStreamSender - interrupted"));
+                        FirebaseCrashlytics.getInstance().recordException(new Exception("NioUdpStreamSender - interrupted"));
                     } catch (Exception e1) {
                         //do nothing
                     }
@@ -124,7 +124,7 @@ public class NioUdpStreamSender implements StreamSender<DatagramChannel> {
                 if (stopTimeMs > 0 && stopTimeMs < System.currentTimeMillis()) {
                     isRunning.set(false);
                     try {
-                        Crashlytics.logException(new Exception("NioUdpStreamSender - timeout " + timeoutMs + " ms"));
+                        FirebaseCrashlytics.getInstance().recordException(new Exception("NioUdpStreamSender - timeout " + timeoutMs + " ms"));
                     } catch (Exception e1) {
                         //do nothing
                     }

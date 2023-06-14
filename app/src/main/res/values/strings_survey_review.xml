@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="review_positive_button">Yes</string>
+    <string name="review_negative_button">No, thanks</string>
+    <string name="review_neutral_button">Remind me later</string>
+
+    <string name="survey_take_part_message">Do you want to take a survey?</string>
+</resources>

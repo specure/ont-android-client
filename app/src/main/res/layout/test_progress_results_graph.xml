@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_gravity="center_horizontal"
+    android:minWidth="80dp"
+    android:orientation="vertical">
+
+    <TextView
+        android:id="@+id/test_progress__small_graph_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:gravity="center"
+        android:text="Download"
+        android:maxLines="2"
+        android:lines="2"
+        android:textColor="@color/app_text_color"
+        android:textSize="@dimen/text_size_small"
+        tools:text="Download" />
+
+    <TextView
+        android:id="@+id/test_progress__small_graph_value"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:gravity="center"
+        android:textColor="@color/icon_main_tint"
+        android:textSize="@dimen/text_size_big"
+        android:textStyle="bold"
+        tools:text="50" />
+
+    <FrameLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content">
+
+        <com.github.mikephil.charting.charts.LineChart
+            android:id="@+id/test_progress__small_graph"
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
+            android:layout_gravity="bottom"
+            android:layout_marginTop="-20dp"
+            android:layout_marginBottom="-10dp"
+            android:background="@color/transparent" />
+
+        <!--<com.jjoe64.graphview.GraphView-->
+        <!--android:id="@+id/test_progress__small_graph"-->
+        <!--android:layout_width="80dp"-->
+        <!--android:layout_height="32dp"-->
+        <!--android:layout_gravity="bottom"-->
+        <!--android:layout_marginBottom="-10dp"-->
+        <!--android:background="@color/transparent" />-->
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="22dp"
+            android:layout_gravity="bottom"
+            android:background="@drawable/white_gradient" />
+
+        <TextView
+            android:id="@+id/test_progress__small_graph_units"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal|bottom"
+            android:gravity="center"
+            android:textColor="@android:color/darker_gray"
+            android:textSize="@dimen/text_size_extra_small"
+            tools:text="Mbps" />
+
+    </FrameLayout>
+
+</LinearLayout>
+
+

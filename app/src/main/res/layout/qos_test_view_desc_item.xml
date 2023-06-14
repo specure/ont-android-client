@@ -25,7 +25,9 @@
     android:paddingTop="5dp" >
 
     <TextView
+		android:background="@drawable/list_selector"
         android:id="@+id/name"
+        style="@style/QoSTheme.TextView.ListItemMedium.Light"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:padding="2dp"

@@ -17,15 +17,15 @@
 package at.specure.android.screens.main;
 
 import android.app.Activity;
+import androidx.annotation.NonNull;
 import androidx.appcompat.graphics.drawable.DrawerArrowDrawable;
 import androidx.appcompat.widget.Toolbar;
-import androidx.appcompat.widget.Toolbar.LayoutParams;
+import androidx.core.view.GravityCompat;
+import androidx.drawerlayout.widget.DrawerLayout;
+
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.ImageButton;
-
-import androidx.core.view.GravityCompat;
-import androidx.drawerlayout.widget.DrawerLayout;
 
 import com.specure.opennettest.R;
 
@@ -50,7 +50,7 @@ public class EndDrawerToggle implements DrawerLayout.DrawerListener {
 
         toggleButton = new ImageButton(toolbar.getContext(), null,
                 R.attr.toolbarNavigationButtonStyle);
-        toolbar.addView(toggleButton, new LayoutParams(GravityCompat.END));
+        toolbar.addView(toggleButton, new Toolbar.LayoutParams(GravityCompat.END));
         toggleButton.setImageDrawable(arrowDrawable);
         toggleButton.setOnClickListener(new OnClickListener() {
                                             @Override
@@ -89,12 +89,12 @@ public class EndDrawerToggle implements DrawerLayout.DrawerListener {
     }
 
     @Override
-    public void onDrawerSlide(View drawerView, float slideOffset) {
+    public void onDrawerSlide(@NonNull View drawerView, float slideOffset) {
         setPosition(Math.min(1f, Math.max(0, slideOffset)));
     }
 
     @Override
-    public void onDrawerOpened(View drawerView) {
+    public void onDrawerOpened(@NonNull View drawerView) {
         setPosition(1f);
         if (listener != null) {
             listener.onDrawerOpen();
@@ -103,7 +103,7 @@ public class EndDrawerToggle implements DrawerLayout.DrawerListener {
     }
 
     @Override
-    public void onDrawerClosed(View drawerView) {
+    public void onDrawerClosed(@NonNull View drawerView) {
         setPosition(0f);
         if (listener != null) {
             listener.onDrawerClose();

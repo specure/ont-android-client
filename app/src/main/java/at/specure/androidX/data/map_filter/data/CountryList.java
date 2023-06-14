@@ -14,7 +14,7 @@ public class CountryList {
     private static ArrayList<MapFilterCountry> mapFilterCountries;
     private static FilterGroup country;
 
-    public static ArrayList<MapFilterCountry> getCountryList(final Context context) {
+    public static ArrayList<MapFilterCountry> getCountryList(Context context) {
         if (mapFilterCountries == null)
         mapFilterCountries = new ArrayList<MapFilterCountry>() {
             {

@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <array name="hidden_for_upper_curve">
+
+        <item>0</item>
+        <item>2</item>
+        <item>4</item>
+        <item>5</item>
+        <item>6</item>
+        <item>7</item>
+        <item>9</item>
+        <item>10</item>
+        <item>11</item>
+        <item>12</item>
+    </array>
+
+    <array name="strings_for_upper_curve">
+        <item>Init</item>
+        <item>Ping</item>
+        <item>Download</item>
+        <item>Upload</item>
+    </array>
+
+    <array name="strings_shifts_for_upper_curve">
+        <item>15</item>
+        <item>50</item>
+        <item>110</item>
+        <item>210</item>
+    </array>
+
+    <array name="colors_of_bottom_curve">
+        <item>#f5d042</item>
+        <item>#fdd23e</item>
+        <item>#1e98a6</item>
+        <item>#011a3c</item>
+        <item>#011a3c</item>
+    </array>
+
+    <color name="gauge_scale">#011a3c</color>
+    <color name="gauge_pointer_color">#09b7b4</color>
+
+    <color name="gauge_basic">#09b7b4</color>
+    <color name="gauge_outer_ring">#0b000000</color>
+    <color name="gauge_inner_ring">#f3f3f4</color>
+    <color name="gauge_inner_ring_dark">#838384</color>
+    <color name="gauge_central_ring">#c9cacb</color>
+
+</resources>

@@ -34,6 +34,8 @@ public interface MainFragmentInterface {
 
     void changeScreenState(MainScreenState screenState, String logInfoMessage, Boolean forceUIRefresh);
 
+    MainScreenState getScreenState();
+
 
     // test performing methods
 
@@ -57,11 +59,29 @@ public interface MainFragmentInterface {
 
     void setTestTextProgress(String i);
 
-    void updateDownloadGraph(String value, int downloadStatusStringID, int unitStringID);
-
-    void updateUploadGraph(String value, int uploadStatusStringID, int unitStringID);
-
     void showQoSProgress(TestService testTestService);
 
     void setTestUUID(String testUUID);
+
+    String getTestUUID();
+
+    int getTestErrorQosStringId();
+
+    int getTestErrorStringId();
+
+    int getProgressTitleId();
+
+    int getProgressTextId();
+
+    int getAbortDialogTitleId();
+
+    int getAbortDialogTextId();
+
+    int getAbortDialogPositiveButtonText();
+
+    int getAbortDialogNegativeButtonText();
+
+    int getTestErrorTitleId();
+
+    int getErrorControlServerConnectionStringId();
 }

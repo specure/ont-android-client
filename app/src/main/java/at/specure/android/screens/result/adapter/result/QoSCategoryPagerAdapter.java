@@ -16,28 +16,27 @@
  ******************************************************************************/
 package at.specure.android.screens.result.adapter.result;
 
+import android.content.Context;
+import android.os.Handler;
+import androidx.annotation.NonNull;
+import android.view.View;
+import android.view.ViewGroup;
+
+import com.specure.opennettest.R;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import android.content.Context;
-import android.os.Handler;
-import android.view.View;
-import android.view.ViewGroup;
-
 import androidx.viewpager.widget.PagerAdapter;
-
-import com.specure.opennettest.R;
-
-import at.specure.android.screens.main.MainActivity;
-import at.specure.android.screens.result.QoSCategoryView;
 import at.specure.android.configs.ConfigHelper;
+import at.specure.android.screens.main.MainActivity;
+import at.specure.android.screens.result.views.QoSCategoryView;
 import at.specure.client.v2.task.result.QoSServerResult;
 import at.specure.client.v2.task.result.QoSServerResultCollection;
 import at.specure.client.v2.task.result.QoSServerResultDesc;
 import at.specure.client.v2.task.result.QoSTestResultEnum;
-
 
 public class QoSCategoryPagerAdapter extends PagerAdapter {
 
@@ -62,7 +61,7 @@ public class QoSCategoryPagerAdapter extends PagerAdapter {
     private final Map<QoSTestResultEnum, List<QoSServerResultDesc>> descMap;
         
 	public QoSCategoryPagerAdapter(final MainActivity _activity,
-			final Handler _handler, final QoSServerResultCollection results)
+                                   final Handler _handler, final QoSServerResultCollection results)
     {
 		super();
 		
@@ -93,12 +92,13 @@ public class QoSCategoryPagerAdapter extends PagerAdapter {
 	public boolean hasResults(QoSTestResultEnum key) {
 		return titleList.contains(key);
 	}
-	
+
+	@NonNull
 	@Override
-	public Object instantiateItem(ViewGroup container, int position) {
-        final Context context = container.getContext();
-        
-        //QoSTestResultEnum key = QoSTestResultEnum.values()[position];
+	public Object instantiateItem(@NonNull ViewGroup container, int position) {
+		final Context context = container.getContext();
+
+		//QoSTestResultEnum key = QoSTestResultEnum.values()[position];
         QoSTestResultEnum key = titleList.get(position);
         View view = null;
         view = new QoSCategoryView(context, activity, results.getTestDescMap().get(key), resultMap.get(key), descMap.get(key));
@@ -107,8 +107,8 @@ public class QoSCategoryPagerAdapter extends PagerAdapter {
 	}
 	
 	@Override
-	public int getItemPosition(Object object) {
-	    return PagerAdapter.POSITION_NONE;
+	public int getItemPosition(@NonNull Object object) {
+		return PagerAdapter.POSITION_NONE;
 	}
 	
 	@Override
@@ -124,13 +124,13 @@ public class QoSCategoryPagerAdapter extends PagerAdapter {
     }
 
 	@Override
-	public boolean isViewFromObject(View view, Object object) {
-        return view == object;
+	public boolean isViewFromObject(@NonNull View view, @NonNull Object object) {
+		return view == object;
 	}
 
 	@Override
-	public void destroyItem(ViewGroup container, int position, Object object) {
-        final View view = (View) object;
-        container.removeView(view);
+	public void destroyItem(@NonNull ViewGroup container, int position, @NonNull Object object) {
+		final View view = (View) object;
+		container.removeView(view);
 	}	
 }

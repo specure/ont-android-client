@@ -24,8 +24,8 @@ import com.specure.opennettest.R;
 
 import java.util.HashMap;
 
-import at.specure.android.constants.TestResultConst;
 import at.specure.android.api.jsons.VoipTestResult;
+import at.specure.android.constants.TestResultConst;
 
 /**
  * Created by michal.cadrik on 7/6/2017.
@@ -39,7 +39,7 @@ public class VoipTestResultHandler {
     private static final String VOIP_TEST_RESULT_SHARED_PREF_KEY = "VOIP_TEST_RESULT_SHARED_PREF";
 
     /**
-     * Converts results hash map to object used to send as JSON
+     * Converts results hash map to object used to send as Json
      *
      * @param resultMap
      * @return

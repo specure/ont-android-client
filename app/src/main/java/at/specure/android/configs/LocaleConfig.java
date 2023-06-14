@@ -11,13 +11,12 @@ import android.os.Build;
 import android.os.LocaleList;
 import android.util.DisplayMetrics;
 
-import androidx.annotation.NonNull;
-import androidx.core.os.ConfigurationCompat;
-
 import com.specure.opennettest.R;
 
 import java.util.Locale;
 
+import androidx.annotation.NonNull;
+import androidx.core.os.ConfigurationCompat;
 import at.specure.android.SupportedLocales;
 import at.specure.android.screens.main.MainActivity;
 import timber.log.Timber;
@@ -129,7 +128,6 @@ public class LocaleConfig {
         return myLocale;
     }
 
-    @SuppressLint("NewApi")
     public static void initializeApp(Activity activity, boolean shouldrefresh) {
         Locale myLocale;
 
@@ -214,6 +212,6 @@ public class LocaleConfig {
     }
 
     public static boolean isUserAbleToChangeLanguage(Context context) {
-        return false;
+        return context.getResources().getInteger(R.integer.language_choose_option) == 1;
     }
 }

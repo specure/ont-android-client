@@ -2,14 +2,13 @@ package at.specure.android.screens.preferences;
 
 import android.content.Context;
 
-import androidx.loader.content.AsyncTaskLoader;
-
 import com.google.android.gms.ads.identifier.AdvertisingIdClient;
 import com.google.android.gms.common.GooglePlayServicesNotAvailableException;
 import com.google.android.gms.common.GooglePlayServicesRepairableException;
 
 import java.io.IOException;
 
+import androidx.loader.content.AsyncTaskLoader;
 import timber.log.Timber;
 
 public class AdvertisingIdClientLoader extends AsyncTaskLoader<Boolean> {

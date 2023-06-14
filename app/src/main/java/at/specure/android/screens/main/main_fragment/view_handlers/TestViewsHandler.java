@@ -17,13 +17,13 @@
 package at.specure.android.screens.main.main_fragment.view_handlers;
 
 import android.content.Context;
+import androidx.core.content.ContextCompat;
 import android.view.View;
 
-
 import com.specure.opennettest.R;
-
 import java.util.HashMap;
 
+import at.specure.android.views.CustomGauge;
 
 /**
  * Class handling UI for test performing mode state of the main screen fragment
@@ -49,14 +49,41 @@ public class TestViewsHandler extends ViewsHandler {
 
 
         this.viewsToSetVisible.add(R.id.text_view_upper_test);
+        this.viewsToSetVisible.add(R.id.test_graph);
+        this.viewsToSetVisible.add(R.id.graph_container);
+        this.viewsToSetVisible.add(R.id.measurement_graphs_container);
         this.viewsToSetVisible.add(R.id.main_fragment__top_info_container_measurement);
     }
 
     @Override
     public void initializeViews(View rootView, Context context) {
         super.setViewVisibility();
-        if (rootView != null) {
+        if ((rootView != null) && (context != null)) {
             disableClickingOnButtons(rootView);
+
+            CustomGauge testViewUpper = rootView.findViewById(R.id.gauge_upper);
+            if (testViewUpper != null) {
+                testViewUpper.setmStrokeInnerColor(ContextCompat.getColor(context, R.color.gauge_inner_ring_dark));
+                testViewUpper.setGaugeStrings(R.array.strings_for_upper_curve);
+                testViewUpper.setStringShifts(R.array.strings_shifts_for_upper_curve);
+                testViewUpper.setDividerSize(1);
+                testViewUpper.setValue(0);
+                testViewUpper.setEndValue(143);
+                testViewUpper.invalidate();
+            }
+
+            CustomGauge testViewLower = rootView.findViewById(R.id.gauge_lower);
+            if (testViewLower != null) {
+                testViewLower.setmStrokeInnerColor(ContextCompat.getColor(context, R.color.gauge_inner_ring_dark));
+                testViewLower.setValue(-1);
+                testViewLower.setShowScale(true);
+                testViewLower.setShowArrow(true);
+                testViewLower.setEndValue(143);
+                testViewLower.invalidate();
+            }
+
+
+
         }
     }
 }

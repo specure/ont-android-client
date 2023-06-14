@@ -40,11 +40,13 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.MatchResult;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import javax.net.ssl.SSLSession;
 import javax.net.ssl.SSLSocket;
 
+import at.specure.androidX.data.test.testResultRequest.Ping;
 import at.specure.client.helper.TestStatus;
 import timber.log.Timber;
 
@@ -63,7 +65,7 @@ public class RMBTTest extends AbstractRMBTTest implements Callable<ThreadTestRes
 //    private static final double nsecs = 1e9;
 
     private static final long UPLOAD_MAX_DISCARD_TIME = 1;
-    private static final long UPLOAD_MAX_WAIT_SECS = 3;
+    private static final long UPLOAD_MAX_WAIT_SECS = 6;
 
     private final CyclicBarrier barrier;
     private final AtomicBoolean fallbackToOneThread;
@@ -279,9 +281,19 @@ public class RMBTTest extends AbstractRMBTTest implements Callable<ThreadTestRes
         reader = new BufferedReader(new InputStreamReader(in, "US-ASCII"), 4096);
         out = new OutputStreamCounter(s.getOutputStream());
 
+        //At this point, the communication is based on RMBT
+        // - either directly from the start, or from switching from RMBThttp
         String line = reader.readLine();
-        if (!line.equals(EXPECT_GREETING)) {
-            Timber.e("SOCKECT CONNECT thread %d: got '%s' expected '%s'", threadId, line, EXPECT_GREETING);
+        if (line.contains(EXPECT_GREETING_EXP)) {
+            line = line.trim();
+            Matcher matcher = RMBT_SERVER_PATTERN.matcher(line.trim());
+            String version;
+            if (matcher.find()) {
+                version = matcher.group(1);
+                testResult.client_version = version;
+            }
+        } else {
+            Timber.e("thread %d: got '%s' expected '%s'", threadId, line, EXPECT_GREETING_EXP);
             return null;
         }
 
@@ -401,9 +413,9 @@ public class RMBTTest extends AbstractRMBTTest implements Callable<ThreadTestRes
                         if (ping != null) {
                             client.updatePingStatus(timeStart, i + 1, System.nanoTime());
 
-                            pings[i] = ping.server;
-                            if (ping.client < shortestPing)
-                                shortestPing = ping.client;
+                            pings[i] = ping.timeDiffServer;
+                            if (ping.timeDiffClient < shortestPing)
+                                shortestPing = ping.timeDiffClient;
 
                             testResult.pings.add(ping);
                         }
@@ -836,7 +848,7 @@ public class RMBTTest extends AbstractRMBTTest implements Callable<ThreadTestRes
                         }
 
                         final MatchResult match = s.match();
-                        if ((match.groupCount() == 2) && (uploadContinue)) {
+                        if ((match.groupCount() == 2) /*&& (uploadContinue)*/) {
                             final long nsec = Long.parseLong(match.group(1));
                             final long bytes = Long.parseLong(match.group(2));
                             result.addResult(bytes, nsec);
@@ -844,20 +856,20 @@ public class RMBTTest extends AbstractRMBTTest implements Callable<ThreadTestRes
                             curTime.set(nsec);
                         }
 
-                        if (terminateRxAtAllEvents.get() || (!uploadContinue)) {
+                        if (terminateRxAtAllEvents.get()/* || (!uploadContinue)*/) {
                             terminate = true;
-                            uploadContinue = false;
+                            /*uploadContinue = false;*/
                         }
-                        if (terminateRxIfEnough.get() && curTime.get() > enoughTime || (!uploadContinue)) {
+                        if (terminateRxIfEnough.get() && curTime.get() > enoughTime/* || (!uploadContinue)*/) {
                             terminate = true;
-                            uploadContinue = false;
+                            /*uploadContinue = false;*/
                         }
                         if (!uploadContinue) {
                             Timber.e("UPLOAD_END %s  Upload continue = false", threadId);
                         }
 
                     }
-                    while (!terminate && uploadContinue);
+                    while (!terminate/* && uploadContinue*/);
                     return true;
                 } finally {
                     s.close();

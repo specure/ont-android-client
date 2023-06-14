@@ -24,12 +24,13 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteQueryBuilder;
 import android.net.Uri;
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import android.util.Log;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import timber.log.Timber;
 
 /**
  * Provider for Opennettest database tasks.
@@ -90,7 +91,7 @@ public class DatabaseProvider extends ContentProvider {
     @Nullable
     @Override
     public Cursor query(@NonNull Uri uri, String[] projection, String selection, String[] selectionArgs, String sortOrder) {
-        Log.d(TAG, "querying " + uri.toString());
+        Timber.d("querying %s", uri.toString());
         SQLiteQueryBuilder qb = new SQLiteQueryBuilder();
         SQLiteDatabase db = databaseHelper.getWritableDatabase();
         String groupBy = null;
@@ -178,7 +179,7 @@ public class DatabaseProvider extends ContentProvider {
     @SuppressWarnings("ConstantConditions")
     public Uri insert(@NonNull Uri uri, ContentValues values) {
 
-        Log.d(TAG, "Inserting into " + uri.toString() + " values " + values.toString());
+        Timber.d( "Inserting into %s values %s", uri.toString(), values.toString());
 
         SQLiteDatabase db = databaseHelper.getWritableDatabase();
         Long id = null;
@@ -240,7 +241,7 @@ public class DatabaseProvider extends ContentProvider {
     @SuppressWarnings("ConstantConditions")
     public int update(@NonNull Uri uri, ContentValues values, String selection, String[] selectionArgs) {
 
-        Log.d(TAG, "Updating " + uri.toString() + " with values " + values.toString() + " (selection = " + selection + ")");
+        Timber.d("Updating %s  with values %s  (selection =  %s)", uri.toString(), values.toString(), selection);
 
         SQLiteDatabase db = databaseHelper.getWritableDatabase();
         String tableName;

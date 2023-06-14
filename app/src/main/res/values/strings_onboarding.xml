@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="onboarding_welcome_to">Welcome to</string>
+    <string name="onboarding_welcome_text1">Before you start using the app, we would like you to review the Privacy Policy and make informed choices about the personal data.</string>
+    <string name="onboarding_welcome_text2">See the Privacy Policy here. You can also revisit it later via the Menu/Info Page. You can also revisit it later via the Menu / Info Page. You can always contact us with your privacy concerns at</string>
+
+    <string name="onboarding_ads_personalisation">Ads Personalisation</string>
+    <string name="onboarding_ads_personalisation_text1">We use Advertising Identifier to attribute previously served advertising to an app installation and for user analytics.</string>
+    <string name="onboarding_ads_personalisation_text2">To manage the permissions regarding the Advertising ID, please go to Settings->Privacy->Advertising. Your current setting is:</string>
+
+    <string name="onboarding_client_uuid_text1">Client UUID is a randomly generated ID that is saved with every measurement. Persistent Client UUID means that the ID is the same for your every measurement. It is needed to enable measurement history and synchronisation of the results between devices.</string>
+    <string name="onboarding_client_uuid_text2">Please make your choice here. You can change it later in the Settings.</string>
+    <string name="onboarding_client_uuid_opt2">No, thank you</string>
+    <string name="onboarding_client_uuid_opt1">Allow Persistent Client UUID</string>
+
+    <string name="onboarding_analytics">Analytics</string>
+    <string name="onboarding_analytics_text1">Analytics Information is used to understand how our users use the mobile apps and to continuously optimize the service. We also collect crash traces data that help us to statistically evaluate, analyse and resolve crashes and bugs.</string>
+    <string name="onboarding_analytics_opt1">Allow Analytics</string>
+
+    <string name="onboarding_almost_finished">Almost finished...</string>
+    <string name="onboarding_almost_finished_text1">Thank you for reviewing your privacy settings. You can always contact us with your privacy concerns at dpo@nettest.org.</string>
+    <string name="onboarding_almost_finished_text2">There is one last choice to make - what king of user interface would you prefer to start with? You can, of course, change it later in the Settings.</string>
+    <string name="onboarding_almost_finished_opt1">Light Mode</string>
+    <string name="onboarding_almost_finished_opt2">Dark Mode</string>
+    <string name="onboarding_almost_finished_opt3">I will follow the sun</string>
+    <string name="next">Next</string>
+
+</resources>

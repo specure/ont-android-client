@@ -21,6 +21,7 @@
 
     <TextView
         android:id="@+id/text_name"
+        style="@style/textSmallLight"
         android:layout_width="0dp"
         android:layout_height="40dp"
         android:layout_gravity="center"

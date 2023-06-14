@@ -72,9 +72,9 @@ public class FeatureConfig {
                 return split[1];
             }
         } else {
-            return  "";
+            return  context.getResources().getString(R.string.country_code_of_operators);
         }
-        return  "";
+        return  context.getResources().getString(R.string.country_code_of_operators);
     }
 
     /**
@@ -83,7 +83,7 @@ public class FeatureConfig {
      * 1 - Square - square results
      */
     public static int showLayoutTheme(Context context) {
-        return 0;
+        return context.getResources().getInteger(R.integer.layout_type);
     }
 
     /**
@@ -91,6 +91,6 @@ public class FeatureConfig {
      * @return default true
      */
     public static boolean showBasicResultInPager(Context context) {
-        return true;
+        return context.getResources().getBoolean(R.bool.show_basic_result_in_pager);
     }
 }

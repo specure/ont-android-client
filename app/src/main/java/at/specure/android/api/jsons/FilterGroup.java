@@ -23,9 +23,9 @@ import com.google.gson.annotations.SerializedName;
 import java.util.ArrayList;
 
 import at.specure.android.configs.ConfigHelper;
+import at.specure.androidX.data.map_filter.data.MapFilterTypes;
 import at.specure.android.screens.map.MapListEntry;
 import at.specure.android.screens.map.MapListSection;
-import at.specure.androidX.data.map_filter.data.MapFilterTypes;
 
 /**
  * Used in map filters for operators only for this moment

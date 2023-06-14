@@ -17,8 +17,13 @@
 -->
 <resources>
 
+    <!--Overrides server links sent by control server in settings response-->
+    <bool name="url_override">true</bool>
+
     <integer name="default_loop_max_tests">100</integer>
-    <integer name="default_loop_min_delay">30</integer>
+    <integer name="default_loop_min_delay">300</integer>
+    <integer name="loop_min_delay">30</integer>
+    <integer name="loop_min_distance">100</integer>
     <integer name="default_loop_max_delay">900</integer>
     <integer name="default_loop_max_movement">250</integer>
 
@@ -28,17 +33,36 @@
     <bool name="test_use_personal_data_fuzzing">false</bool>
     <bool name="show_splash_screen">true</bool>
     <bool name="show_statistics_in_main_menu">false</bool>
+
+    <!--TERMS AND CONDITIONS, PRIVACY POLICY-->
     <bool name="show_ndt_info">false</bool>
+    <bool name="override_send_crash_info">false</bool>
+    <bool name="show_terms_and_conditions_on_start">true</bool>
+    <bool name="show_privacy_policy_on_start">false</bool>
+    // must be "show_terms_and_conditions_on_start" enabled to enable this also
+    <bool name="show_privacy_policy_in_information_screen">true</bool>
+    <bool name="publish_personal_data_visible">false</bool>
+
+
     <bool name="show_loop_mode_after_secret">false</bool>
+    <string name="secret" translatable="false">0</string>
+
     <bool name="show_licenses">false</bool>
     <bool name="country_specific_operators_for_map">true</bool>
-    <bool name="show_terms_and_conditions_on_start">false</bool>
-    <bool name="url_override">true</bool>
     <bool name="detect_zero_measurements">false</bool>
+    <string name="country_code_of_operators" translatable="false">all</string>
+
+    <bool name="enabled_badges">false</bool>
+
+    <!--SURVEY SETTINGS-->
+    <bool name="survey_enabled">false</bool>
+
+    <!--REVIEW SETTINGS-->
+    <bool name="enabled_app_review">false</bool>
+    <integer name="review_number_tests">5</integer>
+    <integer name="review_number_days">7</integer>
 
 
-    <integer name="loop_min_delay">5</integer>
-    <integer name="loop_min_distance">30</integer>
 
     <!--MAP FILTERS-->
     <bool name="show_map_filter_whitespots">false</bool>
@@ -49,6 +73,8 @@
     <!--MAP-->
     <item name="map_center_latitude" format="float" type="dimen">46.049053</item>
     <item name="map_center_longitude" format="float" type="dimen">14.501973</item>
+    <item name="map_zoom_level" format="integer" type="dimen">6</item>
+    <item name="map_zoom_level_land" format="integer" type="dimen">6</item>
 
     <integer name="signal_semaphore_gms_green">-85</integer>
     <integer name="signal_semaphore_gms_orange">-101</integer>
@@ -67,9 +93,68 @@
     <integer name="ping_semaphore_green">25</integer>
     <integer name="ping_semaphore_orange">75</integer>
 
-    <!-- Zero measurements thresholds -->
-    <integer name="zero_measurement_gsm_threshold">-110</integer>
-    <integer name="zero_measurement_lte_threshold">-130</integer>
+    <!-- ZERO MEASUREMENTS -->
+    <integer name="zero_measurement_2g_threshold">-110</integer>
+    <integer name="zero_measurement_3g_threshold">-110</integer>
+    <integer name="zero_measurement_4g_threshold">-130</integer>
+
+    <!--0 = disabled  - unused because of global config -->
+    <!--1 = possible to enabled in settings -->
+    <!--2 = enabled -->
+    <integer name="zero_measurement_detection_manner">0</integer>
+    <bool name="zero_measurements_detect_default">false</bool>
+
+    <!-- LAYOUTS -->
+    <integer name="layout_type">0</integer>
+    <bool name="show_basic_result_in_pager">true</bool>
+
+    <!-- API -->
+
+    <!-- api to get info about measurements servers -->
+    <integer name="measurements_servers_api_version">1</integer>
+    <bool name="show_sponsor_with_measurements_servers">false</bool>
+
+    <!--MAPS-->
+    <!--0 = user choose  - unused because of global config -->
+    <!--1 = google maps -->
+    <!--2 = mapbox maps -->
+    <integer name="maps_provider">2</integer>
+    <integer name="default_maps_provider_if_user_choose">1</integer>
+    <string name="mapbox_style_url">YOUR MAPBOX STYLE URL</string>
+    <string name="layer_add_basic">bridge</string>
+    <string name="mapbox_satellite_style_url">YOUR MAPBOX SATELLITE STYLE URL</string>
+    <string name="layer_add_satellite">admin-2-boundaries-dispute</string>
+    <bool name="points_overlay_enabled">true</bool>
+    <bool name="send_country_in_map_marker">true</bool>
+
+
+    <!--0 - last known location if able-->
+    <!--1 - location from resource file-->
+    <integer name="initial_point_not_enabled_gps">0</integer>
+
+
+    <!--TERMS_AND_CONDITIONS-->
+    <!--0 = local and web -->
+    <!--1 = only local -->
+    <!--2 = only web -->
+    <integer name="terms_and_conditions_source">0</integer>
+    <integer name="privacy_policy_source">0</integer>
+
+
+    <!-- LANGUAGE -->
+    <!--0 - system default-->
+    <!--1 - user select in settings-->
+    <integer name="language_choose_option">1</integer>
+
+    <!--TUTORIAL-->
+    <!--0 - Brief-->
+    <!--1 - Advanced-->
+    <bool name="show_tutorial_on_startup">true</bool>
+    <integer name="show_tutorial_on_startup_type">0</integer>
+
+
+    <!--INFORMATION-->
+    <bool name="open_website_info_screen">true</bool>
 
 
 </resources>

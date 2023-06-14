@@ -1,4 +1,4 @@
-/*******************************************************************************
+/*
  * Copyright 2014-2017 Specure GmbH
  * Copyright 2013-2014 alladin-IT GmbH
  *
@@ -13,7 +13,7 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- ******************************************************************************/
+*/
 package at.specure.android.screens.map;
 
 import com.google.gson.annotations.SerializedName;

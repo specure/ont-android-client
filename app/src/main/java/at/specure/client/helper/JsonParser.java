@@ -18,6 +18,7 @@ package at.specure.client.helper;
 
 import android.util.Log;
 
+import com.facebook.stetho.okhttp3.StethoInterceptor;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
@@ -49,7 +50,13 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
+import okhttp3.MediaType;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
 import timber.log.Timber;
 
 import static com.google.gson.stream.JsonToken.NULL;
@@ -109,31 +116,47 @@ public class JsonParser {
 
         try {
             final HttpParams params = new BasicHttpParams();
-            HttpConnectionParams.setConnectionTimeout(params, 20000);
-            HttpConnectionParams.setSoTimeout(params, 20000);
+            HttpConnectionParams.setConnectionTimeout(params, 30000);
+            HttpConnectionParams.setSoTimeout(params, 30000);
+
             final HttpClient client = new DefaultHttpClient(params);
+//            OkHttpClient.Builder builder = new OkHttpClient.Builder()
+//                    .addNetworkInterceptor(new StethoInterceptor())
+//                    .connectTimeout(30, TimeUnit.SECONDS)
+//                    .readTimeout(8, TimeUnit.SECONDS)
+//                    .writeTimeout(30, TimeUnit.SECONDS);
+//
+//            final OkHttpClient client = builder.build();
+//            final MediaType JSON
+//                    = MediaType.get("application/json; charset=utf-8");
+
+            String dataString = data.toString();
 
             final HttpPost httppost = new HttpPost(uri);
 
-            final StringEntity se = new StringEntity(data.toString(), "UTF-8");
+            final StringEntity se = new StringEntity(dataString, "UTF-8");
 
             httppost.setEntity(se);
             httppost.setHeader(new BasicHeader(HTTP.CONTENT_TYPE, "application/json;charset=UTF-8"));
 
-            Timber.e("Request to: %s \n \nwith data: \n%s", uri.toString(),  data.toString());
+            Timber.e("Request to: %s \n \nwith data: \n%s", uri.toString(),  dataString);
 
             final ResponseHandler<String> responseHandler = new BasicResponseHandler();
             try {
+//                RequestBody body = RequestBody.create(dataString, JSON);
+//                Request request = new Request.Builder()
+//                        .url(uri.toURL())
+//                        .post(body)
+//                        .build();
+//                Response response = client.newCall(request).execute();
                 responseBody = client.execute(httppost, responseHandler);
                 try {
                     Timber.e("Response to: %s \n\n with data: \n %s", uri.toString(), responseBody);
-//                JsonObject json = new JsonObject();
+//                    Timber.e("Response to: %s \n\n with data: \n %s", uri.toString(), response);
                     Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
                     JsonElement jelem = gson.fromJson(responseBody, JsonElement.class);
-//                JsonObject jobj = jelem.getAsJsonObject();
+//                    JsonElement jelem = gson.fromJson(response.body().string(), JsonElement.class);
                     jObj = jelem.getAsJsonObject();
-//                jObj = (JsonObject) gson.toJsonTree(responseBody);
-//                jObj = new JsonObject(responseBody);
                 } catch (final JsonParseException | IllegalStateException e) {
                     writeErrorList("Error parsing Json " + e.toString());
                     Timber.e("ReqError %s", e.getMessage());

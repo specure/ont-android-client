@@ -16,8 +16,8 @@
 
 package at.specure.android.api.reqres.geolocation;
 
-import android.util.Log;
 
+import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
@@ -34,6 +34,7 @@ import java.io.IOException;
 
 import at.specure.android.api.jsons.Address;
 import at.specure.android.api.jsons.LocalizedGeopositionGet;
+import timber.log.Timber;
 
 /**
  * Created by michal.cadrik on 8/8/2017.
@@ -44,9 +45,9 @@ public class Geolocation {
 
 
     public static String requestDecodeLocation(double lat, double lon, GeolocationDecoderListener listener) {
-        final String requestString = "http://nominatim.openstreetmap.org/reverse?format=json&lat=" +
+        final String requestString = "https://nominatim.openstreetmap.org/reverse?format=json&lat=" +
                 Double.toString(lat) + "&lon=" + Double.toString(lon) + "&zoom=18&addressdetails=1";
-        Log.e("Request to:", requestString);
+        Timber.e("Request to: %s", requestString);
         String responseBody;
 //        final HttpParams params = new BasicHttpParams();
 //        HttpConnectionParams.setConnectionTimeout(params, 20000);
@@ -76,7 +77,7 @@ public class Geolocation {
         final ResponseHandler<String> responseHandler = new BasicResponseHandler();
         try {
             responseBody = client.execute(httpget, responseHandler);
-            Log.e("Response to:", requestString + "\n" + responseBody);
+            Timber.e("Response to: %s \n %s", requestString, responseBody);
 
             String city = "";
             try {
@@ -123,6 +124,9 @@ public class Geolocation {
                 }*/
                 return city;
             } catch (Exception e) {
+                return "";
+            } catch (IncompatibleClassChangeError e) {
+                FirebaseCrashlytics.getInstance().recordException(e);
                 return "";
             }
 

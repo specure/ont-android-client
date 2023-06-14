@@ -24,6 +24,9 @@ import android.util.Log;
 
 import com.specure.opennettest.BuildConfig;
 
+import timber.log.Timber;
+
+
 /**
  * Created by michal.cadrik on 8/9/2017.
  */
@@ -65,7 +68,8 @@ public class Database extends SQLiteOpenHelper {
                     Contract.ZeroMeasurementsColumns.TEL_DATA_STATE + " TEXT, " +
                     Contract.ZeroMeasurementsColumns.TEL_NET_SIM_COUNTRY + " TEXT, " +
 
-                    Contract.ZeroMeasurementsColumns.STATE + " INTEGER " +
+                    Contract.ZeroMeasurementsColumns.STATE + " INTEGER, " +
+                    Contract.ZeroMeasurementsColumns.TIMEZONE + " TEXT " +
                     " ) ";
 
     public static final String CREATE_TABLE_SIGNALS = " CREATE TABLE IF NOT EXISTS " + Tables.SIGNALS + " ( " +
@@ -123,13 +127,13 @@ public class Database extends SQLiteOpenHelper {
     }
 
     private static void execSql(SQLiteDatabase db, String command) {
-        Log.d(LOG_TAG, command);
+        Timber.d(command);
         db.execSQL(command);
     }
 
     @Override
     public void onCreate(SQLiteDatabase db) {
-        Log.d(LOG_TAG, "Creating database");
+        Timber.d( "Creating database");
         execSql(db, CREATE_TABLE_ZERO_MEASUREMENTS);
         execSql(db, CREATE_TABLE_CELL_LOCATIONS);
         execSql(db, CREATE_TABLE_SIGNALS);
@@ -139,7 +143,7 @@ public class Database extends SQLiteOpenHelper {
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-        Log.w(Database.class.getName(),
+        Timber.w(Database.class.getName(),
                 "Upgrading database from version " + oldVersion + " to "
                         + newVersion + ", which will destroy all old data");
         switch (oldVersion) {

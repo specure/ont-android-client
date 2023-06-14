@@ -1,58 +1,46 @@
-/*******************************************************************************
- * Copyright 2014-2017 Specure GmbH
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- *******************************************************************************/
-/*******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- ******************************************************************************/
+/*
+ Copyright 2015 SPECURE GmbH
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+ http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+ */
 package at.specure.android.screens.main;
 
+import android.Manifest;
+import android.app.ActivityManager;
 import android.app.ProgressDialog;
 import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
-import android.content.res.Configuration;
 import android.graphics.PixelFormat;
 import android.graphics.PorterDuff;
 import android.graphics.drawable.Drawable;
-import android.location.Location;
 import android.net.ConnectivityManager;
-import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
-import android.preference.PreferenceManager;
-import androidx.annotation.NonNull;
-import android.util.Log;
+import android.os.Handler;
+import android.os.IBinder;
 import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -60,242 +48,204 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnKeyListener;
 import android.view.Window;
-import android.view.WindowManager;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
-import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.Toast;
 
-import androidx.appcompat.app.ActionBarDrawerToggle;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.widget.Toolbar;
-import androidx.drawerlayout.widget.DrawerLayout;
-import androidx.fragment.app.FragmentManager;
-import androidx.fragment.app.Fragment;
-import androidx.fragment.app.FragmentTransaction;
-
-import com.crashlytics.android.Crashlytics;
 import com.google.android.gms.maps.model.LatLng;
-import com.google.gson.Gson;
+import com.google.firebase.analytics.FirebaseAnalytics;
 import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParseException;
+import com.mapbox.mapboxsdk.Mapbox;
+import com.specure.opennettest.BuildConfig;
 import com.specure.opennettest.R;
+import com.stepstone.apprating.listener.RatingDialogListener;
 
 import java.io.File;
 import java.io.PrintStream;
-import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
+import java.util.MissingResourceException;
 import java.util.Set;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.ActionBarDrawerToggle;
+import androidx.appcompat.widget.Toolbar;
+import androidx.core.content.ContextCompat;
+import androidx.core.content.PermissionChecker;
+import androidx.drawerlayout.widget.DrawerLayout;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
+import androidx.lifecycle.LiveData;
+import androidx.lifecycle.Observer;
+import androidx.lifecycle.ViewModelProviders;
+import androidx.loader.content.Loader;
+
+import javax.inject.Inject;
 
 import at.specure.android.api.calls.CheckHistoryTask;
 import at.specure.android.api.calls.CheckNewsTask;
 import at.specure.android.api.calls.CheckSettingsTask;
-import at.specure.android.api.calls.GetMapOptionsProvidersTask;
 import at.specure.android.api.calls.GetMeasurementServersTask;
 import at.specure.android.api.calls.LogTask;
+import at.specure.android.api.calls.RegistrationTask;
 import at.specure.android.api.calls.SendZeroMeasurementsTask;
-import at.specure.android.api.jsons.FilterGroup;
-import at.specure.android.api.jsons.MapFilterCountries;
 import at.specure.android.api.jsons.MeasurementServer;
-import at.specure.android.api.jsons.VoipTestResult;
+import at.specure.android.base.BaseFragment;
 import at.specure.android.configs.Config;
 import at.specure.android.configs.ConfigHelper;
+import at.specure.android.configs.FeatureConfig;
+import at.specure.android.configs.LocaleConfig;
 import at.specure.android.configs.LoopModeConfig;
+import at.specure.android.configs.MapConfig;
+import at.specure.android.configs.PermissionHandler;
+import at.specure.android.configs.PreferenceConfig;
+import at.specure.android.configs.PrivacyConfig;
+import at.specure.android.configs.SurveyConfig;
+import at.specure.android.configs.TermsAndConditionsConfig;
+import at.specure.android.configs.TestConfig;
 import at.specure.android.constants.AppConstants;
 import at.specure.android.screens.about.AboutFragment;
+import at.specure.android.screens.badges.newbadges.BadgeListActivity;
 import at.specure.android.screens.help.HelpFragment;
+import at.specure.android.screens.history.HistoryFilterFragment;
+import at.specure.android.screens.history.HistoryFragment;
+import at.specure.android.screens.main.main_activity_interfaces.ExpandedResultInterface;
+import at.specure.android.screens.main.main_activity_interfaces.HelpInterface;
+import at.specure.android.screens.main.main_activity_interfaces.MapInterface;
 import at.specure.android.screens.main.main_fragment.MainMenuFragment;
 import at.specure.android.screens.main.main_fragment.MainScreenState;
-import at.specure.android.screens.map.MapFilterTypes;
-import at.specure.android.screens.map.MapListEntry;
-import at.specure.android.screens.map.MapListSection;
+import at.specure.android.screens.map.MapBoxFragment;
 import at.specure.android.screens.map.MapProperties;
 import at.specure.android.screens.preferences.PreferenceActivity;
-import at.specure.android.screens.result.QoSCategoryPagerFragment;
-import at.specure.android.screens.result.QoSTestDetailPagerFragment;
-import at.specure.android.screens.result.TestResultDetailFragment;
 import at.specure.android.screens.result.adapter.result.OnCompleteListener;
-import at.specure.android.screens.terms.CheckFragment;
-import at.specure.android.screens.terms.TermsCheckFragment;
+import at.specure.android.screens.result.fragments.SimpleResultFragment;
+import at.specure.android.screens.result.fragments.main_result_pager.ResultPagerController;
+import at.specure.android.screens.result.fragments.main_result_pager.ResultPagerFragment;
+import at.specure.android.screens.result.fragments.qos_category.QoSCategoryPagerFragment;
+import at.specure.android.screens.result.fragments.qos_detail.QoSTestDetailPagerFragment;
+import at.specure.android.screens.sync.sync.SyncFragment;
+import at.specure.android.screens.terms.CheckType;
+import at.specure.android.screens.terms.check_fragment.CheckFragment;
+import at.specure.android.screens.terms.terms_check.TermsCheckFragment;
 import at.specure.android.test.TestService;
+import at.specure.android.util.AppRater;
 import at.specure.android.util.DebugPrintStream;
 import at.specure.android.util.EndBooleanTaskListener;
 import at.specure.android.util.EndTaskListener;
-import at.specure.android.util.GeoLocation;
 import at.specure.android.util.Helperfunctions;
 import at.specure.android.util.MeasurementTaskEndedListener;
+import at.specure.android.util.connectivity.RequestReadPhoneStatePermissionInterface;
+import at.specure.android.util.location.GeoLocationX;
+import at.specure.android.util.location.RequestBackgroundLocationPermissionInterface;
+import at.specure.android.util.location.RequestGPSPermissionInterface;
 import at.specure.android.util.net.NetworkInfoCollector;
+import at.specure.android.util.network.network.ActiveNetworkLiveData;
+import at.specure.androidX.Application;
+import at.specure.androidX.data.badges.BadgesViewModel;
+import at.specure.androidX.data.history.HistoryItem;
+import at.specure.androidX.data.history.HistoryLoader;
+import at.specure.androidX.data.map_filter.mappers.MapFilterSaver;
+import at.specure.androidX.data.map_filter.view_data.FilterGroup;
+import at.specure.androidX.data.map_filter.view_data.FilterLiveData;
+import at.specure.androidX.data.map_filter.view_data.FilterViewModel;
+import at.specure.androidX.test.LoopModeExecutorInterface;
 import at.specure.client.v2.task.result.QoSServerResult;
 import at.specure.client.v2.task.result.QoSServerResult.DetailType;
 import at.specure.client.v2.task.result.QoSServerResultCollection;
 import at.specure.client.v2.task.result.QoSServerResultDesc;
-import io.fabric.sdk.android.Fabric;
+import at.specure.info.strength.SignalStrengthLiveData;
+import at.specure.info.strength.SignalStrengthWatcher;
+import timber.log.Timber;
 
-import static androidx.fragment.app.FragmentTransaction.TRANSIT_FRAGMENT_OPEN;
+import static at.specure.android.configs.FeatureConfig.LAYOUT_SQUARE;
+import static at.specure.androidX.loaders.LoaderEnumerator.HISTORY_LOADER_ID;
 
-/**
- * @author
- */
-public class MainActivity extends AppCompatActivity implements MapProperties, DrawerActionListener {
-    /**
-     *
-     */
+public class MainActivity extends BasicActivity
+        implements
+        MapProperties,
+        DrawerActionListener,
+        MapInterface,
+        HelpInterface,
+        ExpandedResultInterface,
+        RatingDialogListener,
+        RequestGPSPermissionInterface,
+        SimpleResultFragment.OnFragmentInteractionListener,
+        LoopModeExecutorInterface, RequestReadPhoneStatePermissionInterface, RequestBackgroundLocationPermissionInterface {
+
+    private final static int PERM_REQ_LOC_COARSE_TEST = 0;
+    private final static int PERM_REQ_LOC_FINE_TEST = 1;
+    private final static int PERM_REQ_LOC_COARSE_START = 2;
+    private final static int PERM_REQ_LOC_FINE_START = 3;
+    private final static int PERM_REQ_READ_PHONE_STATE_TEST = 4;
+    private final static int PERM_REQ_READ_PHONE_STATE_START = 5;
+    private final static int PERM_REQ_BACKGROUND_LOCATION_ACCESS = 6;
+
     private final static boolean VIEW_HIERARCHY_SERVER_ENABLED = false;
-
-    /**
-     *
-     */
     private static final String DEBUG_TAG = "MainActivity";
-
-    /**
-     *
-     */
-    private FragmentManager fm;
-
-    /**
-     *
-     */
-    private GeoLocation geoLocation;
-
-    /**
-     *
-     */
+    List<HistoryItem> historyItems = new ArrayList<>();
+    private final HashMap<String, String> currentMapOptions = new HashMap<>();
     private CheckNewsTask newsTask;
-
-    /**
-     *
-     */
     private CheckSettingsTask settingsTask;
-
     private GetMeasurementServersTask measurementServersTask;
-
     private SendZeroMeasurementsTask sendZeroMeasurementsTask;
-
-    /**
-     *
-     */
     private CheckHistoryTask historyTask;
-
-    /**
-     *
-     */
     private String historyFilterDevices[];
-
-    /**
-     *
-     */
     private String historyFilterNetworks[];
-
-    /**
-     *
-     */
     private ArrayList<String> historyFilterDevicesFilter;
-
-    /**
-     *
-     */
     private ArrayList<String> historyFilterNetworksFilter;
-
-    /**
-     *
-     */
-    private final ArrayList<Map<String, String>> historyItemList = new ArrayList<Map<String, String>>();
-
-    /**
-     *
-     */
-    private final ArrayList<Map<String, String>> historyStorageList = new ArrayList<Map<String, String>>();
-
-    /**
-     *
-     */
     private int historyResultLimit;
-
-    /**
-     *
-     */
-    private final HashMap<String, String> currentMapOptions = new HashMap<String, String>();
-
-    /**
-     *
-     */
-    private HashMap<String, String> currentMapOptionTitles = new HashMap<String, String>();
-
-    /**
-     *
-     */
-    private ArrayList<MapListSection> mapTypeListSectionList;
-
-    /**
-     *
-     */
-    private HashMap<String, List<MapListSection>> mapFilterListSectionListMap;
-
-    private MapListEntry currentMapType;
-
-    // /
-
-    /**
-     *
-     */
+    at.specure.android.screens.map.MapInterface mapInterface;
     private IntentFilter mNetworkStateChangedFilter;
-
-    /**
-     *
-     */
     private BroadcastReceiver mNetworkStateIntentReceiver;
-
-    // /
-
     private boolean mapTypeSatellite;
-
-    /**
-     *
-     */
     private boolean historyDirty = true;
-
-
-
-    /**
-     *
-     */
-    private boolean mapFirstRun = true;
-
     private ProgressDialog loadingDialog;
-
     private DrawerLayout drawerLayout;
-
     private ListView drawerList;
-
     private ActionBarDrawerToggle drawerToggle;
-
     private boolean exitAfterDrawerClose = false;
-
     private Menu actionBarMenu;
-
-    private String title;
-
     private NetworkInfoCollector networkInfoCollector;
     private Toolbar toolbar;
-    private List<MeasurementServer> measurementsServers = new ArrayList<MeasurementServer>();
-    private MapFilterCountries mapFilterCountries;
-    private FilterGroup mapFilterOperatorList;
+    private List<MeasurementServer> measurementsServers = new ArrayList<>();
+    private boolean isPausing;
+    private InitialSetupInterface initialSetupInterface;
+    private Boolean isTesting = false;
+    private boolean firstTimeRun;
+    private FirebaseAnalytics mFirebaseAnalytics;
+    private FragmentManager fm;
+    private LiveData<List<FilterGroup>> filterLiveData;
+    private Observer<? super List<FilterGroup>> filterDataObserver = new Observer<List<FilterGroup>>() {
+        @Override
+        public void onChanged(List<FilterGroup> groups) {
+            initializeMapBox();
+        }
+    };
 
-    /**
-     *
-     */
+    @Inject
+    ActiveNetworkLiveData activeNetworkLiveData;
+
+    @Inject
+    SignalStrengthLiveData signalStrengthLiveData;
+
+
+    private void initializeMapBox() {
+//        BuildConfig.MAPBOX_APIKEY;
+        Mapbox.getInstance(this, MapFilterSaver.getChosenMapLayoutAccessToken(this));
+    }
+
     private void preferencesUpdate() {
-        final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+        final SharedPreferences preferences = PreferenceConfig.getPreferenceSharedPreferences(getApplicationContext());
 
         //remove control server version on start
         ConfigHelper.setControlServerVersion(this, null);
@@ -309,35 +259,70 @@ public class MainActivity extends AppCompatActivity implements MapProperties, Dr
 
             final int lastVersion = preferences.getInt("LAST_VERSION_CODE", -1);
             if (lastVersion == -1) {
-                preferences.edit().clear().commit();
-                Log.d(DEBUG_TAG, "preferences cleared");
+                preferences.edit().apply();
+                Timber.d(DEBUG_TAG + " preferences cleared");
             }
 
             if (lastVersion != clientVersion)
-                preferences.edit().putInt("LAST_VERSION_CODE", clientVersion).commit();
+                preferences.edit().putInt("LAST_VERSION_CODE", clientVersion).apply();
         } catch (final NameNotFoundException e) {
-            Log.e(DEBUG_TAG, "version of the application cannot be found", e);
+            Timber.e(e, DEBUG_TAG + "version of the application cannot be found");
         }
     }
 
-    /**
-     *
-     */
+
     @Override
     public void onCreate(final Bundle savedInstanceState) {
-        //Log.i("MAIN ACTIVITY", "onCreate");
-        try {
-            Fabric.with(this, new Crashlytics());
-        } catch (Exception e) {
-            e.printStackTrace();
-            // ignored... if you want to use crashlytics you must follow steps in the https://fabric.io/sign_up,
+
+//        PrivacyConfig.updateSettings(this);
+
+        if (PrivacyConfig.isAnalyticsPermitted(this.getApplicationContext())) {
+            mFirebaseAnalytics = FirebaseAnalytics.getInstance(this);
         }
+
+        if (savedInstanceState == null) {
+            firstTimeRun = true;
+        }
+
+        if (mFirebaseAnalytics != null) {
+            mFirebaseAnalytics.setUserId(ConfigHelper.getUUID(this.getApplicationContext()));
+            String isoLanguage = "";
+            try {
+                isoLanguage = Locale.getDefault().getISO3Language();
+            } catch (MissingResourceException e) {
+                Timber.e("MISSING ISO3 language %s", Locale.getDefault().toString());
+            }
+
+            mFirebaseAnalytics.setUserProperty("Language", isoLanguage);
+            Bundle bundle = new Bundle();
+            bundle.putString("Language3", isoLanguage);
+            bundle.putString("Language2", Locale.getDefault().getLanguage());
+            mFirebaseAnalytics.logEvent("AppStartLocale", bundle);
+            if ((isoLanguage != null) && (!isoLanguage.isEmpty())) {
+                mFirebaseAnalytics.logEvent(isoLanguage, bundle);
+            }
+            mFirebaseAnalytics.logEvent(FirebaseAnalytics.Event.APP_OPEN, bundle);
+        }
+
+        FilterViewModel filterViewModel = ViewModelProviders.of(this).get(FilterViewModel.class);
+        filterLiveData = filterViewModel.getData();
+        filterLiveData.observe(this, filterDataObserver);
+        List<FilterGroup> value = filterLiveData.getValue();
+        if (value != null) {
+            initializeMapBox();
+        } else {
+            Mapbox.getInstance(this, BuildConfig.MAPBOX_APIKEY);
+        }
+
+        if (checkForGPSPermissions(PERM_REQ_LOC_COARSE_START, PERM_REQ_LOC_FINE_START)) {
+            checkForReadPhoneStatePermissions(PERM_REQ_READ_PHONE_STATE_START);
+        }
+
         restoreInstance(savedInstanceState);
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
         super.onCreate(savedInstanceState);
         NetworkInfoCollector.init(this);
-        networkInfoCollector = NetworkInfoCollector.getInstance();
-
+        networkInfoCollector = NetworkInfoCollector.getInstance(this.getApplicationContext());
 
         preferencesUpdate();
         setContentView(R.layout.main_with_navigation_drawer);
@@ -346,24 +331,15 @@ public class MainActivity extends AppCompatActivity implements MapProperties, Dr
             ViewServer.get(this).addWindow(this);
         }
 
-        toolbar = (Toolbar) findViewById(R.id.toolbar);
+        toolbar = findViewById(R.id.toolbar);
         this.setSupportActionBar(toolbar);
 
-//        android.support.v7.app.ActionBar actionBar = getSupportActionBar();
-//        actionBar.setDisplayOptions(ActionBar.DISPLAY_SHOW_HOME | ActionBar.DISPLAY_SHOW_TITLE);
-//        actionBar.setDisplayUseLogoEnabled(true);
-//        actionBar.setBackgroundDrawable(new ColorDrawable(Color.WHITE));
-
-
         // initialize the navigation drawer with the main menu list adapter:
-
         MainMenuListAdapter mainMenuAdapter = new MainMenuListAdapter(this,
                 MainMenuUtil.getMenuTitles(getResources(), this), MainMenuUtil.getMenuIds(this));
 
-        drawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
-        drawerList = (ListView) findViewById(R.id.left_drawer);
-
-//        drawerToggle = new EndDrawerToggle(this, drawerLayout, toolbar, R.string.title_screen_empty, R.string.title_screen_empty, this);
+        drawerLayout = findViewById(R.id.drawer_layout);
+        drawerList = findViewById(R.id.left_drawer);
 
         drawerToggle = new ActionBarDrawerToggle(this, drawerLayout, toolbar, R.string.page_title_title_page, R.string.page_title_title_page) {
 
@@ -383,14 +359,14 @@ public class MainActivity extends AppCompatActivity implements MapProperties, Dr
         drawerLayout.setOnKeyListener(new OnKeyListener() {
             @Override
             public boolean onKey(View v, int keyCode, KeyEvent event) {
-                if (KeyEvent.KEYCODE_BACK == event.getKeyCode() && exitAfterDrawerClose) {
+                if ((KeyEvent.KEYCODE_BACK == event.getKeyCode() && exitAfterDrawerClose) && ((initialSetupInterface != null) && !(initialSetupInterface instanceof TermsCheckFragment))) {
                     onBackPressed();
                     return true;
                 }
                 return false;
             }
         });
-        drawerLayout.setDrawerListener(drawerToggle);
+        drawerLayout.addDrawerListener(drawerToggle);
         drawerList.setAdapter(mainMenuAdapter);
         drawerList.setOnItemClickListener(new OnItemClickListener() {
             final List<Integer> menuIds = MainMenuUtil.getMenuActionIds(MainActivity.this);
@@ -399,22 +375,20 @@ public class MainActivity extends AppCompatActivity implements MapProperties, Dr
             public void onItemClick(AdapterView<?> parent, View view,
                                     int position, long id) {
                 selectMenuItem(menuIds.get(position));
-//                selectMenuItem((int) id);
                 drawerLayout.closeDrawers();
             }
         });
 
-//        actionBar.setDisplayHomeAsUpEnabled(true);
-//        actionBar.setHomeButtonEnabled(true);
-
         // Do something against banding effect in gradients
-        // Dither flag might mess up on certain devices??
         final Window window = getWindow();
         window.setFormat(PixelFormat.RGBA_8888);
-        window.addFlags(WindowManager.LayoutParams.FLAG_DITHER);
 
-        androidx.preference.PreferenceManager.setDefaultValues(this, R.xml.preferences, false);
-
+        // Setzt Default-Werte, wenn noch keine Werte vorhanden
+//        if (ConfigHelper.isSecretEntered(this)) {
+//            PreferenceManager.setDefaultValues(this, R.xml.preferences_after_secret, false);
+//        } else {
+//            PreferenceManager.setDefaultValues(this, R.xml.preferences, false);
+//        }
 
         final String uuid = ConfigHelper.getUUID(getApplicationContext());
 
@@ -425,23 +399,30 @@ public class MainActivity extends AppCompatActivity implements MapProperties, Dr
                 // clear fragment back stack
                 fm.popBackStack(fm.getBackStackEntryAt(0).getId(), FragmentManager.POP_BACK_STACK_INCLUSIVE);
 
-//            getActionBar().hide();
             setLockNavigationDrawer(true);
 
-            showTermsCheck();
+            if (TermsAndConditionsConfig.shouldShowPrivacyPolicy(this)) {
+                showTermsCheck(CheckType.TERMS_AND_PRIVACY);
+            } else {
+                showTermsCheck(null);
+            }
+
         } else {
             currentMapOptions.put("highlight", uuid);
             if (fragment == null) {
+                //noinspection ConstantConditions,ConstantIfStatement
                 if (false) // deactivated for si // ! ConfigHelper.isNDTDecisionMade(this))
                 {
-                    showTermsCheck();
+                    if (TermsAndConditionsConfig.shouldShowPrivacyPolicy(this)) {
+                        showTermsCheck(CheckType.TERMS_AND_PRIVACY);
+                    } else {
+                        showTermsCheck(null);
+                    }
                     showNdtCheck();
                 } else
                     initApp(true);
             }
         }
-
-        geoLocation = new MainGeoLocation(getApplicationContext());
 
         mNetworkStateChangedFilter = new IntentFilter();
         mNetworkStateChangedFilter.addAction(ConnectivityManager.CONNECTIVITY_ACTION);
@@ -449,15 +430,13 @@ public class MainActivity extends AppCompatActivity implements MapProperties, Dr
         mNetworkStateIntentReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(final Context context, final Intent intent) {
-                if (intent.getAction().equals(ConnectivityManager.CONNECTIVITY_ACTION)) {
+                if (intent.getAction() != null && intent.getAction().equals(ConnectivityManager.CONNECTIVITY_ACTION)) {
                     final boolean connected = !intent.getBooleanExtra(ConnectivityManager.EXTRA_NO_CONNECTIVITY, false);
-                    final boolean isFailover = intent.getBooleanExtra(ConnectivityManager.EXTRA_IS_FAILOVER, false);
-
+                    final boolean isFailOver = intent.getBooleanExtra(ConnectivityManager.EXTRA_IS_FAILOVER, false);
 
                     if (connected) {
                         if (networkInfoCollector != null) {
                             networkInfoCollector.setHasConnectionFromAndroidApi(true);
-
                         }
                     } else {
                         if (networkInfoCollector != null) {
@@ -465,10 +444,20 @@ public class MainActivity extends AppCompatActivity implements MapProperties, Dr
                         }
                     }
 
-                    Log.i(DEBUG_TAG, "CONNECTED: " + connected + " FAILOVER: " + isFailover);
+                    Timber.i(" %s  CONNECTED:  %s  FAILOVER:  %s", DEBUG_TAG, connected, isFailOver);
                 }
             }
         };
+//        BadgesConfig.setAllBadgeReceived(this);
+    }
+
+    private void resetMapFilter() {
+        String s = FeatureConfig.countrySpecificOperatorsCountryCode(this);
+        if (s.isEmpty()) {
+            ConfigHelper.setSelectedCountryInMapFilter("all", this);
+        } else {
+            ConfigHelper.setSelectedCountryInMapFilter(s, this);
+        }
     }
 
     @Override
@@ -491,20 +480,39 @@ public class MainActivity extends AppCompatActivity implements MapProperties, Dr
         inflater.inflate(R.menu.action_menu, menu);
         this.actionBarMenu = menu;
 
-        title = getTitle(getCurrentFragmentName());
-        refreshActionBar(getCurrentFragmentName());
+        Timber.e("MActivity onCreateOptionsMenu: CREATED");
 
         for (int i = 0; i < menu.size(); i++) {
             Drawable drawable = menu.getItem(i).getIcon();
             if (drawable != null) {
                 drawable.mutate();
-                drawable.setColorFilter(getResources().getColor(R.color.toolbar_icon_overlay), PorterDuff.Mode.SRC_IN);
+                drawable.setColorFilter(Helperfunctions.getColor(R.color.toolbar_icon_overlay, getApplicationContext()), PorterDuff.Mode.SRC_IN);
+            }
+        }
+
+        Timber.e("MENU setvisibleMenuItems MainActivity");
+        setVisibleMenuItems();
+
+        Fragment currentFragment = getCurrentFragment();
+        if (currentFragment != null) {
+            if (currentFragment instanceof InitialSetupInterface) {
+                ((InitialSetupInterface) currentFragment).setActionBarItems(this);
+
+            }
+        }
+
+        if (initialSetupInterface != null) {
+            initialSetupInterface.setActionBarItems(this);
+
+            if (initialSetupInterface instanceof TermsCheckFragment) {
+                setLockNavigationDrawer(true);
+                setToolbarVisible(View.GONE);
             }
         }
 
         return true;
-        //return super.onCreateOptionsMenu(menu);
     }
+
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
@@ -521,9 +529,6 @@ public class MainActivity extends AppCompatActivity implements MapProperties, Dr
         return true;
     }
 
-    /**
-     * @param id
-     */
     public void selectMenuItem(int id) {
         if (id != R.id.action_settings && id != R.id.action_title_page && id != R.id.action_info) {
             if (networkInfoCollector != null) {
@@ -533,8 +538,6 @@ public class MainActivity extends AppCompatActivity implements MapProperties, Dr
                 }
             }
         }
-
-
         switch (id) {
             case R.id.action_title_page:
                 popBackStackFull();
@@ -554,14 +557,11 @@ public class MainActivity extends AppCompatActivity implements MapProperties, Dr
             case R.id.action_settings:
                 showSettings();
                 break;
-            case R.id.action_log:
-                showLogFragment();
+            case R.id.action_menu_filter:
+                showFilter();
                 break;
             case R.id.action_stats:
                 showStatistics();
-                break;
-            /*case R.id.action_menu_filter:
-                showFilter();
                 break;
             case R.id.action_menu_sync:
                 showSync();
@@ -577,112 +577,216 @@ public class MainActivity extends AppCompatActivity implements MapProperties, Dr
                 break;
             case R.id.action_menu_map:
                 showMapFromPager();
-                break;*/
+                break;
+            case R.id.action_badges:
+                showBadges();
+                break;
+            case R.id.action_survey:
+                showSurvey();
+                break;
+
+//            case R.id.action_menu_map_info:
+//                if (mapInterface != null) {
+//                    mapInterface.openInfo();
+//                }
+//                break;
+
+            case R.id.action_menu_my_position:
+                if (mapInterface != null) {
+                    mapInterface.centerToMyPosition();
+                }
+                break;
+
+            case R.id.action_menu_map_filter:
+                if (mapInterface != null) {
+                    mapInterface.openMapFilter();
+                }
+                break;
+
+            case R.id.action_menu_map_settings:
+                if (mapInterface != null) {
+                    mapInterface.openMapSettings();
+                }
+                break;
+//            case R.id.action_netstat:
+//                showNetStatFragment();
+//                break;
+//            case R.id.action_log:
+//                showLogFragment();
+//                break;
 
         }
     }
 
-    @SuppressWarnings("unchecked")
+    private void showSurvey() {
+        SurveyConfig.openSurveyPage(this);
+    }
+
+
+    @SuppressWarnings({"unchecked", "ConstantConditions"})
     protected void restoreInstance(Bundle b) {
-        if (b == null)
-            return;
-        historyFilterDevices = (String[]) b.getSerializable("historyFilterDevices");
-        historyFilterNetworks = (String[]) b.getSerializable("historyFilterNetworks");
-        historyFilterDevicesFilter = (ArrayList<String>) b.getSerializable("historyFilterDevicesFilter");
-        historyFilterNetworksFilter = (ArrayList<String>) b.getSerializable("historyFilterNetworksFilter");
-        historyItemList.clear();
-        historyItemList.addAll((ArrayList<Map<String, String>>) b.getSerializable("historyItemList"));
-        historyStorageList.clear();
-        historyStorageList.addAll((ArrayList<Map<String, String>>) b.getSerializable("historyStorageList"));
-        historyResultLimit = b.getInt("historyResultLimit");
-        currentMapOptions.clear();
-        currentMapOptions.putAll((HashMap<String, String>) b.getSerializable("currentMapOptions"));
-        currentMapOptionTitles = (HashMap<String, String>) b.getSerializable("currentMapOptionTitles");
-        mapTypeListSectionList = (ArrayList<MapListSection>) b.getSerializable("mapTypeListSectionList");
-        mapFilterListSectionListMap = (HashMap<String, List<MapListSection>>) b.getSerializable("mapFilterListSectionListMap");
-        currentMapType = (MapListEntry) b.getSerializable("currentMapType");
+        if (b != null) {
+//            historyFilterDevices = (String[]) b.getSerializable("historyFilterDevices");
+//            historyFilterNetworks = (String[]) b.getSerializable("historyFilterNetworks");
+//            historyFilterDevicesFilter = (ArrayList<String>) b.getSerializable("historyFilterDevicesFilter");
+//            historyFilterNetworksFilter = (ArrayList<String>) b.getSerializable("historyFilterNetworksFilter");
+//            historyItemList.clear();
+//            historyItemList.addAll(b.getSerializable("historyItemList") != null ? (ArrayList<Map<String, String>>) b.getSerializable("historyItemList") : null);
+//            historyStorageList.clear();
+//            historyStorageList.addAll(b.getSerializable("historyStorageList") != null ? (ArrayList<Map<String, String>>) b.getSerializable("historyStorageList") : null);
+            historyResultLimit = b.getInt("historyResultLimit");
+//            currentMapOptions.clear();
+//            currentMapOptions.putAll(b.getSerializable("currentMapOptions") != null ? (HashMap<String, String>) b.getSerializable("currentMapOptions") : null);
+//            currentMapOptionTitles = (HashMap<String, String>) b.getSerializable("currentMapOptionTitles");
+//            mapTypeListSectionList = (ArrayList<MapListSection>) b.getSerializable("mapTypeListSectionList");
+//            mapFilterListSectionListMap = (HashMap<String, List<MapListSection>>) b.getSerializable("mapFilterListSectionListMap");
+//            currentMapType = (MapListEntry) b.getSerializable("currentMapType");
+//            mapFilterCountries = new MapFilterCountries();
+//            mapFilterCountries.countries = (ArrayList<MapFilterCountry>) b.getSerializable("mapFilterCountriesList");
+        }
     }
 
     @Override
     protected void onSaveInstanceState(Bundle b) {
         super.onSaveInstanceState(b);
-        b.putSerializable("historyFilterDevices", historyFilterDevices);
-        b.putSerializable("historyFilterNetworks", historyFilterNetworks);
-        b.putSerializable("historyFilterDevicesFilter", historyFilterDevicesFilter);
-        b.putSerializable("historyFilterNetworksFilter", historyFilterNetworksFilter);
-        b.putSerializable("historyItemList", historyItemList);
-        b.putSerializable("historyStorageList", historyStorageList);
+        isPausing = true;
+//        b.putSerializable("historyFilterDevices", historyFilterDevices);
+//        b.putSerializable("historyFilterNetworks", historyFilterNetworks);
+//        b.putSerializable("historyFilterDevicesFilter", historyFilterDevicesFilter);
+//        b.putSerializable("historyFilterNetworksFilter", historyFilterNetworksFilter);
+//        b.putSerializable("historyItemList", historyItemList);
+//        b.putSerializable("historyStorageList", historyStorageList);
         b.putInt("historyResultLimit", historyResultLimit);
-        b.putSerializable("currentMapOptions", currentMapOptions);
-        b.putSerializable("currentMapOptionTitles", currentMapOptionTitles);
-        b.putSerializable("mapTypeListSectionList", mapTypeListSectionList);
-        b.putSerializable("mapFilterListSectionListMap", mapFilterListSectionListMap);
-        b.putSerializable("currentMapType", currentMapType);
-
+//        b.putSerializable("currentMapOptions", currentMapOptions);
+//        b.putSerializable("currentMapOptionTitles", currentMapOptionTitles);
+//        b.putSerializable("mapTypeListSectionList", mapTypeListSectionList);
+//        b.putSerializable("mapFilterListSectionListMap", mapFilterListSectionListMap);
+//        if (mapFilterCountries != null) {
+//            b.putSerializable("mapFilterCountriesList", mapFilterCountries.countries);
+//        }
+//        b.putSerializable("currentMapType", currentMapType);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
+
+        if (LocaleConfig.isUserAbleToChangeLanguage(this)) {
+            if (LocaleConfig.isLanguageChanged(this)) {
+                LocaleConfig.setLanguageChangedDone(this);
+                LocaleConfig.initializeApp(this, true);
+            }
+        }
+
+        setSendZeroMeasurements();
+
+        isPausing = false;
         ViewServer.get(this).setFocusedWindow(this);
+//        refreshMenuItems();
+
+        BaseFragment currentFragment = (BaseFragment) getCurrentFragment();
+        if (currentFragment != null) {
+            if (currentFragment instanceof MapBoxFragment) {
+                MapBoxFragment fragment = (MapBoxFragment) currentFragment;
+                fragment.setActionBarItems(this);
+            }
+//            currentFragment.setActionBarItems(this);
+        }
+//        if (currentFragment instanceof MapBoxFragment) {
+//            showMap(true);
+//        }
+//        startTestingService(TestService.ACTION_START_SERVICE);
 
     }
 
-    /**
-     *
-     */
+    @Override
+    public boolean startLoopMode() {
+        MainScreenState mainScreenState = preStartTest(MainScreenState.DEFAULT);
+        if (mainScreenState == MainScreenState.LOOP_MODE_ACTIVE) {
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public boolean startTest() {
+        MainScreenState mainScreenState = preStartTest(MainScreenState.DEFAULT);
+        if (mainScreenState == MainScreenState.TESTING) {
+            return true;
+        }
+        return false;
+    }
+
+    public MainScreenState preStartTest(MainScreenState state) {
+        return preRunTest(state);
+    }
+
+    @Override
+    public void stopLoopMode() {
+        final Intent stopIntent = new Intent(TestService.ACTION_STOP_LOOP, null, this, TestService.class);
+        this.startService(stopIntent);
+    }
+
+    @Override
+    public void stopTest() {
+        final Intent stopIntent = new Intent(TestService.ACTION_ABORT_TEST, null, this, TestService.class);
+        this.startService(stopIntent);
+    }
+
+    private void refreshMenuItems() {
+        invalidateOptionsMenu();
+        supportInvalidateOptionsMenu();
+        MainMenuListAdapter mainMenuAdapter = new MainMenuListAdapter(this,
+                MainMenuUtil.getMenuTitles(getResources(), this), MainMenuUtil.getMenuIds(this));
+
+        drawerList = findViewById(R.id.left_drawer);
+        if (drawerList != null) {
+            drawerList.setAdapter(mainMenuAdapter);
+            drawerList.setOnItemClickListener(new OnItemClickListener() {
+                final List<Integer> menuIds = MainMenuUtil.getMenuActionIds(MainActivity.this);
+
+                @Override
+                public void onItemClick(AdapterView<?> parent, View view,
+                                        int position, long id) {
+                    selectMenuItem(menuIds.get(position));
+                    drawerLayout.closeDrawers();
+                }
+            });
+        }
+    }
+
     @Override
     public void onStart() {
-        Log.i(DEBUG_TAG, "onStart");
+        isPausing = false;
+        Timber.i(" %s onStart", DEBUG_TAG);
         super.onStart();
 
         registerReceiver(mNetworkStateIntentReceiver, mNetworkStateChangedFilter);
         // init location Manager
 
         if (ConfigHelper.isTCAccepted(this) && ConfigHelper.isNDTDecisionMade(this)) {
-            geoLocation.start();
+            boolean permissionGranted = checkForGPSPermissions(PERM_REQ_LOC_COARSE_START, PERM_REQ_LOC_FINE_START);
+            if (permissionGranted) {
+                checkForReadPhoneStatePermissions(PERM_REQ_READ_PHONE_STATE_START);
+                GeoLocationX.getInstance(this.getApplication()).getLastKnownLocation(this, null);
+            }
         }
-
-        title = getTitle(getCurrentFragmentName());
-        refreshActionBar(getCurrentFragmentName());
     }
 
-    /**
-     *
-     */
     @Override
     public void onStop() {
-        Log.i(DEBUG_TAG, "onStop");
+        Timber.i("%s onStop", DEBUG_TAG);
         super.onStop();
         stopBackgroundProcesses();
         unregisterReceiver(mNetworkStateIntentReceiver);
     }
 
-    public void setOverlayVisibility(boolean isVisible) {
-        final LinearLayout overlay = (LinearLayout) findViewById(R.id.overlay);
-
-        if (isVisible) {
-            overlay.setVisibility(View.VISIBLE);
-            overlay.setClickable(true);
-            overlay.bringToFront();
-        } else {
-            overlay.setVisibility(View.GONE);
-        }
-    }
-
-    /**
-     * @param context
-     */
-    private void checkNews(final Context context) {
+    private void checkNews() {
         newsTask = new CheckNewsTask(this);
         newsTask.execute();
-        // newsTask.setEndTaskListener(this);
     }
 
-    /**
-     * @param context
-     */
-    private void checkLogs(final Context context, final OnCompleteListener listener) {
+    private void checkLogs(final OnCompleteListener listener) {
         if (ConfigHelper.DEFAULT_SEND_LOG_TO_CONTROL_SERVER) {
             final LogTask logTask = new LogTask(this, listener);
             logTask.execute();
@@ -698,9 +802,7 @@ public class MainActivity extends AppCompatActivity implements MapProperties, Dr
         return (historyFilterDevices != null && historyFilterNetworks != null);
     }
 
-    /**
-     *
-     */
+    @SuppressWarnings("SameParameterValue")
     public void checkSettings(boolean force, final EndTaskListener endTaskListener) {
         if (settingsTask != null && settingsTask.getStatus() == AsyncTask.Status.RUNNING)
             return;
@@ -718,26 +820,33 @@ public class MainActivity extends AppCompatActivity implements MapProperties, Dr
                     endTaskListener.taskEnded(result);
             }
         });
-
         settingsTask.execute();
     }
 
 
     public void setSendZeroMeasurements() {
-        if (sendZeroMeasurementsTask != null && sendZeroMeasurementsTask.getStatus() == AsyncTask.Status.RUNNING)
-            return;
+        if ((this != null) && (ConfigHelper.detectZeroMeasurementEnabled(this))) {
+            if (sendZeroMeasurementsTask != null && sendZeroMeasurementsTask.getStatus() == AsyncTask.Status.RUNNING)
+                return;
 
-        sendZeroMeasurementsTask = new SendZeroMeasurementsTask(this);
-        sendZeroMeasurementsTask.setOnCompleteListener(new EndBooleanTaskListener() {
-            @Override
-            public void taskEnded(boolean result) {
-                // If something want to displayed after un/successful sending on the main thread
-            }
-        });
-        sendZeroMeasurementsTask.execute();
+            sendZeroMeasurementsTask = new SendZeroMeasurementsTask(this);
+            sendZeroMeasurementsTask.setOnCompleteListener(new EndBooleanTaskListener() {
+                @Override
+                public void taskEnded(boolean result) {
+                    Timber.e("ZERO sent:  %s", result);
+                    // If something want to displayed after un/successful sending on the main thread
+                }
+            });
+            sendZeroMeasurementsTask.execute();
+        }
     }
 
     public void getMeasurementServers(final OnMeasurementServersLoaded onMeasurementServersLoaded, at.specure.android.api.jsons.Location location, boolean forceLoad) {
+        if (!forceLoad && (this.measurementsServers != null) && (!this.measurementsServers.isEmpty())) {
+            onMeasurementServersLoaded.onServersLoaded(this.measurementsServers);
+            return;
+        }
+
         if (measurementServersTask != null && measurementServersTask.getStatus() == AsyncTask.Status.RUNNING)
             return;
 
@@ -745,6 +854,14 @@ public class MainActivity extends AppCompatActivity implements MapProperties, Dr
 
             //run sending zero measurements
             setSendZeroMeasurements();
+
+            if (measurementServersTask != null) {
+                boolean b = measurementServersTask.shouldRun(location);
+                if (!b) {
+                    onMeasurementServersLoaded.onServersLoaded(measurementServersTask.getServers());
+                    return;
+                }
+            }
 
             measurementServersTask = new GetMeasurementServersTask(this);
             measurementServersTask.setOnCompleteListener(new MeasurementTaskEndedListener() {
@@ -759,8 +876,6 @@ public class MainActivity extends AppCompatActivity implements MapProperties, Dr
             updateMeasurementServers(measurementServersTask.getServers());
             onMeasurementServersLoaded.onServersLoaded(measurementServersTask.getServers());
         }
-
-
     }
 
     private void updateMeasurementServers(List<MeasurementServer> result) {
@@ -768,6 +883,7 @@ public class MainActivity extends AppCompatActivity implements MapProperties, Dr
     }
 
 
+    @SuppressWarnings("SameParameterValue")
     public void waitForSettings(boolean waitForUUID, boolean waitForHistoryFilters, boolean forceWait) {
         final boolean haveUuid = haveUuid();
         if (forceWait || (waitForUUID && !haveUuid) || (waitForHistoryFilters && !haveHistoryFilters())) {
@@ -787,15 +903,14 @@ public class MainActivity extends AppCompatActivity implements MapProperties, Dr
         }
     }
 
-    /**
-     *
-     */
+    public MainScreenState startTest(MainScreenState state) {
+        checkForBackgroundLocationPermissions(PERM_REQ_BACKGROUND_LOCATION_ACCESS);
+        checkForGPSPermissions(PERM_REQ_LOC_COARSE_TEST, PERM_REQ_LOC_FINE_TEST);
+        return preRunTest(state);
+    }
 
+    private MainScreenState preRunTest(MainScreenState state) {
 
-    /**
-     * @param popStack
-     */
-    public MainScreenState startTest(final boolean popStack, MainScreenState state) {
         if (networkInfoCollector != null) {
             if (!networkInfoCollector.hasConnectionFromAndroidApi()) {
                 showNoNetworkConnectionToast();
@@ -803,38 +918,112 @@ public class MainActivity extends AppCompatActivity implements MapProperties, Dr
             }
         }
 
+        if (!PrivacyConfig.isClientUUIDPersistent(this.getApplicationContext())) {
+            RegistrationTask registrationTask = new RegistrationTask(this);
+            registrationTask.setEndTaskListener(new EndTaskListener() {
+                @Override
+                public void taskEnded(JsonArray result) {
+                    MainScreenState mainScreenState = fireTest();
+                    try {
+                        MainMenuFragment currentFragment = (MainMenuFragment) getCurrentFragment();
+                        if (currentFragment != null) {
+                            currentFragment.changeScreenState(mainScreenState, "Main Activity - popBackStackFull", true);
+                        }
+                    } catch (ClassCastException e) {
+                        //DO nothing
+                    }
+                }
+            });
+            registrationTask.execute();
+            return MainScreenState.DEFAULT;
+        } else {
+            return fireTest();
+        }
+    }
 
+    @NonNull
+    private MainScreenState fireTest() {
         final boolean loopMode = LoopModeConfig.isLoopMode(this);
         if (loopMode) {
-            //TOTO - HistoryDirty
-            setHistoryDirty(true);
+            ConfigHelper.setHistoryIsDirty(this, true);
+            LoopModeConfig.resetCurrentTestNumber(this);
+            startTestingService(TestService.ACTION_START_LOOP);
             return MainScreenState.LOOP_MODE_ACTIVE;
         } else {
-//            FragmentTransaction ft;
-//            ft = fm.beginTransaction();
-//            final RMBTTestFragment rmbtTestFragment = new RMBTTestFragment();
-//            ft.replace(R.id.fragment_content, rmbtTestFragment, AppConstants.PAGE_TITLE_TEST);
-//            ft.addToBackStack(AppConstants.PAGE_TITLE_TEST);
-//            ft.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN);
-//            if (popStack)
-//                fm.popBackStack();
-//            ft.commit();
-
-            final Intent service = new Intent(TestService.ACTION_START_TEST, null, this, TestService.class);
-            startService(service);
+            startTestingService(TestService.ACTION_START_TEST);
             return MainScreenState.TESTING;
         }
     }
 
-    public boolean isLoopModeRunning() {
+    private void startTestingService(String actionStartService) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            startForegroundService(new Intent(actionStartService, null, this, TestService.class));
+        } else {
+            startService(new Intent(actionStartService, null, this, TestService.class));
+        }
+    }
+
+    public void checkLoopModeRunning(LoopModeActivityCheckListener listener) {
+
+        //TODO: bind to it and chcek if loop is running
+
+
+        // Bind to TestService
+        final Intent serviceIntent = new Intent(this, TestService.class);
+        boolean b = this.bindService(serviceIntent, new ServiceConnection() {
+            @Override
+            public void onServiceConnected(ComponentName name, IBinder service) {
+                final TestService.RMBTBinder binder = (TestService.RMBTBinder) service;
+                TestService testService = binder.getService();
+                boolean loopMode = testService.isLoopModeRunning();
+                if (listener != null) {
+                    listener.onLoopModeRunning(loopMode);
+                }
+            }
+
+            @Override
+            public void onServiceDisconnected(ComponentName name) {
+
+            }
+        }, Context.BIND_AUTO_CREATE);
+    }
+
+    public boolean isTestRunning() {
+        return isMyServiceRunning(TestService.class);
+    }
+
+    private boolean isMyServiceRunning(Class<?> serviceClass) {
+        ActivityManager manager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
+        if (manager != null) {
+            for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
+                if (serviceClass.getName().startsWith(service.service.getClassName())) {
+                    if (this.getPackageName().equalsIgnoreCase(service.service.getPackageName())) {
+                        return true;
+                    }
+                }
+            }
+        }
         return false;
     }
 
-    public void showTermsCheck() {
-        popBackStackFull();
+    private void showShareResultsIntent() {
+        Fragment f = getCurrentFragment();
+        if (f != null) {
+            switch (FeatureConfig.showLayoutTheme(this)) {
+                case LAYOUT_SQUARE:
+                    ((SimpleResultFragment) f).startShareResultsIntent();
+                    break;
+                default:
+                    ((ResultPagerFragment) f).getPagerAdapter().startShareResultsIntent();
 
-        final androidx.fragment.app.FragmentTransaction ft = fm.beginTransaction();
-        ft.replace(R.id.fragment_content, TermsCheckFragment.getInstance(null), AppConstants.PAGE_TITLE_TERMS_CHECK);
+            }
+        }
+    }
+
+    public void showTermsCheck(CheckType checkType) {
+        popBackStackFull();
+        final FragmentTransaction ft = fm.beginTransaction();
+        ft.replace(R.id.fragment_content, TermsCheckFragment.getInstance(checkType), AppConstants.PAGE_TITLE_TERMS_CHECK);
         ft.commit();
     }
 
@@ -867,28 +1056,39 @@ public class MainActivity extends AppCompatActivity implements MapProperties, Dr
      * information commissioner check
      */
     public void showIcCheck() {
-        final androidx.fragment.app.FragmentTransaction ft = fm.beginTransaction();
-        ft.replace(R.id.fragment_content, CheckFragment.newInstance(CheckFragment.CheckType.INFORMATION_COMMISSIONER), AppConstants.PAGE_TITLE_CHECK_INFORMATION_COMMISSIONER);
+        final FragmentTransaction ft = fm.beginTransaction();
+        ft.replace(R.id.fragment_content, CheckFragment.newInstance(CheckType.INFORMATION_COMMISSIONER), AppConstants.PAGE_TITLE_CHECK_INFORMATION_COMMISSIONER);
         ft.addToBackStack(AppConstants.PAGE_TITLE_CHECK_INFORMATION_COMMISSIONER);
         ft.commit();
     }
 
     public void showNdtCheck() {
-        final androidx.fragment.app.FragmentTransaction ft = fm.beginTransaction();
-        ft.replace(R.id.fragment_content, CheckFragment.newInstance(CheckFragment.CheckType.NDT), AppConstants.PAGE_TITLE_NDT_CHECK);
+        final FragmentTransaction ft = fm.beginTransaction();
+        ft.replace(R.id.fragment_content, CheckFragment.newInstance(CheckType.NDT), AppConstants.PAGE_TITLE_NDT_CHECK);
         ft.addToBackStack(AppConstants.PAGE_TITLE_NDT_CHECK);
         ft.commit();
     }
 
     public void showResultsAfterTest(String testUuid) {
         popBackStackFull();
+        TestConfig.setShouldShowResults(false);
+        final SimpleResultFragment fragment = SimpleResultFragment.newInstance(testUuid);
+        showFragment(AppConstants.PAGE_TITLE_HISTORY_PAGER, fragment);
+    }
 
-        /* SHOW RESULT */
+    public void showDetailedResultsAfterTest(String testUuid) {
+        popBackStackFull();
+        TestConfig.setShouldShowResults(false);
+        final ResultPagerFragment fragment = new ResultPagerFragment();
+        final Bundle args = new Bundle();
+        args.putString(ResultPagerController.ARG_TEST_UUID, testUuid);
+        fragment.setArguments(args);
+        showFragment(AppConstants.PAGE_TITLE_HISTORY_PAGER, fragment);
     }
 
     public void initApp(boolean duringCreate) {
         //check log directory and send log files to control server if available
-        checkLogs(getApplicationContext(), new OnCompleteListener() {
+        checkLogs(new OnCompleteListener() {
 
             @Override
             public void onComplete(int flag, Object object) {
@@ -899,85 +1099,83 @@ public class MainActivity extends AppCompatActivity implements MapProperties, Dr
 
         popBackStackFull();
 
-        androidx.fragment.app.FragmentTransaction ft;
-        ft = fm.beginTransaction();
-        ft.replace(R.id.fragment_content, new MainMenuFragment(), AppConstants.PAGE_TITLE_MAIN);
-        ft.setTransition(TRANSIT_FRAGMENT_OPEN);
-        ft.commit();
+        showFragment(AppConstants.PAGE_TITLE_MAIN, new MainMenuFragment(), false);
 
-        checkNews(getApplicationContext());
+        checkNews();
         checkSettings(false, null);
         //checkIp();
         waitForSettings(true, false, false);
         historyResultLimit = Config.HISTORY_RESULTLIMIT_DEFAULT;
 
-        if (!duringCreate && geoLocation != null)
-            geoLocation.start();
+        if (!duringCreate)
+            if (checkForGPSPermissions(PERM_REQ_LOC_COARSE_START, PERM_REQ_LOC_FINE_START)) {
+                GeoLocationX.getInstance(this.getApplication()).getLastKnownLocation(this, null);
+            }
     }
 
-    /**
-     *
-     */
     public void showNoNetworkConnectionToast() {
         Toast.makeText(this, R.string.error_no_internet, Toast.LENGTH_SHORT).show();
     }
 
-    /**
-     * @param popStack
-     */
+    @SuppressWarnings("SameParameterValue")
     public void showHistory(final boolean popStack) {
         popBackStackFull();
 
-        /* show history fragment */
-
-        refreshActionBar(AppConstants.PAGE_TITLE_HISTORY);
-    }
-
-    public void showHistoryPager(final int pos) {
-        if (historyStorageList != null) {
-
-            final Bundle args = new Bundle();
-
-          /* SHOW HISTORY FRAGMENT */
-            refreshActionBar(AppConstants.PAGE_TITLE_HISTORY_PAGER);
-        }
-    }
-
-    public void showResultDetail(final String testUUid) {
-        androidx.fragment.app.FragmentTransaction ft;
-
-        final Fragment fragment = new TestResultDetailFragment();
-
-        final Bundle args = new Bundle();
-
-        args.putString(TestResultDetailFragment.ARG_UID, testUUid);
-        fragment.setArguments(args);
-
+        FragmentTransaction ft;
         ft = fm.beginTransaction();
-        ft.replace(R.id.fragment_content, fragment, AppConstants.PAGE_TITLE_RESULT_DETAIL);
-        ft.addToBackStack(AppConstants.PAGE_TITLE_RESULT_DETAIL);
-        ft.setTransition(TRANSIT_FRAGMENT_OPEN);
-        ft.commit();
 
-        refreshActionBar(AppConstants.PAGE_TITLE_RESULT_DETAIL);
+        ft.replace(R.id.fragment_content, new HistoryFragment(), AppConstants.PAGE_TITLE_HISTORY);
+        ft.addToBackStack(AppConstants.PAGE_TITLE_HISTORY);
+        ft.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN);
+        if (popStack) {
+            fm.popBackStack();
+        }
+
+        ft.commit();
+    }
+
+    public void showHistoryTestDetailPager(final int pos) {
+        //noinspection ConstantConditions
+        if (historyItems != null) {
+            final Bundle args = new Bundle();
+//            final ResultPagerFragment fragment = new ResultPagerFragment();
+            String testUuid = historyItems.get(pos).getTestUUID();
+            BaseFragment fragment = SimpleResultFragment.newInstance(testUuid);
+
+            switch (FeatureConfig.showLayoutTheme(this)) {
+                case LAYOUT_SQUARE:
+                    fragment = SimpleResultFragment.newInstance(testUuid);
+                    break;
+                default:
+                    fragment = new ResultPagerFragment();
+                    args.putString(ResultPagerController.ARG_TEST_UUID, testUuid);
+                    fragment.setArguments(args);
+                    break;
+            }
+
+            final FragmentTransaction ft = fm.beginTransaction();
+            ft.replace(R.id.fragment_content, fragment, AppConstants.PAGE_TITLE_HISTORY_PAGER);
+            ft.addToBackStack(AppConstants.PAGE_TITLE_HISTORY_PAGER);
+            ft.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN);
+            ft.commit();
+        }
     }
 
     public void showAbout() {
         popBackStackFull();
 
-        androidx.fragment.app.FragmentTransaction ft;
+        FragmentTransaction ft;
         ft = fm.beginTransaction();
 
         ft.replace(R.id.fragment_content, new AboutFragment(), AppConstants.PAGE_TITLE_ABOUT);
         ft.addToBackStack(AppConstants.PAGE_TITLE_ABOUT);
-        ft.setTransition(TRANSIT_FRAGMENT_OPEN);
+        ft.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN);
 
         ft.commit();
-        refreshActionBar(AppConstants.PAGE_TITLE_ABOUT);
     }
 
     public void showExpandedResultDetail(QoSServerResultCollection testResultArray, DetailType detailType, int position) {
-        androidx.fragment.app.FragmentTransaction ft;
+        FragmentTransaction ft;
 
         //final RMBTResultDetailPagerFragment fragment = new RMBTResultDetailPagerFragment();
         final QoSCategoryPagerFragment fragment = new QoSCategoryPagerFragment();
@@ -988,21 +1186,14 @@ public class MainActivity extends AppCompatActivity implements MapProperties, Dr
         ft = fm.beginTransaction();
         ft.replace(R.id.fragment_content, fragment, AppConstants.PAGE_TITLE_RESULT_QOS);
         ft.addToBackStack("result_detail_expanded");
-        ft.setTransition(TRANSIT_FRAGMENT_OPEN);
+        ft.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN);
         ft.commit();
 
         fragment.setCurrentPosition(position);
-        refreshActionBar(AppConstants.PAGE_TITLE_RESULT_QOS);
-    }
-
-    public void updateTitle(String title) {
-        if (toolbar != null) {
-            toolbar.setTitle(title);
-        }
     }
 
     public void showQoSTestDetails(List<QoSServerResult> resultList, List<QoSServerResultDesc> descList, int index) {
-        androidx.fragment.app.FragmentTransaction ft;
+        FragmentTransaction ft;
 
         //final RMBTResultDetailPagerFragment fragment = new RMBTResultDetailPagerFragment();
         final QoSTestDetailPagerFragment fragment = new QoSTestDetailPagerFragment();
@@ -1014,17 +1205,15 @@ public class MainActivity extends AppCompatActivity implements MapProperties, Dr
         ft = fm.beginTransaction();
         ft.replace(R.id.fragment_content, fragment, AppConstants.PAGE_TITLE_TEST_DETAIL_QOS);
         ft.addToBackStack(AppConstants.PAGE_TITLE_TEST_DETAIL_QOS);
-        ft.setTransition(TRANSIT_FRAGMENT_OPEN);
+        ft.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN);
         ft.commit();
-
-        refreshActionBar(AppConstants.PAGE_TITLE_TEST_DETAIL_QOS);
     }
 
     public void showMapFromPager() {
         try {
             Fragment f = getCurrentFragment();
             if (f != null) {
-                /* Show map */
+                ((ResultPagerFragment) f).getPagerAdapter().showMap();
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -1035,125 +1224,119 @@ public class MainActivity extends AppCompatActivity implements MapProperties, Dr
         if (popBackStack) {
             popBackStackFull();
         }
+        new Handler().post(new Runnable() {
+            @Override
+            public void run() {
+                FragmentTransaction ft;
+                ft = fm.beginTransaction();
+                if (MapConfig.MAP_TYPE_MAPBOX == MapConfig.getMapType(MainActivity.this)) {
+                    Fragment f = new MapBoxFragment();
+                    mapInterface = (at.specure.android.screens.map.MapInterface) f;
+                    Bundle bundle = new Bundle();
+                    f.setArguments(bundle);
+                    ft.replace(R.id.fragment_content, f, AppConstants.PAGE_TITLE_MAP);
+                    ft.addToBackStack(AppConstants.PAGE_TITLE_MAP);
+                    ft.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN);
+                    ft.commit();
+                    ((MapBoxFragment) f).setActionBarItems(MainActivity.this);
+                }
 
-       /* Show map fragment */
-
-        refreshActionBar(AppConstants.PAGE_TITLE_MAP);
+            }
+        });
     }
 
     public void showMap(String mapType, LatLng initialCenter, boolean clearFilter, boolean popBackStack) {
-        showMap(mapType, initialCenter, clearFilter, -1, popBackStack);
-    }
-
-    public void showMap(String mapType, LatLng initialCenter, boolean clearFilter, int viewId, boolean popBackStack) {
         if (popBackStack) {
             popBackStackFull();
         }
 
-        FragmentTransaction ft;
+        if (MapConfig.MAP_TYPE_MAPBOX == MapConfig.getMapType(this)) {
+            final MapBoxFragment fragment = new MapBoxFragment();
 
-        setCurrentMapType(mapType);
+            final Bundle bundle = new Bundle();
+            bundle.putParcelable("initialCenter", initialCenter);
 
-        if (clearFilter) {
-            final List<MapListSection> mapFilterListSelectionList = getMapFilterListSelectionList();
-            if (mapFilterListSelectionList != null) {
-                for (final MapListSection section : mapFilterListSelectionList) {
-                    for (final MapListEntry entry : section.getMapListEntryList())
-                        entry.setChecked(entry.isDefault());
-                }
-                updateMapFilter();
-            }
+            System.out.println("SHOW MAP");
+            fragment.setArguments(bundle);
+            showFragment(AppConstants.PAGE_TITLE_MAP, fragment);
+            mapInterface = (at.specure.android.screens.map.MapInterface) fragment;
         }
-
-        /* show map fragment */
     }
 
-    public void showHelp(final int resource, boolean popBackStack) {
-        showHelp(getResources().getString(resource), popBackStack, AppConstants.PAGE_TITLE_HELP);
-    }
-
-    public void showHelp(boolean popBackStack) {
-        showHelp("", popBackStack, AppConstants.PAGE_TITLE_HELP);
-    }
-
-    public void showHelp(final String url, boolean popBackStack, String titleId) {
-//        System.err.println("Showing help. Url:" + getResources().getString(R.string.url_help));
-//        System.err.println("Label Tat:" + getResources().getString(R.string.terms_accept_text));
-
-        if (popBackStack) {
-            popBackStackFull();
-        }
-
-        androidx.fragment.app.FragmentTransaction ft;
-
-
-        ft = fm.beginTransaction();
-
-        final Fragment fragment = new HelpFragment();
-        final Bundle args = new Bundle();
-
-        args.putString(HelpFragment.ARG_URL, url);
-        fragment.setArguments(args);
-        ft.replace(R.id.fragment_content, fragment, titleId);
-        ft.addToBackStack(titleId);
-        ft.setTransition(TRANSIT_FRAGMENT_OPEN);
-
-        ft.commit();
-        refreshActionBar(titleId);
-    }
-
-    /**
-     *
-     */
-    public void showSync() {
-        androidx.fragment.app.FragmentTransaction ft;
-        ft = fm.beginTransaction();
-
-       /* Show sync fragment */
-        refreshActionBar(AppConstants.PAGE_TITLE_SYNC);
-    }
-
-    public void showFilter() {
-        final FragmentManager fm = getSupportFragmentManager();
-        FragmentTransaction ft;
-
-        /* Show filter fragment */
-
-        refreshActionBar(AppConstants.PAGE_TITLE_HISTORY_FILTER);
-    }
-
-    /**
-     *
-     */
     public void showSettings() {
         startActivity(new Intent(this, PreferenceActivity.class));
     }
 
+    private void showBadges() {
+//        startActivity(new Intent(this, BadgesActivity.class));
+        startActivity(new Intent(this, BadgeListActivity.class));
+    }
 
-    /**
-     *
-     */
     public void showStatistics() {
-        String urlStatistic = null; // ConfigHelper.getVolatileSetting("url_statistics");
-        if (urlStatistic == null || urlStatistic.length() == 0) {
-            if ((urlStatistic = ConfigHelper.getCachedStatisticsUrl(getApplicationContext())) == null) {
-                return;
+        String urlStatistic = getString(R.string.url_statistics); // ConfigHelper.getVolatileSetting("url_statistics");
+        showHelp(urlStatistic, true, AppConstants.PAGE_TITLE_STATISTICS, R.string.page_title_statistics);
+    }
+
+    public void showFragment(String pageTitle, Fragment fragment) {
+        showFragment(pageTitle, fragment, true);
+    }
+
+    public void showFragment(final String pageTitle, final Fragment fragment, final boolean addToBackStack) {
+        new Handler().post(new Runnable() {
+            @Override
+            public void run() {
+                if (!isPausing) { // control because app can request change fragment during activity is going to sleep
+                    FragmentTransaction ft;
+                    ft = fm.beginTransaction();
+                    ft.replace(R.id.fragment_content, fragment, pageTitle);
+                    if (addToBackStack) {
+                        ft.addToBackStack(pageTitle);
+                    }
+                    ft.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN);
+                    ft.commit();
+                }
             }
+        });
+    }
+
+    public void showHelp(final int resource, boolean popBackStack) {
+        showHelp(getResources().getString(resource), popBackStack, AppConstants.PAGE_TITLE_HELP, R.string.page_title_help);
+    }
+
+    public void showHelp(boolean popBackStack) {
+        showHelp("", popBackStack, AppConstants.PAGE_TITLE_HELP, R.string.page_title_help);
+    }
+
+    public void showHelp(final String url, boolean popBackStack, String titleId, int titleResourceId) {
+        if (popBackStack) {
+            popBackStackFull();
         }
-        showHelp(urlStatistic, true, AppConstants.PAGE_TITLE_STATISTICS);
+        final Fragment fragment = new HelpFragment();
+        final Bundle args = new Bundle();
+        args.putString(HelpFragment.ARG_URL, url);
+        args.putInt(HelpFragment.ARG_TITLE, titleResourceId);
+        fragment.setArguments(args);
+        showFragment(titleId, fragment);
     }
 
-    public void showLogFragment() {
-       /* Log fragment */
-        refreshActionBar(AppConstants.PAGE_TITLE_LOG);
+    public void showSync() {
+        showFragment(AppConstants.PAGE_TITLE_SYNC, new SyncFragment());
     }
 
+    public void showFilter() {
+        showFragment(AppConstants.PAGE_TITLE_HISTORY_FILTER, new HistoryFilterFragment());
+    }
 
-    /**
-     *
-     */
+//    public void showNetStatFragment() {
+//        showFragment(AppConstants.PAGE_TITLE_NETSTAT, new NetstatFragment());
+//    }
+//
+//    public void showLogFragment() {
+//        showFragment(AppConstants.PAGE_TITLE_LOG, new LogFragment());
+//    }
+
+
     private void stopBackgroundProcesses() {
-        geoLocation.stop();
         if (newsTask != null) {
             newsTask.cancel(true);
             newsTask = null;
@@ -1166,238 +1349,57 @@ public class MainActivity extends AppCompatActivity implements MapProperties, Dr
             loadingDialog.dismiss();
             loadingDialog = null;
         }
-
         if (historyTask != null) {
             historyTask.cancel(true);
             historyTask = null;
         }
     }
 
-    /**
-     * @param history_filter_devices
-     * @param history_filter_networks
-     */
     public void setSettings(final String[] history_filter_devices, final String[] history_filter_networks) {
         historyFilterDevices = history_filter_devices;
         historyFilterNetworks = history_filter_networks;
 
-        historyFilterDevicesFilter = new ArrayList<String>();
+        historyFilterDevicesFilter = new ArrayList<>();
         if (history_filter_devices != null)
-            for (final String history_filter_device : history_filter_devices)
-                historyFilterDevicesFilter.add(history_filter_device);
+            historyFilterDevicesFilter.addAll(Arrays.asList(history_filter_devices));
 
-        historyFilterNetworksFilter = new ArrayList<String>();
+        historyFilterNetworksFilter = new ArrayList<>();
         if (history_filter_networks != null)
-            for (final String history_filter_network : history_filter_networks)
-                historyFilterNetworksFilter.add(history_filter_network);
+            historyFilterNetworksFilter.addAll(Arrays.asList(history_filter_networks));
     }
 
-    /**
-     * @return
-     */
     public String[] getHistoryFilterDevices() {
         return historyFilterDevices;
     }
 
-    /**
-     * @return
-     */
     public String[] getHistoryFilterNetworks() {
         return historyFilterNetworks;
     }
 
-    public void setHistoryFilterDevicesFilter(final ArrayList<String> historyFilterDevicesFilter) {
-        this.historyFilterDevicesFilter = historyFilterDevicesFilter;
-        historyDirty = true;
-    }
-
-    public void setHistoryFilterNetworksFilter(final ArrayList<String> historyFilterNetworksFilter) {
-        this.historyFilterNetworksFilter = historyFilterNetworksFilter;
-        historyDirty = true;
-    }
-
-    /**
-     * @return
-     */
     public ArrayList<String> getHistoryFilterDevicesFilter() {
         return historyFilterDevicesFilter;
     }
 
-    /**
-     * @return
-     */
+    public void setHistoryFilterDevicesFilter(final ArrayList<String> historyFilterDevicesFilter) {
+        this.historyFilterDevicesFilter = historyFilterDevicesFilter;
+        ConfigHelper.setHistoryIsDirty(this, true);
+        historyDirty = true;
+    }
+
     public ArrayList<String> getHistoryFilterNetworksFilter() {
         return historyFilterNetworksFilter;
     }
 
-    /**
-     * @return
-     */
-    public List<Map<String, String>> getHistoryItemList() {
-        return historyItemList;
+    public void setHistoryFilterNetworksFilter(final ArrayList<String> historyFilterNetworksFilter) {
+        this.historyFilterNetworksFilter = historyFilterNetworksFilter;
+        ConfigHelper.setHistoryIsDirty(this, true);
+        historyDirty = true;
     }
 
-    /**
-     * @return
-     */
-    public ArrayList<Map<String, String>> getHistoryStorageList() {
-        return historyStorageList;
+    public List<HistoryItem> getHistoryItemList() {
+        return historyItems;
     }
 
-    /**
-     *
-     */
-    public Map<String, String> getCurrentMapOptions() {
-        return currentMapOptions;
-    }
-
-    /**
-     *
-     */
-    public Map<String, String> getCurrentMapOptionTitles() {
-        return currentMapOptionTitles;
-    }
-
-    // /
-
-    public void setCurrentMapType(MapListEntry currentMapType, MapListSection section) {
-        this.currentMapType = currentMapType;
-
-        // set the filter options in activity
-        final String uuid = ConfigHelper.getUUID(getApplicationContext());
-        currentMapOptions.clear();
-        currentMapOptionTitles.clear();
-        currentMapOptions.put("highlight", uuid);
-        currentMapOptions.put(currentMapType.getKey(), currentMapType.getValue());
-        currentMapOptions.put("overlay_type", currentMapType.getOverlayType());
-        currentMapOptionTitles.put(currentMapType.getKey(),
-                section.getTitle() + ": " + currentMapType.getTitle());
-
-        updateMapFilter();
-    }
-
-    public void setCurrentMapType(String mapType) {
-        if (mapTypeListSectionList == null || mapType == null)
-            return;
-        for (final MapListSection section : mapTypeListSectionList) {
-            for (MapListEntry entry : section.getMapListEntryList()) {
-                if (entry.getValue().equals(mapType)) {
-                    setCurrentMapType(entry, section);
-                    return;
-                }
-            }
-        }
-    }
-
-    public MapListEntry getCurrentMapType() {
-        return currentMapType;
-    }
-
-    public String getCurrentMainMapType() {
-        final String mapTypeString = currentMapType == null ? null : currentMapType.getValue();
-        String part = null;
-        if (mapTypeString != null) {
-            final String[] parts = mapTypeString.split("/");
-            part = parts[0];
-        }
-        return part;
-    }
-
-    public void setMapFilterCountries(MapFilterCountries mapFilterCountries) {
-        this.mapFilterCountries = mapFilterCountries;
-    }
-
-    public MapFilterCountries getMapFilterCountries() {
-        return this.mapFilterCountries;
-    }
-
-    /**
-     * @return
-     */
-    public List<MapListSection> getMapTypeListSectionList() {
-        return mapTypeListSectionList;
-    }
-
-    /**
-     * @param mapTypeListSectionList
-     */
-    public void setMapTypeListSectionList(final ArrayList<MapListSection> mapTypeListSectionList) {
-        this.mapTypeListSectionList = mapTypeListSectionList;
-    }
-
-    /**
-     * @return
-     */
-    public Map<String, List<MapListSection>> getMapFilterListSectionListMap() {
-        return mapFilterListSectionListMap;
-    }
-
-    public void getOperatorsForCountry(String countryCode) {
-        String operatorType = getFilterOperatorType();
-        new GetMapOptionsProvidersTask(this).execute(countryCode, operatorType);
-    }
-
-    @NonNull
-    public String getFilterOperatorType() {
-        String operatorType = MapFilterTypes.MAP_FILTER_TYPE_MOBILE;
-        Map<String, String> currentMapOptions = getCurrentMapOptions();
-        if (currentMapOptions != null) {
-            String map_options = currentMapOptions.get("map_options");
-            if (map_options != null) {
-                if (map_options.contains("mobile")) {
-                    operatorType = MapFilterTypes.MAP_FILTER_TYPE_MOBILE;
-                } else if (map_options.contains("wifi")) {
-                    operatorType = MapFilterTypes.MAP_FILTER_TYPE_WLAN;
-                } else if (map_options.contains("browser")) {
-                    operatorType = MapFilterTypes.MAP_FILTER_TYPE_BROWSER;
-                } else if (map_options.contains("all")) {
-                    operatorType = MapFilterTypes.MAP_FILTER_TYPE_ALL;
-                }
-            }
-        }
-        return operatorType;
-    }
-
-    public List<MapListSection> getMapFilterListSelectionList() {
-
-        final Map<String, List<MapListSection>> mapFilterListSectionListMap = getMapFilterListSectionListMap();
-        if (mapFilterListSectionListMap == null)
-            return null;
-        return mapFilterListSectionListMap.get(getCurrentMainMapType());
-    }
-
-    /**
-     * @param mapFilterListSectionList
-     */
-    public void setMapFilterListSectionListMap(final HashMap<String, List<MapListSection>> mapFilterListSectionList) {
-        this.mapFilterListSectionListMap = mapFilterListSectionList;
-        updateMapFilter();
-    }
-
-    public void updateMapFilter() {
-        final List<MapListSection> mapFilterListSelectionList = getMapFilterListSelectionList();
-        if (mapFilterListSelectionList == null)
-            return;
-        for (final MapListSection section : mapFilterListSelectionList) {
-            final MapListEntry entry = section.getCheckedMapListEntry();
-
-            if (entry != null && entry.getKey() != null && entry.getValue() != null) {
-                getCurrentMapOptions().put(entry.getKey(), entry.getValue());
-                getCurrentMapOptionTitles().put(entry.getKey(),
-                        section.getTitle() + ": " + entry.getTitle());
-            }
-        }
-
-        if (mapFilterOperatorList != null) {
-            MapListSection mapListSection = mapFilterOperatorList.convertOperatorsToMapListSection(getApplicationContext());
-            MapListEntry checkedMapListEntry = mapListSection.getCheckedMapListEntry();
-            if (checkedMapListEntry != null && checkedMapListEntry.getKey() != null && checkedMapListEntry.getValue() != null) {
-                getCurrentMapOptions().put(checkedMapListEntry.getKey(), checkedMapListEntry.getValue());
-                getCurrentMapOptionTitles().put(checkedMapListEntry.getKey(),
-                        mapListSection.getTitle() + ": " + checkedMapListEntry.getTitle());
-            }
-        }
-    }
 
     public void setToolbarVisible(int visibility) {
         if (toolbar != null) {
@@ -1415,63 +1417,68 @@ public class MainActivity extends AppCompatActivity implements MapProperties, Dr
 
     }
 
-    public void setOperatorList(FilterGroup result) {
-        this.mapFilterOperatorList = result;
-    }
-
-
-    /**
-     * @author
-     */
-    private class MainGeoLocation extends GeoLocation {
-        /**
-         * @param context
-         */
-        public MainGeoLocation(final Context context) {
-            super(context, ConfigHelper.isGPS(context));
-        }
-
-        /**
-         *
-         */
-        @Override
-        public void onLocationChanged(final Location curLocation) {
+    public void updateTitle(String title) {
+        if (toolbar != null) {
+            toolbar.setTitle(title);
         }
     }
 
-
-    /**
-     * @return
-     */
-    public boolean isMapFirstRun() {
-        return mapFirstRun;
+    @Override
+    public void onPositiveButtonClicked(int starsCount, String reviewText) {
+        AppRater.onPositiveButtonClicked(this, starsCount, reviewText);
     }
 
-    /**
-     * @param mapFirstRun
-     */
-    public void setMapFirstRun(final boolean mapFirstRun) {
-        this.mapFirstRun = mapFirstRun;
+    @Override
+    public void onNegativeButtonClicked() {
+        AppRater.onNegativeButtonClicked(this);
     }
 
-    /**
-     *
-     */
+    @Override
+    public void onNeutralButtonClicked() {
+        AppRater.onNeutralButtonClicked(this);
+    }
+
+    public void showSurveyRequest() {
+        if (SurveyConfig.isSurveyEnabledInApp(this)) {
+            SurveyConfig.showSurveyDialog(this);
+        }
+    }
+
+    @Override
+    public void requestPermission(int requestCode) {
+        if (requestCode == PERM_REQ_LOC_COARSE_START || requestCode == PERM_REQ_LOC_FINE_START || requestCode == PERM_REQ_LOC_FINE_TEST || requestCode == PERM_REQ_LOC_COARSE_TEST) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, requestCode);
+            }
+        } else if (requestCode == PERM_REQ_READ_PHONE_STATE_START || requestCode == PERM_REQ_READ_PHONE_STATE_TEST) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                requestPermissions(new String[]{Manifest.permission.READ_PHONE_STATE}, requestCode);
+            }
+        } else if (requestCode == PERM_REQ_BACKGROUND_LOCATION_ACCESS) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                requestPermissions(new String[]{Manifest.permission.ACCESS_BACKGROUND_LOCATION}, requestCode);
+            }
+        }
+    }
+
+//    private class MainGeoLocation extends GeoLocation {
+//
+//        MainGeoLocation(final Context context) {
+//            super(context, ConfigHelper.isGPS(context));
+//        }
+//
+//        @Override
+//        public void onLocationChanged(final Location curLocation) {
+//        }
+//    }
+
     @Override
     public void onBackPressed() {
-//        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
 
-        if (drawerLayout.isDrawerOpen(drawerList) && !exitAfterDrawerClose) {
+        if ((drawerLayout.isDrawerOpen(drawerList) && !exitAfterDrawerClose) && ((initialSetupInterface != null) && !(initialSetupInterface instanceof TermsCheckFragment))) {
             drawerLayout.closeDrawer(drawerList);
             return;
         }
-
-//
-//        final RMBTNDTCheckFragment ndtCheckFragment = (RMBTNDTCheckFragment) getSupportFragmentManager().findFragmentByTag("ndt_check");
-//        if (ndtCheckFragment != null)
-//            if (ndtCheckFragment.onBackPressed())
-//                return;
-
 
         final TermsCheckFragment tcFragment = (TermsCheckFragment) getSupportFragmentManager().findFragmentByTag("terms_check");
         if (tcFragment != null && tcFragment.isResumed()) {
@@ -1479,259 +1486,170 @@ public class MainActivity extends AppCompatActivity implements MapProperties, Dr
                 return;
         }
 
-
-//        final RMBTTestFragment testFragment = (RMBTTestFragment) getSupportFragmentManager().findFragmentByTag("test");
-//        if (testFragment != null && testFragment.isResumed()) {
-//            if (testFragment.onBackPressed())
-//                return;
-//        }
+        final SyncFragment syncCodeFragment = (SyncFragment) getSupportFragmentManager()
+                .findFragmentByTag("sync");
+        if (syncCodeFragment != null && syncCodeFragment.isResumed()) {
+            if (syncCodeFragment.onBackPressed())
+                return;
+        }
 
         final MainMenuFragment mainMenuCodeFragment = (MainMenuFragment) getSupportFragmentManager()
                 .findFragmentByTag(AppConstants.PAGE_TITLE_MAIN);
         if (mainMenuCodeFragment != null && mainMenuCodeFragment.isResumed()) {
-            if (mainMenuCodeFragment.onBackPressed())
+            if (mainMenuCodeFragment.isTestVisible()) {
+                mainMenuCodeFragment.onBackPressed();
                 return;
-        }
+            } else {
+                if (ConfigHelper.isDontShowMainMenuOnClose(this)) {
+                    startTestingService(TestService.ACTION_STOP_SERVICE);
+                    super.onBackPressed();
+                    return;
+                } else {
+                    if (exitAfterDrawerClose) {
+                        startTestingService(TestService.ACTION_STOP_SERVICE);
+                        super.onBackPressed();
+                    } else {
+                        exitAfterDrawerClose = true;
+                        drawerLayout.openDrawer(drawerList);
+                        return;
+                    }
+                }
+            }
 
-        refreshActionBarAndTitle();
+        }
 
         if (getSupportFragmentManager().getBackStackEntryCount() > 0 || exitAfterDrawerClose) {
             super.onBackPressed();
         } else {
             System.out.println(getCurrentFragment());
-            super.onBackPressed();
+            if (ConfigHelper.isDontShowMainMenuOnClose(this)) {
+                super.onBackPressed();
+            } else {
+                if (((initialSetupInterface != null) && (initialSetupInterface instanceof TermsCheckFragment))) {
+                    super.onBackPressed();
+                    return;
+                }
+                exitAfterDrawerClose = true;
+                drawerLayout.openDrawer(drawerList);
+            }
         }
     }
 
-    private void refreshActionBarAndTitle() {
-        title = getTitle(getPreviousFragmentName());
-        refreshActionBar(title);
-    }
-
-    /**
-     * @return
-     */
-    public boolean isHistoryDirty() {
-        return historyDirty;
-    }
-
-    /**
-     * @param historyDirty
-     */
-    public void setHistoryDirty(final boolean historyDirty) {
-        this.historyDirty = historyDirty;
-    }
-
-    /**
-     * @author bp
-     */
-    public interface HistoryUpdatedCallback {
-        public final static int SUCCESSFUL = 0;
-        public final static int LIST_EMPTY = 1;
-        public final static int ERROR = 2;
-
-        public void historyUpdated(int status);
-    }
-
-    /**
-     * @param callback
-     */
     public void updateHistory(final HistoryUpdatedCallback callback) {
-        if (historyDirty
-                && (historyTask == null || historyTask.isCancelled() || historyTask.getStatus() == AsyncTask.Status.FINISHED)) {
-            historyTask = new CheckHistoryTask(this, historyFilterDevicesFilter, historyFilterNetworksFilter);
 
-            historyTask.setEndTaskListener(new EndTaskListener() {
+
+        androidx.loader.app.LoaderManager loaderManager = androidx.loader.app.LoaderManager.getInstance(this);
+
+        if (((historyItems == null) || (historyItems.isEmpty()))
+                || (ConfigHelper.getHistoryIsDirty(getApplicationContext()))) {
+            loaderManager.destroyLoader(HISTORY_LOADER_ID);
+            Loader<List<HistoryItem>> historyLoader = loaderManager.initLoader(HISTORY_LOADER_ID, null, new androidx.loader.app.LoaderManager.LoaderCallbacks<List<HistoryItem>>() {
+                @NonNull
                 @Override
-                public void taskEnded(final JsonArray resultList) {
-                    if (resultList != null && resultList.size() > 0 && !historyTask.hasError()) {
-                        historyStorageList.clear();
-                        historyItemList.clear();
-
-                        final Date tmpDate = new Date();
-                        final DateFormat dateFormat = Helperfunctions.getDateFormat(false);
-
-                        for (int i = 0; i < resultList.size(); i++) {
-
-                            JsonObject resultListItem;
-                            try {
-                                resultListItem = resultList.get(i).getAsJsonObject();
-
-                                final HashMap<String, String> storageItem = new HashMap<String, String>();
-                                String testUUID = null;
-                                if (resultListItem.has("test_uuid")) {
-                                    testUUID = resultListItem.get("test_uuid").getAsString();
-                                }
-                                storageItem.put("test_uuid", testUUID);
-
-                                Long time = 0l;
-                                if (resultListItem.has("time")) {
-                                    time = resultListItem.get("time").getAsLong();
-                                }
-                                storageItem.put("time", String.valueOf(time));
-
-                                String timezone = null;
-                                if (resultListItem.has("timezone")) {
-                                    timezone = resultListItem.get("timezone").getAsString();
-                                }
-                                storageItem.put("timezone", timezone);
-                                historyStorageList.add(storageItem);
-
-                                final HashMap<String, String> viewItem = new HashMap<String, String>();
-                                // viewIitem.put( "device",
-                                // resultListItem.optString("plattform","none"));
-
-                                String model = " - ";
-                                if (resultListItem.has("model")) {
-                                    model = resultListItem.get("model").getAsString();
-                                }
-                                viewItem.put("device", model);
-
-                                String type = "";
-                                if (resultListItem.has("network_type")) {
-                                    type = resultListItem.get("network_type").getAsString();
-                                }
-                                viewItem.put("type", type);
-
-                                Long time2 = 0l;
-                                if (resultListItem.has("time")) {
-                                    time2 = resultListItem.get("time").getAsLong();
-                                }
-                                String timezone2 = null;
-                                if (resultListItem.has("timezone")) {
-                                    timezone2 = resultListItem.get("timezone").getAsString();
-                                }
-                                final String timeString = Helperfunctions.formatTimestampWithTimezone(tmpDate,
-                                        dateFormat, time2, timezone2);
-
-                                viewItem.put("date", timeString == null ? " - " : timeString);
-
-                                String speedResult = " - ";
-                                if (resultListItem.has("speed_download")) {
-                                    speedResult = resultListItem.get("speed_download").getAsString();
-                                }
-                                viewItem.put("down", speedResult);
-
-
-                                String speedUpload = " - ";
-                                if (resultListItem.has("speed_upload")) {
-                                    speedUpload = resultListItem.get("speed_upload").getAsString();
-                                }
-                                viewItem.put("up", speedUpload);
-
-                                String ping = " - ";
-                                if (resultListItem.has("ping")) {
-                                    ping = resultListItem.get("ping").getAsString();
-                                }
-                                viewItem.put("ping", ping);
-
-                                String meanPacketLossInPercent = " - ";
-                                String meanJitter = "-";
-
-                                if (resultListItem.has("jpl")) {
-                                    Gson gson = new Gson();
-                                    VoipTestResult jpl = gson.fromJson(resultListItem.get("jpl"), VoipTestResult.class);
-
-                                    meanPacketLossInPercent = jpl.getVoipResultPacketLoss();
-                                    meanJitter = jpl.getVoipResultJitter();
-                                }
-
-                                String networkName = " - ";
-                                if (resultListItem.has("network_name")) {
-                                    networkName = resultListItem.get("network_name").getAsString();
-                                }
-
-                                String quality_result = " - ";
-                                if (resultListItem.has("qos_result")) {
-                                    quality_result = resultListItem.get("qos_result").getAsString();
-                                }
-
-                                viewItem.put("packet_loss", meanPacketLossInPercent);
-                                viewItem.put("jitter", meanJitter);
-                                viewItem.put("quality", quality_result);
-                                viewItem.put("network_name", networkName);
-
-                                historyItemList.add(viewItem);
-                            } catch (final JsonParseException e) {
-                                e.printStackTrace();
-                            }
-                        }
-                        historyDirty = false;
-                        if (callback != null)
-                            callback.historyUpdated(HistoryUpdatedCallback.SUCCESSFUL);
-                    } else if (callback != null) {
-                        callback.historyUpdated(historyTask.hasError() ? HistoryUpdatedCallback.ERROR : HistoryUpdatedCallback.LIST_EMPTY);
+                public Loader<List<HistoryItem>> onCreateLoader(int id, @Nullable Bundle args) {
+                    Loader loader = null;
+                    switch (id) {
+                        case HISTORY_LOADER_ID:
+                            loader = new HistoryLoader(MainActivity.this, historyFilterDevicesFilter, historyFilterNetworksFilter);
                     }
+                    return loader;
+                }
+
+                @Override
+                public void onLoadFinished(@NonNull Loader<List<HistoryItem>> loader, List<HistoryItem> data) {
+                    historyItems = data;
+                    if (data.size() > 0) {
+                        if (callback != null) {
+                            callback.historyUpdated(HistoryUpdatedCallback.SUCCESSFUL);
+                        }
+                    } else {
+                        if (callback != null) {
+                            callback.historyUpdated(HistoryUpdatedCallback.LIST_EMPTY);
+                        }
+                    }
+                    historyDirty = false;
+                    ConfigHelper.setHistoryIsDirty(getApplicationContext(), false);
+                }
+
+                @Override
+                public void onLoaderReset(@NonNull Loader<List<HistoryItem>> loader) {
+                    historyItems = new ArrayList<>();
                 }
             });
-            historyTask.execute();
-        } else if (callback != null)
-            callback.historyUpdated(!(historyStorageList.isEmpty() && historyStorageList.isEmpty()) ? HistoryUpdatedCallback.SUCCESSFUL : HistoryUpdatedCallback.LIST_EMPTY);
+            historyLoader.forceLoad();
+            Timber.d("History should load");
+        } else {
+            if (historyItems.size() > 0) {
+                if (callback != null) {
+                    callback.historyUpdated(HistoryUpdatedCallback.SUCCESSFUL);
+                }
+            } else {
+                if (callback != null) {
+                    callback.historyUpdated(HistoryUpdatedCallback.LIST_EMPTY);
+                }
+            }
+        }
     }
 
-
-    /**
-     * @return
-     */
     public int getHistoryResultLimit() {
         return historyResultLimit;
     }
 
-    /**
-     * @param limit
-     */
     public void setHistoryResultLimit(final int limit) {
         historyResultLimit = limit;
-    }
-
-    public void setMapTypeSatellite(boolean mapTypeSatellite) {
-        this.mapTypeSatellite = mapTypeSatellite;
     }
 
     public boolean getMapTypeSatellite() {
         return mapTypeSatellite;
     }
 
+    public void setMapTypeSatellite(boolean mapTypeSatellite) {
+        this.mapTypeSatellite = mapTypeSatellite;
+    }
+
     public void popBackStackFull() {
-        runOnUiThread(new Runnable() {
+//        runOnUiThread(new Runnable() {
+//
+//            @Override
+//            public void run() {
+        if (fm.getBackStackEntryCount() > 0) {
+            fm.popBackStackImmediate(fm.getBackStackEntryAt(0).getId(), FragmentManager.POP_BACK_STACK_INCLUSIVE);
+        }
 
-            @Override
-            public void run() {
-                if (fm.getBackStackEntryCount() > 0) {
-                    fm.popBackStack(fm.getBackStackEntryAt(0).getId(), FragmentManager.POP_BACK_STACK_INCLUSIVE);
-                }
-
-                try {
-                    MainMenuFragment currentFragment = (MainMenuFragment) getCurrentFragment();
-                    if (currentFragment != null) {
-                        boolean loopModeRunning = isLoopModeRunning();
+        try {
+            MainMenuFragment currentFragment = (MainMenuFragment) getCurrentFragment();
+            if (currentFragment != null) {
+                checkLoopModeRunning(new LoopModeActivityCheckListener() {
+                    @Override
+                    public void onLoopModeRunning(boolean isRunning) {
+                        boolean loopModeRunning = isRunning;
                         if (loopModeRunning) {
                             currentFragment.changeScreenState(MainScreenState.LOOP_MODE_ACTIVE, "Main Activity - popBackStackFull", true);
                         } else {
                             currentFragment.changeScreenState(MainScreenState.DEFAULT, "Main Activity - popBackStackFull", true);
                         }
-
                     }
-                } catch (ClassCastException e) {
-                    //DO nothing
-                }
-
-                refreshActionBarAndTitle();
+                });
             }
-        });
+        } catch (ClassCastException e) {
+            //DO nothing
+        }
+
+//            }
+//        });
     }
 
-    /**
-     * @param toFile
-     */
     public void redirectSystemOutput(boolean toFile) {
         try {
             if (toFile) {
-                Log.i(DEBUG_TAG, "redirecting sysout to file");
+                Timber.i("%s redirecting sysout to file", DEBUG_TAG);
                 //Redirecting console output and runtime exceptions to file (System.out.println)
                 File f = new File(Environment.getExternalStorageDirectory(), "qosdebug");
                 if (!f.exists()) {
-                    f.mkdir();
+                    boolean mkdir = f.mkdir();
+                    if (!mkdir) {
+                        Timber.e("%s redirectSystemOutput: failed create dir", "ERROR");
+                    }
                 }
 
                 SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd-HHmm", Locale.GERMAN);
@@ -1744,13 +1662,14 @@ public class MainActivity extends AppCompatActivity implements MapProperties, Dr
                 //Redirecting console output and runtime exceptions to default output stream
                 //System.setOut(new PrintStream(new FileOutputStream(FileDescriptor.out)));
                 //System.setErr(new PrintStream(new FileOutputStream(FileDescriptor.err)));
-                Log.i(DEBUG_TAG, "redirecting sysout to default");
+                Timber.i(" %s redirecting sysout to default", DEBUG_TAG);
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
+    @SuppressWarnings("UnnecessaryLocalVariable")
     public Fragment getCurrentFragment() {
         final int backStackEntryCount = getSupportFragmentManager().getBackStackEntryCount();
         if (backStackEntryCount > 0) {
@@ -1770,50 +1689,6 @@ public class MainActivity extends AppCompatActivity implements MapProperties, Dr
         return getSupportFragmentManager().findFragmentByTag(AppConstants.PAGE_TITLE_MAIN);
     }
 
-    /**
-     * @return
-     */
-    public String getCurrentFragmentName() {
-        if (getSupportFragmentManager().getBackStackEntryCount() > 0) {
-            String fragmentTag = getSupportFragmentManager().getBackStackEntryAt(getSupportFragmentManager().getBackStackEntryCount() - 1).getName();
-            return fragmentTag;
-        }
-
-        Fragment f = getSupportFragmentManager().findFragmentByTag(AppConstants.PAGE_TITLE_MAIN);
-        return f != null ? AppConstants.PAGE_TITLE_MAIN : null;
-    }
-
-    /**
-     * @return
-     */
-    protected String getPreviousFragmentName() {
-        if (getSupportFragmentManager().getBackStackEntryCount() > 1) {
-            String fragmentTag = getSupportFragmentManager().getBackStackEntryAt(getSupportFragmentManager().getBackStackEntryCount() - 2).getName();
-            return fragmentTag;
-        }
-
-        return null;
-    }
-
-    /**
-     * @return
-     */
-    protected String getTitle(String fragmentName) {
-        String name = fragmentName; // (fragmentName != null ? fragmentName : getCurrentFragmentName());
-        Integer id = null;
-        if (name != null)
-            id = AppConstants.TITLE_MAP.get(name);
-
-        if (id != null) {
-//    	    id = R.string.page_title_title_page;
-            title = getResources().getString(id);
-        } else {
-            title = "";
-        }
-
-        return title;
-    }
-
     public void setLockNavigationDrawer(boolean isLocked) {
         if (isLocked) {
             drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED);
@@ -1822,41 +1697,33 @@ public class MainActivity extends AppCompatActivity implements MapProperties, Dr
         }
     }
 
-    public void refreshActionBar(String name) {
-        if (name == null && title == null) {
-            toolbar.setTitle(getTitle(getCurrentFragmentName()));
-//    		getActionBar().setTitle(getTitle(getCurrentFragmentName()));
-        } else {
-            if (name == null) {
-                toolbar.setTitle("");
-            }
-            toolbar.setTitle((name != null || title == null) ? getTitle(name) : title);
-//    		getActionBar().setTitle((name != null || title == null) ? getTitle(name) : title);
-        }
-
-        if (actionBarMenu != null) {
-            if (AppConstants.PAGE_TITLE_HISTORY.equals(name)) {
-                setVisibleMenuItems(R.id.action_menu_filter, R.id.action_menu_sync);
-            }
-            /*
-            //enable this option only if a logo/icon is present
-    		else if (AppConstants.PAGE_TITLE_ABOUT.equals(name)) {
-    			setVisibleMenuItems(R.id.action_menu_rtr);
-    		}
-    		*/
-            else {
-                setVisibleMenuItems();
+    @Override
+    public void onAttachFragment(final Fragment fragment) {
+        super.onAttachFragment(fragment);
+        if ((fragment != null) && (fragment instanceof InitialSetupInterface)) {
+            initialSetupInterface = (InitialSetupInterface) fragment;
+            if (initialSetupInterface instanceof TermsCheckFragment) {
+                setToolbarVisible(View.GONE);
+            } else {
+                setToolbarVisible(View.VISIBLE);
+                refreshMenuItems();
             }
         }
     }
 
-    /**
-     * @param id
-     */
+
+
+
+
     public void setVisibleMenuItems(Integer... id) {
+        Timber.e("MENU  MActivity setVisibleMenuItems: %s", actionBarMenu);
+        if (actionBarMenu == null) {
+            invalidateOptionsMenu();
+            supportInvalidateOptionsMenu();
+        }
         if (actionBarMenu != null) {
             if (id != null && id.length > 0) {
-                Set<Integer> idSet = new HashSet<Integer>();
+                Set<Integer> idSet = new HashSet<>();
                 Collections.addAll(idSet, id);
                 for (int i = 0; i < actionBarMenu.size(); i++) {
                     MenuItem item = actionBarMenu.getItem(i);
@@ -1876,46 +1743,108 @@ public class MainActivity extends AppCompatActivity implements MapProperties, Dr
     }
 
     /**
-     * @return
+     * @return true if some location provider is permitted
      */
+    public boolean checkForGPSPermissions(int requestCodeCoarse, int requestCodeFine) {
+
+        boolean returnValue = false;
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED) {
+            if (shouldShowRequestPermissionRationale(Manifest.permission.ACCESS_FINE_LOCATION)) {
+                PermissionHandler.showLocationExplanationDialog(this, requestCodeFine, this);
+            } else {
+                requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, requestCodeFine);
+            }
+        } else {
+            returnValue = true;
+        }
+
+        return returnValue;
+    }
+
+    public boolean checkForBackgroundLocationPermissions(int requestCodeBackgroundLocation) {
+
+        boolean returnValue = false;
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_BACKGROUND_LOCATION)
+                != PackageManager.PERMISSION_GRANTED) {
+            if (shouldShowRequestPermissionRationale(Manifest.permission.ACCESS_BACKGROUND_LOCATION)) {
+                PermissionHandler.showBackgroundLocationExplanationDialog(this, requestCodeBackgroundLocation, this);
+            } else {
+                requestPermissions(new String[]{Manifest.permission.ACCESS_BACKGROUND_LOCATION}, requestCodeBackgroundLocation);
+            }
+        } else {
+            returnValue = true;
+        }
+
+        return returnValue;
+    }
+
+    public boolean checkForReadPhoneStatePermissions(int requestCodePhone) {
+
+        boolean returnValue = false;
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && ContextCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE)
+                != PackageManager.PERMISSION_GRANTED) {
+            if (shouldShowRequestPermissionRationale(Manifest.permission.READ_PHONE_STATE)) {
+                PermissionHandler.showReadPhoneStateExplanationDialog(this, requestCodePhone, this);
+            } else {
+                requestPermissions(new String[]{Manifest.permission.READ_PHONE_STATE}, requestCodePhone);
+            }
+        } else {
+            returnValue = true;
+        }
+
+        return returnValue;
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        switch (requestCode) {
+            case PERM_REQ_LOC_COARSE_START:
+            case PERM_REQ_LOC_FINE_START:
+                checkForReadPhoneStatePermissions(PERM_REQ_READ_PHONE_STATE_START);
+                if ((grantResults.length > 0) && (grantResults[0] == PermissionChecker.PERMISSION_GRANTED)) {
+                    GeoLocationX.getInstance(this.getApplication()).getLastKnownLocation(this, null);
+                }
+                break;
+            case PERM_REQ_LOC_FINE_TEST:
+            case PERM_REQ_LOC_COARSE_TEST:
+                if ((grantResults.length > 0) && (grantResults[0] == PermissionChecker.PERMISSION_GRANTED)) {
+                    checkForBackgroundLocationPermissions(PERM_REQ_BACKGROUND_LOCATION_ACCESS);
+                    GeoLocationX.getInstance(this.getApplication()).getLastKnownLocation(this, null);
+                }
+                break;
+            case PERM_REQ_READ_PHONE_STATE_START:
+                if ((grantResults.length > 0) && (grantResults[0] == PermissionChecker.PERMISSION_GRANTED)) {
+                }
+                break;
+        }
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+    }
+
     public NetworkInfoCollector getNetworkInfoCollector() {
         return this.networkInfoCollector;
     }
 
-    /*
-     */
     @Override
-    public void onConfigurationChanged(Configuration newConfig) {
-        super.onConfigurationChanged(newConfig);
+    public void onFragmentInteraction(Uri uri) {
+
     }
 
-    /**
-     * @param context
-     * @return
-     */
-    public static boolean isNetworkAvailable(Context context) {
-        boolean isMobile = false, isWifi = false;
+    @Override
+    public void onPointerCaptureChanged(boolean hasCapture) {
 
-        try {
-            NetworkInfo[] infoAvailableNetworks = ((ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE)).getAllNetworkInfo();
-
-            if (infoAvailableNetworks != null) {
-                for (NetworkInfo network : infoAvailableNetworks) {
-
-                    if (network.getType() == ConnectivityManager.TYPE_WIFI) {
-                        if (network.isConnected() && network.isAvailable())
-                            isWifi = true;
-                    }
-                    if (network.getType() == ConnectivityManager.TYPE_MOBILE) {
-                        if (network.isConnected() && network.isAvailable())
-                            isMobile = true;
-                    }
-                }
-            }
-
-            return isMobile || isWifi;
-        } catch (Exception e) {
-            return false;
-        }
     }
+
+    public interface HistoryUpdatedCallback {
+        int SUCCESSFUL = 0;
+        int LIST_EMPTY = 1;
+        int ERROR = 2;
+
+        void historyUpdated(int status);
+    }
+
+
 }

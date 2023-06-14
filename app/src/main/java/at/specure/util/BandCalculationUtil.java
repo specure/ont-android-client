@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+// TODO: calculation of NR bands needs to be adjusted according to the new way of computing
 public class BandCalculationUtil {
 
     /**
@@ -68,6 +69,21 @@ public class BandCalculationUtil {
         for (GSMBand gsmBand : gsmBands) { //Loop through all lteBands
             if (gsmBand.containsChannel(arfcn)) //If the band contains the earfcn then return it
                 return new FrequencyInformation<>(arfcn, gsmBand);
+        }
+
+        //Invalid input
+        return null;
+    }
+
+    /**
+     * @param arfcn Frequency to check
+     * @return GSMBand object for matched band, or NULL if invalid earfcn is passed
+     */
+    public static FrequencyInformation<NRBand> getBandFromNrarfcn(int arfcn) {
+        //we can't differentiate between UL and DL with umts?
+        for (NRBand nrBand : nrBands) { //Loop through all nrBands
+            if (nrBand.containsChannel(arfcn)) //If the band contains the nrarfcn then return it
+                return new FrequencyInformation<>(arfcn, nrBand);
         }
 
         //Invalid input
@@ -246,6 +262,51 @@ public class BandCalculationUtil {
         add(new GSMBand(2, 1850.2, 1909.8, 1930.2, 1989.8, 512, 810, 0, "GSM 1900"));
     }};
 
+    /**
+     * Table of NR Band channels, European channels are on the top
+     */
+    private static List<NRBand> nrBands = new ArrayList<NRBand>() {{
+        add(new NRBand(1, 1920.0, 1980.0, 2110.0, 2170.0, 0.0, 0.0, 0.0, "2100 MHz"));
+        add(new NRBand(3, 1710.0, 1785.0, 1805.0, 1880.0, 0.0, 0.0, 0.0, "1800 MHz"));
+        add(new NRBand(8, 880.0, 915.0, 925.0, 960.0, 0.0, 0.0, 0.0, "900 MHz"));
+        add(new NRBand(7, 2500.0, 2570.0, 2620.0, 2690.0, 0.0, 0.0, 0.0, "2600 MHz"));
+        add(new NRBand(78, 3300.0, 3800.0, 3300.0, 3800.0, 0.0, 0.0, 0.0, "3500 MHz"));
+        add(new NRBand(75, 0.0, 0.0, 1432.0, 1517.0, 0.0, 0.0, 0.0, "1500 MHz"));
+        add(new NRBand(258, 24250.0, 27500.0, 24250.0, 27500.0, 0.0, 0.0, 0.0, "26 GHz"));
+        add(new NRBand(20, 832.0, 862.0, 791.0, 821.0, 0.0, 0.0, 0.0, "800 MHz"));
+        add(new NRBand(28, 703.0, 748.0, 758.0, 803.0, 0.0, 0.0, 0.0, "700 MHz"));
+        add(new NRBand(40, 2300.0, 2400.0, 2300.0, 2400.0, 0.0, 0.0, 0.0, "TD 2300 MHz"));
+        add(new NRBand(2, 1850.0, 1910.0, 1930.0, 1990.0, 0.0, 0.0, 0.0, "1900 MHz"));
+        add(new NRBand(5, 824.0, 849.0, 869.0, 894.0, 0.0, 0.0, 0.0, "850 MHz"));
+        add(new NRBand(12, 699.0, 716.0, 729.0, 746.0, 0.0, 0.0, 0.0, "700 MHz US A"));
+        add(new NRBand(25, 1850.0, 1915.0, 1930.0, 1995.0, 0.0, 0.0, 0.0, "1900 MHz +"));
+        add(new NRBand(34, 2010.0, 2025.0, 2010.0, 2025.0, 0.0, 0.0, 0.0, "TD 2 GHz upper"));
+        add(new NRBand(38, 2570.0, 2620.0, 2570.0, 2620.0, 0.0, 0.0, 0.0, "TD 2600 MHz"));
+        add(new NRBand(39, 1880.0, 1920.0, 1880.0, 1920.0, 0.0, 0.0, 0.0, "TD 1900 MHz"));
+        add(new NRBand(41, 2496.0, 2690.0, 2496.0, 2690.0, 0.0, 0.0, 0.0, "TD 2.6 GHz +"));
+        add(new NRBand(50, 1432.0, 1517.0, 1432.0, 1517.0, 0.0, 0.0, 0.0, "TD 1500 MHz +"));
+        add(new NRBand(51, 1427.0, 1432.0, 1427.0, 1432.0, 0.0, 0.0, 0.0, "TD 1500 MHz -"));
+        add(new NRBand(66, 1710.0, 1780.0, 2110.0, 2200.0, 0.0, 0.0, 0.0, "AWS-3"));
+        add(new NRBand(70, 1695.0, 1710.0, 1995.0, 2020.0, 0.0, 0.0, 0.0, "AWS-4"));
+        add(new NRBand(71, 663.0, 698.0, 617.0, 652.0, 0.0, 0.0, 0.0, "600 MHz US"));
+        add(new NRBand(74, 1427.0, 1470.0, 1475.0, 1518.0, 0.0, 0.0, 0.0, "L-Band"));
+        add(new NRBand(76, 0.0, 0.0, 1427.0, 1432.0, 0.0, 0.0, 0.0, "500 MHz -"));
+
+        add(new NRBand(77, 3300.0, 4200.0, 3300.0, 4200.0, 0.0, 0.0, 0.0, "3500 MHz +"));
+        add(new NRBand(79, 4400.0, 5000.0, 4400.0, 5000.0, 0.0, 0.0, 0.0, "4500 MHz"));
+
+        add(new NRBand(80, 1710.0, 1785.0, 0.0, 0.0, 0.0, 0.0, 0.0, "SUL 1800 MHz+"));
+        add(new NRBand(81, 880.0, 915.0, 0.0, 0.0, 0.0, 0.0, 0.0, "SUL 900 MHz"));
+        add(new NRBand(82, 832.0, 862.0, 0.0, 0.0, 0.0, 0.0, 0.0, "SUL 800 MHz"));
+        add(new NRBand(83, 703.0, 748.0, 0.0, 0.0, 0.0, 0.0, 0.0, "SUL 700 MHz"));
+        add(new NRBand(84, 1920.0, 1980.0, 0.0, 0.0, 0.0, 0.0, 0.0, "SUL 2100 MHz"));
+        add(new NRBand(86, 1710.0, 1780.0, 0.0, 0.0, 0.0, 0.0, 0.0, "SUL 1800 MHz"));
+
+        add(new NRBand(257, 26500.0, 29500.0, 26500.0, 29500.0, 0.0, 0.0, 0.0, "28 GHz"));
+        add(new NRBand(260, 37000.0, 40000.0, 37000.0, 40000.0, 0.0, 0.0, 0.0, "39 GHz US"));
+        add(new NRBand(261, 27500.0, 28350.0, 27500.0, 28350.0, 0.0, 0.0, 0.0, "28 GHz US"));
+    }};
+
     public static abstract class Band {
         private int band;
 
@@ -352,6 +413,18 @@ public class BandCalculationUtil {
         @Override
         public double getStep() {
             return 0.2;
+        }
+    }
+
+    public static class NRBand extends Band {
+
+        protected NRBand(int band, double upload_frequency_lower_bound, double upload_frequency_upper_bound, double download_frequency_lower_bound, double download_frequency_upper_bound, double upload_channel_lower_bound, double upload_channel_upper_bound, double channel_offset, String informal_name) {
+            super(band, upload_frequency_lower_bound, upload_frequency_upper_bound, download_frequency_lower_bound, download_frequency_upper_bound, upload_channel_lower_bound, upload_channel_upper_bound, channel_offset, informal_name);
+        }
+
+        @Override
+        public double getStep() {
+            return 0.0;
         }
     }
 }

@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <LinearLayout xmlns:tools="http://schemas.android.com/tools"
+        android:id="@+id/content_frame"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+        <FrameLayout
+            android:layout_height="0dp"
+            android:layout_width="0dp"
+            app:layout_constraintWidth_max="wrap"
+            app:layout_constraintDimensionRatio="1:1"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintWidth_percent="0.7"
+            android:orientation="vertical"
+            android:padding="24dp">
+
+            <ImageView
+                android:id="@+id/badge_detail__picture"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:padding="@dimen/badge_picture_padding" />
+
+            <ImageView
+                android:id="@+id/badge_detail__placeholder_picture"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:src="@drawable/badge_placeholder" />
+
+            <ImageView
+                android:layout_width="match_parent"
+                android:layout_height="72dp"
+                android:layout_gravity="bottom"
+                android:scaleType="fitXY"
+                android:src="@drawable/badge_orange_banner" />
+
+            <TextView
+                android:id="@+id/badge_detail__title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="bottom|center_horizontal"
+                android:layout_marginBottom="40dp"
+                android:gravity="center"
+                android:textColor="@android:color/white"
+                android:textSize="18dp"
+                tools:text="Rookie" />
+
+        </FrameLayout>
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+        <TextView
+            android:id="@+id/badge_detail__category_title"
+            style="@style/textMediumDark"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:gravity="center_horizontal"
+            android:visibility="visible"
+            android:textSize="26sp"
+            android:padding="24dp"
+            android:textColor="@color/text_color_disabled"
+            android:textAppearance="@style/textMediumLight" />
+
+        <TextView
+            android:id="@+id/badge_detail__measurement_count"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:gravity="center_horizontal"
+            style="@style/textMediumDark"
+            android:textSize="40sp"/>
+
+        <TextView
+            android:id="@+id/badge_detail__measurement_condition_text"
+            style="@style/textLargeDark"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:gravity="center_horizontal"
+            android:visibility="invisible"
+            android:padding="24dp"
+            android:textColor="@color/text_color_disabled"
+            android:textAppearance="@style/textSmallDark" />
+
+        <TextView
+            android:id="@+id/badge_detail__subtitle"
+            style="@style/textMenuButtonSmallDark"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="10dp"
+            android:layout_gravity="center_horizontal"
+            android:gravity="center_horizontal"
+            android:textColor="@color/text_dark_color" />
+
+        <TextView
+            android:id="@+id/badge_detail__author_detail"
+            style="@style/textMenuButtonSmallLight"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:gravity="center_horizontal"
+            android:layout_margin="16dp" />
+
+        <TextView
+            android:id="@+id/badge_detail__earned_day_title"
+            style="@style/textMenuButtonSmallDark"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:gravity="center_horizontal"
+            android:visibility="invisible"
+            android:text="@string/badges_earned_date" />
+
+        <TextView
+            android:id="@+id/badge_detail__earned_day"
+            style="@style/textMenuButtonSmallDark"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:gravity="center_horizontal" />
+
+        <Space
+            android:layout_width="match_parent"
+            android:layout_height="56dp" />
+
+
+
+    </LinearLayout>
+</ScrollView>

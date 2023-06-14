@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<at.specure.android.views.SquareLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/result_ping_container"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:layout_weight="1"
+    android:background="@color/colorAccent">
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_gravity="center"
+        android:orientation="vertical">
+
+        <ProgressBar
+            android:id="@+id/result_square_progress_bar"
+            style="@style/Base.Widget.AppCompat.ProgressBar"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_gravity="center"
+            android:theme="@style/ProgressBar" />
+
+
+        <FrameLayout
+            android:id="@+id/result_square__small_graph_container"
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
+            android:layout_gravity="bottom"
+            android:visibility="gone">
+
+            <com.github.mikephil.charting.charts.LineChart
+                android:id="@+id/result_square__small_graph"
+                android:layout_width="match_parent"
+                android:layout_height="60dp"
+                android:layout_gravity="bottom"
+                android:layout_marginBottom="-15dp"
+                android:layout_marginLeft="-15dp"
+                android:layout_marginRight="-15dp"
+                android:background="@color/transparent"
+                android:visibility="visible" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="60dp"
+                android:layout_gravity="bottom"
+                android:visibility="gone"
+                android:background="@drawable/square_graph_gradient" />
+
+        </FrameLayout>
+
+        <TextView
+            android:id="@+id/result_square_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="4dp"
+            android:text="@string/test_ping"
+            android:textSize="@dimen/text_size_medium"
+            android:textColor="@color/colorPrimary"
+            android:visibility="invisible" />
+
+        <TextView
+            android:id="@+id/result_square_value"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_marginBottom="10dp"
+            android:layout_marginTop="10dp"
+            android:text="@string/test_ping"
+            android:textSize="@dimen/text_size_xxxlarge"
+            android:textColor="@color/colorPrimary"
+            android:visibility="invisible" />
+
+        <TextView
+            android:id="@+id/result_square_units"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal|bottom"
+            android:layout_marginBottom="4dp"
+            android:text="@string/test_mbps"
+            android:textColor="@color/colorPrimary"
+            android:textSize="@dimen/text_size_small"
+            android:visibility="invisible" />
+    </FrameLayout>
+
+</at.specure.android.views.SquareLayout>

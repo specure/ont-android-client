@@ -16,10 +16,6 @@
  ******************************************************************************/
 package at.specure.android.screens.main;
 
-import java.util.List;
-
-import com.specure.opennettest.R;
-
 import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -27,6 +23,10 @@ import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.ImageView;
 import android.widget.TextView;
+
+import com.specure.opennettest.R;
+
+import java.util.List;
 
 public class MainMenuListAdapter extends BaseAdapter {
     private Context context;
@@ -43,15 +43,15 @@ public class MainMenuListAdapter extends BaseAdapter {
     public View getView(int position, View convertView, ViewGroup parent) {
         inflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
         View itemView = inflater.inflate(R.layout.navigation_list_item, parent, false);
- 
-        TextView txtTitle = (TextView) itemView.findViewById(R.id.title);
+
+        TextView txtTitle = itemView.findViewById(R.id.title);
         //TextView txtSubTitle = (TextView) itemView.findViewById(R.id.subtitle);
-        ImageView imgIcon = (ImageView) itemView.findViewById(R.id.icon);
+        ImageView imgIcon = itemView.findViewById(R.id.icon);
  
         txtTitle.setText(mTitle.get(position));
         //txtSubTitle.setText(mSubTitle[position]);
         imgIcon.setImageResource(mIcon.get(position));
-        imgIcon.setColorFilter(context.getResources().getColor(android.R.color.white));
+        imgIcon.setColorFilter(context.getResources().getColor(R.color.menu_foreground));
         
         return itemView;
     }

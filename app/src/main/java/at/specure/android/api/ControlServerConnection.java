@@ -35,15 +35,18 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
+import at.specure.android.api.jsons.CheckSurveyPost;
 import at.specure.android.api.jsons.Location;
 import at.specure.android.api.jsons.MeasurementServerGet;
 import at.specure.android.api.jsons.ZeroMeasurement;
 import at.specure.android.api.jsons.ZeroMeasurementPost;
+import at.specure.android.api.reqres.check_survey.CheckSurveyRq;
 import at.specure.android.api.reqres.measurement_server.MeasurementServerRq;
 import at.specure.android.api.reqres.zero_measurements.ZeroMeasurementsPostRq;
 import at.specure.android.configs.ConfigHelper;
 import at.specure.android.configs.LocaleConfig;
 import at.specure.android.configs.MapConfig;
+import at.specure.androidX.data.badges.BadgesRequest;
 import at.specure.android.screens.map.MapProperties;
 import at.specure.android.util.InformationCollector;
 import at.specure.client.helper.Config;
@@ -207,53 +210,53 @@ public class ControlServerConnection {
         // getting JSON string from URL
         logRequest(DEBUG_TAG, hostUrl, requestData);
 
-        final JsonElement responseElement = jParser.sendJsonToUrl(hostUrl, requestData);
+            final JsonElement responseElement = jParser.sendJsonToUrl(hostUrl, requestData);
 
-        if (responseElement.isJsonObject()) {
+            if (responseElement.isJsonObject()) {
 
-            JsonObject response = responseElement.getAsJsonObject();
-            if (response != null)
-                try {
-                    logResponse(DEBUG_TAG, hostUrl, response);
+                JsonObject response = responseElement.getAsJsonObject();
+                if (response != null)
+                    try {
+                        logResponse(DEBUG_TAG, hostUrl, response);
 
-                    JsonArray errorList = null;
-                    if (response.has("error")) {
-                        errorList = response.getAsJsonArray("error");
-                    }
-
-                    if (errorList == null || errorList.size() == 0) {
-                        return getResponseField(response, fieldName);
-                    } else {
-                        hasError = true;
-                        for (int i = 0; i < errorList.size(); i++) {
-
-                            if (i > 0)
-                                errorMsg += "\n";
-                            errorMsg += errorList.get(i).getAsString();
+                        JsonArray errorList = null;
+                        if (response.has("error")) {
+                            errorList = response.getAsJsonArray("error");
                         }
 
-                        System.out.println(errorMsg);
+                        if (errorList == null || errorList.size() == 0) {
+                            return getResponseField(response, fieldName);
+                        } else {
+                            hasError = true;
+                            for (int i = 0; i < errorList.size(); i++) {
 
-                        //return getResponseField(response, fieldName);
+                                if (i > 0)
+                                    errorMsg += "\n";
+                                errorMsg += errorList.get(i).getAsString();
+                            }
+
+                            System.out.println(errorMsg);
+
+                            //return getResponseField(response, fieldName);
+                        }
+
+                        // }
+                    } catch (final JsonParseException e) {
+                        hasError = true;
+                        errorMsg = "Error parsing server response";
+                        Timber.e("ReqError %s", e.getMessage());
+                        e.printStackTrace();
+                    } catch (RuntimeException e) {
+                        hasError = true;
+                        errorMsg = "Error parsing server response";
+                        e.printStackTrace();
+                        Timber.e("ReqError %s", e.getMessage());
                     }
-
-                    // }
-                } catch (final JsonParseException e) {
+                else {
                     hasError = true;
-                    errorMsg = "Error parsing server response";
-                    Timber.e("ReqError %s", e.getMessage());
-                    e.printStackTrace();
-                } catch (RuntimeException e) {
-                    hasError = true;
-                    errorMsg = "Error parsing server response";
-                    e.printStackTrace();
-                    Timber.e("ReqError %s", e.getMessage());
+                    errorMsg = "No response";
                 }
-            else {
-                hasError = true;
-                errorMsg = "No response";
             }
-        }
 
 
         return null;
@@ -407,6 +410,27 @@ public class ControlServerConnection {
 
     }
 
+    public JsonArray requestBadges() {
+
+        hasError = false;
+        Gson gson = new Gson();
+        final URI hostUrl = getUri(Config.RMBT_BADGES_HOST_URL);
+
+        BadgesRequest badgesRequest = null;
+        try {
+            badgesRequest = new BadgesRequest(context);
+        } catch (final JsonParseException e1) {
+            hasError = true;
+            errorMsg = "Error gernerating request";
+            // e1.printStackTrace();
+        }
+        JsonObject requestData = gson.toJsonTree(badgesRequest).getAsJsonObject();
+
+        logRequest(DEBUG_TAG, hostUrl, requestData);
+        JsonArray array = sendRequest(hostUrl, requestData, null);
+        logResponse(DEBUG_TAG, hostUrl, array);
+        return array;
+    }
 
     public JsonArray requestTestResult(final String testUuid) {
 
@@ -527,6 +551,21 @@ public class ControlServerConnection {
 
         logRequest(DEBUG_TAG, hostUrl, request);
         JsonArray array = sendRequest(hostUrl, request, "servers");
+        logResponse(DEBUG_TAG, hostUrl, array);
+        return array;
+    }
+
+    public JsonArray requestCheckSurvey(String uuid) {
+        hasError = false;
+        Gson gson = new Gson();
+        final URI hostUrl = getUri(Config.RMBT_CHECK_SURVEY_HOST_URL);
+
+        CheckSurveyPost checkSurveyPost = new CheckSurveyPost(uuid);
+
+        JsonObject request = new CheckSurveyRq(checkSurveyPost).createRequest();
+
+        logRequest(DEBUG_TAG, hostUrl, request);
+        JsonArray array = sendRequest(hostUrl, request, "survey");
         logResponse(DEBUG_TAG, hostUrl, array);
         return array;
     }
@@ -772,7 +811,17 @@ public class ControlServerConnection {
                 } else {
                     String[] split1 = s.split("=");
                     if ((split1.length > 1) && (!split1[1].isEmpty())) {
-                        filter.add(split1[0], gson.toJsonTree(split1[1]));
+                        if (MapConfig.sendCountryInMapMarkerRequest(context)) {
+                            if ((split1[0].equalsIgnoreCase("country")) && ((split1[1].equalsIgnoreCase("all")) || (split1[1].equalsIgnoreCase("")))) {
+                                // ignore
+                            } else {
+                                filter.add(split1[0], gson.toJsonTree(split1[1]));
+                            }
+                        } else {
+                            if (!split1[0].equalsIgnoreCase("country")) {
+                                filter.add(split1[0], gson.toJsonTree(split1[1]));
+                            }
+                        }
                     }
                 }
 

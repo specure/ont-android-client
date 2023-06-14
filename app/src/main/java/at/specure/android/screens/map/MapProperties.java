@@ -16,13 +16,8 @@
  ******************************************************************************/
 package at.specure.android.screens.map;
 
-import android.content.Context;
 
 import com.specure.opennettest.BuildConfig;
-import com.specure.opennettest.R;
-
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * @author alladin-IT GmbH

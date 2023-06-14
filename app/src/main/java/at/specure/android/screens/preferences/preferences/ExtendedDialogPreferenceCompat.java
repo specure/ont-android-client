@@ -13,11 +13,11 @@ import android.view.Window;
 import android.view.WindowManager;
 import android.widget.TextView;
 
+import com.specure.opennettest.R;
+
 import androidx.annotation.CallSuper;
 import androidx.preference.DialogPreference;
 import androidx.preference.PreferenceViewHolder;
-
-import com.specure.opennettest.R;
 
 public abstract class ExtendedDialogPreferenceCompat extends DialogPreference implements
         DialogInterface.OnDismissListener, DialogInterface.OnClickListener {

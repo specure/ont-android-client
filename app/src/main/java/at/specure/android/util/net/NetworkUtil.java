@@ -16,8 +16,6 @@
  ******************************************************************************/
 package at.specure.android.util.net;
 
-import android.util.Log;
-
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.Inet4Address;
@@ -86,9 +84,9 @@ public class NetworkUtil {
 	 * @param signalType
 	 * 	can (should) contain one of the following values:
 	 * 	<ul>
-	 * 		<li>{@link InformationCollector#SINGAL_TYPE_MOBILE}</li>
-	 * 		<li>{@link InformationCollector#SINGAL_TYPE_RSRP}</li>
-	 * 		<li>{@link InformationCollector#SINGAL_TYPE_WLAN}</li>
+	 * 		<li>{@link InformationCollector#SIGNAL_TYPE_MOBILE}</li>
+	 * 		<li>{@link InformationCollector#SIGNAL_TYPE_RSRP}</li>
+	 * 		<li>{@link InformationCollector#SIGNAL_TYPE_WLAN}</li>
 	 *	</ul>
 	 * @return
 	 */
@@ -97,17 +95,17 @@ public class NetworkUtil {
         int max = Integer.MAX_VALUE;
         switch (signalType)
         {
-        case InformationCollector.SINGAL_TYPE_MOBILE:
+        case InformationCollector.SIGNAL_TYPE_MOBILE:
             min = -110;
             max = -50;
             break;
             
-        case InformationCollector.SINGAL_TYPE_WLAN:
+        case InformationCollector.SIGNAL_TYPE_WLAN:
             min = -100;
             max = -40;
             break;
             
-        case InformationCollector.SINGAL_TYPE_RSRP:
+        case InformationCollector.SIGNAL_TYPE_RSRP:
             min = -130;
             max = -70;
             break;            

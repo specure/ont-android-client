@@ -2,14 +2,14 @@ package at.specure.androidX.data.map_filter.mappers;
 
 import android.content.Context;
 
-import androidx.annotation.NonNull;
-
 import com.specure.opennettest.R;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+import androidx.annotation.NonNull;
+import at.specure.androidX.data.map_filter.data.CountryList;
 import at.specure.androidX.data.map_filter.data.MapFilterCountry;
 import at.specure.androidX.data.map_filter.data.MapFilterTypes;
 import at.specure.androidX.data.map_filter.data.MapSubType;

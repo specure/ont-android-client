@@ -2,9 +2,11 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:gravity="center_vertical"
     android:orientation="horizontal"
-    android:padding="10dp">
+    android:paddingLeft="10dp"
+    android:paddingRight="10dp">
 
     <LinearLayout
         android:layout_width="wrap_content"
@@ -12,7 +14,7 @@
         android:layout_weight="1"
         android:orientation="horizontal">
 
-        <LinearLayout
+        <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:gravity="center_vertical"
@@ -20,84 +22,75 @@
             android:padding="4dp">
 
             <ImageView
+                android:id="@+id/performed_tests_image"
                 android:layout_width="16dp"
                 android:layout_height="16dp"
+                android:layout_margin="@dimen/margin_small"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
                 android:src="@drawable/qos_performed" />
 
-            <androidx.legacy.widget.Space
-                android:layout_width="1dp"
-                android:layout_height="10dp" />
 
             <ImageView
+                android:id="@+id/passed_tests_image"
                 android:layout_width="16dp"
                 android:layout_height="16dp"
+                android:layout_margin="@dimen/margin_small"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/performed_tests_image"
                 android:src="@drawable/qos_passed" />
 
-            <androidx.legacy.widget.Space
-                android:layout_width="1dp"
-                android:layout_height="10dp" />
-
-
-
 
             <ImageView
+                android:id="@+id/failed_tests_image"
                 android:layout_width="16dp"
                 android:layout_height="16dp"
+                android:layout_margin="@dimen/margin_small"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/passed_tests_image"
                 android:src="@drawable/qos_failed" />
-
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:gravity="center_vertical"
-            android:orientation="vertical"
-            android:padding="4dp">
 
             <TextView
                 android:id="@+id/qos_result_performed"
                 android:layout_width="wrap_content"
+                android:layout_margin="@dimen/margin_small"
+                app:layout_constraintStart_toEndOf="@+id/performed_tests_image"
+                app:layout_constraintTop_toTopOf="parent"
                 android:minHeight="16dp"
                 android:layout_height="wrap_content"
                 android:textSize="11sp"
                 android:textStyle="bold" />
 
-            <androidx.legacy.widget.Space
-                android:layout_width="1dp"
-                android:layout_height="10dp" />
-
             <TextView
                 android:id="@+id/qos_result_passed"
+                app:layout_constraintStart_toEndOf="@+id/performed_tests_image"
+                app:layout_constraintTop_toTopOf="@+id/passed_tests_image"
+                app:layout_constraintBottom_toBottomOf="@+id/passed_tests_image"
+                android:layout_margin="@dimen/margin_small"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:minHeight="16dp"
                 android:textSize="11sp"
                 android:textStyle="bold" />
 
-            <androidx.legacy.widget.Space
-                android:layout_width="1dp"
-                android:layout_height="10dp" />
-
             <TextView
                 android:id="@+id/qos_result_failed"
+                app:layout_constraintStart_toEndOf="@+id/performed_tests_image"
+                app:layout_constraintTop_toTopOf="@+id/failed_tests_image"
+                app:layout_constraintBottom_toBottomOf="@+id/failed_tests_image"
+                android:layout_margin="@dimen/margin_small"
                 android:layout_width="wrap_content"
                 android:minHeight="16dp"
                 android:textSize="11sp"
                 android:textStyle="bold"
                 android:layout_height="wrap_content" />
 
-        </LinearLayout>
-
-
-        <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:gravity="center_vertical"
-            android:layout_weight="1"
-            android:orientation="vertical"
-            android:padding="4dp">
-
             <TextView
+                style="@style/QoSTheme.TextView.Medium.TitlePage"
+                app:layout_constraintStart_toEndOf="@+id/qos_result_performed"
+                app:layout_constraintTop_toTopOf="@+id/performed_tests_image"
+                app:layout_constraintBottom_toBottomOf="@+id/performed_tests_image"
+                android:layout_margin="@dimen/margin_small"
                 android:id="@+id/qos_result_performed_txt"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -108,11 +101,12 @@
                 android:maxLines="1"
                 android:ellipsize="end"/>
 
-            <androidx.legacy.widget.Space
-                android:layout_width="1dp"
-                android:layout_height="10dp" />
-
             <TextView
+                style="@style/QoSTheme.TextView.Medium.TitlePage"
+                app:layout_constraintStart_toEndOf="@+id/qos_result_performed"
+                app:layout_constraintTop_toTopOf="@+id/passed_tests_image"
+                app:layout_constraintBottom_toBottomOf="@+id/passed_tests_image"
+                android:layout_margin="@dimen/margin_small"
                 android:id="@+id/qos_result_passed_txt"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -123,11 +117,12 @@
                 android:text="@string/qos_result_passed"
                 android:textStyle="bold" />
 
-            <androidx.legacy.widget.Space
-                android:layout_width="1dp"
-                android:layout_height="10dp" />
-
             <TextView
+                style="@style/QoSTheme.TextView.Medium.TitlePage"
+                app:layout_constraintStart_toEndOf="@+id/qos_result_performed"
+                app:layout_constraintTop_toTopOf="@+id/failed_tests_image"
+                app:layout_constraintBottom_toBottomOf="@+id/failed_tests_image"
+                android:layout_margin="@dimen/margin_small"
                 android:id="@+id/qos_result_failed_txt"
                 android:layout_width="wrap_content"
                 android:textStyle="bold"
@@ -138,9 +133,7 @@
                 android:gravity="center_vertical"
                 android:layout_height="wrap_content" />
 
-
-
-        </LinearLayout>
+        </androidx.constraintlayout.widget.ConstraintLayout>
 
     </LinearLayout>
 
@@ -152,6 +145,7 @@
 
         <TextView
             android:id="@+id/main_fragment__test_server_title"
+            style="@style/QoSTheme.TextView.Medium.TitlePage"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:clickable="false"
@@ -163,14 +157,15 @@
             android:id="@+id/show_detailed_qos_result_button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:padding="5dp"
+            android:paddingLeft="5dp"
+            android:paddingRight="5dp"
             android:background="@drawable/rounded_button_bckg"
             android:ellipsize="end"
             android:lines="1"
             android:maxLines="1"
             android:text="@string/show_detailed_results"
-            android:visibility="gone"
-            android:textAllCaps="true" />
+            android:textAllCaps="true"
+            android:textColor="@color/app_text_color_light" />
 
         <TextView
             android:id="@+id/qos_result_percentage"
@@ -181,7 +176,7 @@
             android:paddingEnd="10dp"
             android:paddingStart="10dp"
             android:textColor="@color/app_main_button_text_color"
-            android:textSize="30sp"
+            android:textSize="23sp"
             android:textStyle="bold" />
 
 

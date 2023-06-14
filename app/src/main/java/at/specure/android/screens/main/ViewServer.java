@@ -16,6 +16,16 @@
 
 package at.specure.android.screens.main;
 
+import android.app.Activity;
+import android.content.Context;
+import android.content.pm.ApplicationInfo;
+import android.os.Build;
+import androidx.annotation.NonNull;
+import android.text.TextUtils;
+import android.util.Log;
+import android.view.View;
+import android.view.ViewDebug;
+
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -34,14 +44,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import android.app.Activity;
-import android.content.Context;
-import android.content.pm.ApplicationInfo;
-import android.os.Build;
-import android.text.TextUtils;
-import android.util.Log;
-import android.view.View;
-import android.view.ViewDebug;
+import timber.log.Timber;
 
 /**
  * <p>This class can be used to enable the use of HierarchyViewer inside an
@@ -131,34 +134,43 @@ public class ViewServer implements Runnable {
     private static final String COMMAND_WINDOW_MANAGER_AUTOLIST = "AUTOLIST";
     // Returns the focused window
     private static final String COMMAND_WINDOW_MANAGER_GET_FOCUS = "GET_FOCUS";
-
-    private ServerSocket mServer;
+    private static ViewServer sServer;
     private final int mPort;
-
-    private Thread mThread;
-    private ExecutorService mThreadPool;
-    
     private final List<WindowListener> mListeners =
         new CopyOnWriteArrayList<WindowListener>();
-
     private final HashMap<View, String> mWindows = new HashMap<View, String>();
     private final ReentrantReadWriteLock mWindowsLock = new ReentrantReadWriteLock();
-
-    private View mFocusedWindow;
     private final ReentrantReadWriteLock mFocusLock = new ReentrantReadWriteLock();
+    private ServerSocket mServer;
+    private Thread mThread;
+    private ExecutorService mThreadPool;
+    private View mFocusedWindow;
 
-    private static ViewServer sServer;
+    private ViewServer() {
+        mPort = -1;
+    }
+
+    /**
+     * Creates a new ViewServer associated with the specified window manager on the
+     * specified local port. The server is not started by default.
+     *
+     * @param port The port for the server to listen to.
+     * @see #start()
+     */
+    private ViewServer(int port) {
+        mPort = port;
+    }
 
     /**
      * Returns a unique instance of the ViewServer. This method should only be
      * called from the main thread of your application. The server will have
      * the same lifetime as your process.
-     * 
+     *
      * If your application does not have the <code>android:debuggable</code>
      * flag set in its manifest, the server returned by this method will
      * be a dummy object that does not do anything. This allows you to use
      * the same code in debug and release versions of your application.
-     * 
+     *
      * @param context A Context used to check whether the application is
      *                debuggable, this can be the application context
      */
@@ -169,12 +181,12 @@ public class ViewServer implements Runnable {
             if (sServer == null) {
                 sServer = new ViewServer(ViewServer.VIEW_SERVER_DEFAULT_PORT);
             }
-    
+
             if (!sServer.isRunning()) {
                 try {
                     sServer.start();
                 } catch (IOException e) {
-                    Log.d(LOG_TAG, "Error:", e);
+                    Timber.d(e, "Error:");
                 }
             }
         } else {
@@ -184,20 +196,28 @@ public class ViewServer implements Runnable {
         return sServer;
     }
 
-    private ViewServer() {
-        mPort = -1;
-    }
-    
-    /**
-     * Creates a new ViewServer associated with the specified window manager on the
-     * specified local port. The server is not started by default.
-     *
-     * @param port The port for the server to listen to.
-     *
-     * @see #start()
-     */
-    private ViewServer(int port) {
-        mPort = port;
+    private static boolean writeValue(Socket client, String value) {
+        boolean result;
+        BufferedWriter out = null;
+        try {
+            OutputStream clientStream = client.getOutputStream();
+            out = new BufferedWriter(new OutputStreamWriter(clientStream), 8 * 1024);
+            out.write(value);
+            out.write("\n");
+            out.flush();
+            result = true;
+        } catch (Exception e) {
+            result = false;
+        } finally {
+            if (out != null) {
+                try {
+                    out.close();
+                } catch (IOException e) {
+                    result = false;
+                }
+            }
+        }
+        return result;
     }
 
     /**
@@ -237,7 +257,7 @@ public class ViewServer implements Runnable {
                 try {
                     mThreadPool.shutdownNow();
                 } catch (SecurityException e) {
-                    Log.w(LOG_TAG, "Could not stop all view server threads");
+                    Timber.w( "Could not stop all view server threads");
                 }
             }
 
@@ -249,7 +269,7 @@ public class ViewServer implements Runnable {
                 mServer = null;
                 return true;
             } catch (IOException e) {
-                Log.w(LOG_TAG, "Could not close the view server");
+                Timber.w( "Could not close the view server");
             }
         }
 
@@ -281,12 +301,12 @@ public class ViewServer implements Runnable {
     public boolean isRunning() {
         return mThread != null && mThread.isAlive();
     }
-    
+
     /**
      * Invoke this method to register a new view hierarchy.
-     * 
+     *
      * @param activity The activity whose view hierarchy/window to register
-     * 
+     *
      * @see #addWindow(View, String)
      * @see #removeWindow(Activity)
      */
@@ -303,9 +323,9 @@ public class ViewServer implements Runnable {
 
     /**
      * Invoke this method to unregister a view hierarchy.
-     * 
+     *
      * @param activity The activity whose view hierarchy/window to unregister
-     * 
+     *
      * @see #addWindow(Activity)
      * @see #removeWindow(View)
      */
@@ -315,10 +335,10 @@ public class ViewServer implements Runnable {
 
     /**
      * Invoke this method to register a new view hierarchy.
-     * 
+     *
      * @param view A view that belongs to the view hierarchy/window to register
      * @name name The name of the view hierarchy/window to register
-     * 
+     *
      * @see #removeWindow(View)
      */
     public void addWindow(View view, String name) {
@@ -333,9 +353,9 @@ public class ViewServer implements Runnable {
 
     /**
      * Invoke this method to unregister a view hierarchy.
-     * 
+     *
      * @param view A view that belongs to the view hierarchy/window to unregister
-     * 
+     *
      * @see #addWindow(View, String)
      */
     public void removeWindow(View view) {
@@ -350,17 +370,17 @@ public class ViewServer implements Runnable {
 
     /**
      * Invoke this method to change the currently focused window.
-     * 
+     *
      * @param activity The activity whose view hierarchy/window hasfocus,
      *                 or null to remove focus
      */
     public void setFocusedWindow(Activity activity) {
         setFocusedWindow(activity.getWindow().getDecorView());
     }
-    
+
     /**
      * Invoke this method to change the currently focused window.
-     * 
+     *
      * @param view A view that belongs to the view hierarchy/window that has focus,
      *             or null to remove focus
      */
@@ -381,7 +401,7 @@ public class ViewServer implements Runnable {
         try {
             mServer = new ServerSocket(mPort, VIEW_SERVER_MAX_CONNECTIONS, InetAddress.getLocalHost());
         } catch (Exception e) {
-            Log.w(LOG_TAG, "Starting ServerSocket error: ", e);
+            Timber.w(e, "Starting ServerSocket error: ");
         }
 
         while (mServer != null && Thread.currentThread() == mThread) {
@@ -398,33 +418,9 @@ public class ViewServer implements Runnable {
                     }
                 }
             } catch (Exception e) {
-                Log.w(LOG_TAG, "Connection error: ", e);
+                Timber.w(e, "Connection error: ");
             }
         }
-    }
-
-    private static boolean writeValue(Socket client, String value) {
-        boolean result;
-        BufferedWriter out = null;
-        try {
-            OutputStream clientStream = client.getOutputStream();
-            out = new BufferedWriter(new OutputStreamWriter(clientStream), 8 * 1024);
-            out.write(value);
-            out.write("\n");
-            out.flush();
-            result = true;
-        } catch (Exception e) {
-            result = false;
-        } finally {
-            if (out != null) {
-                try {
-                    out.close();
-                } catch (IOException e) {
-                    result = false;
-                }
-            }
-        }
-        return result;
     }
     
     private void fireWindowsChangedEvent() {
@@ -481,12 +477,12 @@ public class ViewServer implements Runnable {
             return mStream.toString();
         }
 
-        public void write(byte[] buffer, int offset, int count)
+        public void write(@NonNull byte[] buffer, int offset, int count)
                 throws IOException {
             mStream.write(buffer, offset, count);
         }
 
-        public void write(byte[] buffer) throws IOException {
+        public void write(@NonNull byte[] buffer) throws IOException {
             mStream.write(buffer);
         }
 
@@ -544,11 +540,10 @@ public class ViewServer implements Runnable {
     }
 
     private class ViewServerWorker implements Runnable, WindowListener {
+        private final Object[] mLock = new Object[0];
         private Socket mClient;
         private boolean mNeedWindowListUpdate;
         private boolean mNeedFocusedWindowUpdate;
-
-        private final Object[] mLock = new Object[0];
 
         public ViewServerWorker(Socket client) {
             mClient = client;
@@ -591,10 +586,10 @@ public class ViewServer implements Runnable {
                 }
 
                 if (!result) {
-                    Log.w(LOG_TAG, "An error occurred with the command: " + command);
+                    Timber.w( "An error occurred with the command: %s" , command);
                 }
             } catch(IOException e) {
-                Log.w(LOG_TAG, "Connection error: ", e);
+                Timber.w( e, "Connection error: ");
             } finally {
                 if (in != null) {
                     try {
@@ -653,8 +648,7 @@ public class ViewServer implements Runnable {
                 }
 
             } catch (Exception e) {
-                Log.w(LOG_TAG, "Could not send command " + command +
-                        " with parameters " + parameters, e);
+                Timber.w(e, "Could not send command %s with parameters %s", command, parameters);
                 success = false;
             } finally {
                 if (out != null) {
@@ -824,7 +818,7 @@ public class ViewServer implements Runnable {
                     }
                 }
             } catch (Exception e) {
-                Log.w(LOG_TAG, "Connection error: ", e);
+                Timber.w(e, "Connection error: ");
             } finally {
                 if (out != null) {
                     try {

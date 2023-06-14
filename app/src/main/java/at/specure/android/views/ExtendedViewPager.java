@@ -22,9 +22,6 @@ import android.view.MotionEvent;
 
 import androidx.viewpager.widget.ViewPager;
 
-import at.specure.android.screens.result.adapter.result.QoSTestDetailPagerAdapter;
-
-
 /**
  * 
  * @author lb
@@ -78,9 +75,5 @@ public class ExtendedViewPager extends ViewPager {
 	 */
 	public boolean isPagingDisabled() {
 		return this.isPagingDisabled;
-	}
-
-	public void setAdapter(QoSTestDetailPagerAdapter pagerAdapter) {
-		super.setAdapter(pagerAdapter);
 	}
 }

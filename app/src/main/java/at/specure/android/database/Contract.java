@@ -27,7 +27,7 @@ import com.specure.opennettest.BuildConfig;
  */
 public class Contract {
 
-    public static final String CONTENT_AUTHORITY = BuildConfig.DATABASE_AUTHORITY;
+    public static final String CONTENT_AUTHORITY = BuildConfig.APPLICATION_ID;
     //GENERAL
     public static final String PATH_BY_REFERENCE = "by_reference";
 
@@ -73,6 +73,7 @@ public class Contract {
         String TEL_NET_SIM_COUNTRY = "zm_tel_net_sim_country";
         String TEL_PHONE_TYPE = "zm_tel_phone_type";
         String TEL_DATA_STATE = "zm_tel_data_state";
+        String TIMEZONE = "zm_timezone";
     }
 
 

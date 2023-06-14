@@ -215,7 +215,7 @@ public final class Helperfunctions
         switch (type)
         {
         case 1:
-            return "GSM";
+            return "GPRS";
         case 2:
             return "EDGE";
         case 3:
@@ -244,6 +244,20 @@ public final class Helperfunctions
             return "EHRPD";
         case 15:
             return "HSPA+";
+        case 16:
+            return "GSM";
+        case 17:
+            return "TD_SCDMA";
+        case 18:
+            return "IWLAN";
+        case 19:
+            return "LTE_CA";
+        case 20:
+            return "NR";
+        case 40:
+            return "NR AVAILABLE";
+        case 41:
+            return "NR NSA";
         case 98:
             return "LAN";
         case 99:

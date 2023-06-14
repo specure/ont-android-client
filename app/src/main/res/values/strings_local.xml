@@ -40,14 +40,15 @@
     <string name="url_statistics">https://test.nettest.org/en/statistics</string>
     <string name="url_help_result">https://test.nettest.org/en/help</string>
     <string name="url_terms">https://test.nettest.org/en/tc</string>
-    
+    <string name="url_pp">https://test.nettest.org/en/pp</string>
+
     <string name="header_image_description" translatable="false">Header image</string>
 
     <string translatable="false" name="default_control_host">test.nettest.org</string>
     <string translatable="false" name="default_control_host_ipv4_only">c01ipv4-test.nettest.org</string>
     <string translatable="false" name="default_control_host_ipv6_only">c01ipv6-test.nettest.org</string>
-    <string translatable="false" name="default_control_check_ipv4_url">https://c01ipv4-test.nettest.org/RMBTControlServer/ip</string>
-    <string translatable="false" name="default_control_check_ipv6_url">https://c01ipv6-test.nettest.org/RMBTControlServer/ip</string>
+    <string translatable="false" name="default_control_check_ipv4_url">https://c01ipv4-test.nettest.org/ControlServer/ip</string>
+    <string translatable="false" name="default_control_check_ipv6_url">https://c01ipv6-test.nettest.org/ControlServer/ip</string>
     <string translatable="false" name="default_map_server_url">test.nettest.org</string>
 
 </resources>

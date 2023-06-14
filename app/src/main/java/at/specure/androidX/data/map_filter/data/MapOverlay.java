@@ -6,6 +6,9 @@ import com.google.gson.annotations.SerializedName;
 
 import java.util.HashMap;
 
+import at.specure.androidX.data.map_filter.view_data.FilterGroup;
+import at.specure.androidX.data.map_filter.view_data.FilterItem;
+
 public class MapOverlay {
 
     public static final String MAP_FILTER_AUTOMATIC = "MAP_FILTER_AUTOMATIC";

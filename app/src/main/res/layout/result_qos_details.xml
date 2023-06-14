@@ -29,12 +29,14 @@
             android:layout_height="wrap_content"
             android:layout_alignParentTop="true"
             android:layout_marginTop="5dp"
+            android:background="@color/result_red"
             android:visibility="gone" >
             
             <!-- android:background="@drawable/result_box_small_red" -->
 
             <LinearLayout
                 android:id="@+id/qos_error_list_label_layout"
+                style="@style/listViewHistoryLabelRow"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:background="@drawable/bg_trans_light_20"
@@ -42,6 +44,7 @@
 
                 <TextView
                     android:id="@+id/col1"
+                    style="@style/listViewHistoryLabelRowItem"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight=".15"
@@ -51,8 +54,10 @@
 
             <LinearLayout
                 android:orientation="vertical"
+                android:background="@drawable/list_selector"
                 android:showDividers="middle"
                 android:id="@+id/qos_error_list"
+                style="@style/listViewHistoryRed"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_below="@+id/qos_error_list_label_layout"
@@ -65,12 +70,14 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_below="@+id/qos_error_list_layout"
-            android:layout_marginTop="3dp">
+            android:layout_marginTop="3dp"
+            android:background="@color/transparent" >
 
             <!-- android:background="@drawable/history_box" -->
 
             <LinearLayout
                 android:id="@+id/qos_success_list_label_layout"
+                style="@style/listViewHistoryLabelRow"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:background="@drawable/bg_trans_light_20"
@@ -79,6 +86,7 @@
 
                 <TextView
                     android:id="@+id/col2"
+                    style="@style/listViewHistoryLabelRowItem"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight=".15"
@@ -107,6 +115,7 @@
                 android:layout_marginTop="80dip" />
             
             <LinearLayout
+				android:divider="@drawable/bg_trans_light_10"
 				android:dividerPadding="0dp"
 				android:showDividers="middle"
                 android:orientation="vertical"

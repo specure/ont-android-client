@@ -35,6 +35,7 @@ import at.specure.client.QualityOfServiceTest;
 import at.specure.client.v2.task.result.QoSTestResult;
 import at.specure.client.v2.task.result.QoSTestResultEnum;
 import at.specure.client.v2.task.service.TestProgressListener.TestProgressEvent;
+import timber.log.Timber;
 
 /**
  * Superclass of all QoS tasks<br>
@@ -308,6 +309,7 @@ public abstract class AbstractQoSTask extends AbstractRMBTTest implements QoSTas
 	 * @param controlConnection
 	 */
 	public void setControlConnection(QoSControlConnection controlConnection) {
+		Timber.e("QOS Control Connection: %s", controlConnection.toString());
 		this.controlConnection = controlConnection;
 	}
 	
